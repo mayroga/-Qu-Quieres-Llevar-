@@ -3,7 +3,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional
 import os
 import datetime
 import stripe
@@ -12,8 +12,8 @@ from legal_disclaimer import LegalNoticeManager
 
 app = FastAPI(
     title="¿Qué Quieres Llevar?",
-    description="Asesoría especializada de transporte, carga y equipaje - May Roga LLC",
-    version="6.0.0"
+    description="Asesoría especializada de equipaje y vuelos - May Roga LLC",
+    version="5.1.0"
 )
 
 app.add_middleware(
@@ -33,20 +33,19 @@ ADMIN_PASS = os.getenv("ADMIN_PASSWORD", "admin123")
 ACTIVE_PAID_SESSIONS = {}
 
 class FlightSearchRequest(BaseModel):
-    natural_query: str = Field(..., description="Búsqueda en lenguaje natural del trayecto o ruta")
+    natural_query: str = Field(..., description="Búsqueda en lenguaje natural del vuelo")
     session_token: str
 
 class ItemCheckRequest(BaseModel):
     session_token: str
     item_description: str
     airline: Optional[str] = None
-    transport_mode: Optional[str] = Field("general", description="aereo, maritimo, terrestre o general")
 
 class AdminLoginRequest(BaseModel):
     username: str
     password: str
 
-# INTERFAZ GRÁFICA PROFESIONAL Y UNIVERSAL
+# INTERFAZ GRÁFICA PROFESIONAL Y LIMPIA
 @app.get("/", response_class=HTMLResponse)
 def read_root():
     html_content = """
@@ -58,10 +57,10 @@ def read_root():
         <title>¿Qué Quieres Llevar? - May Roga LLC</title>
         <style>
             body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f2f5f8; color: #2c3e50; margin: 0; padding: 15px; }
-            .container { max-width: 720px; margin: 0 auto; background: #ffffff; padding: 25px; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+            .container { max-width: 680px; margin: 0 auto; background: #ffffff; padding: 25px; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
             h1 { color: #0f3d59; text-align: center; font-size: 24px; margin-bottom: 5px; }
             p.sub { text-align: center; color: #596e79; font-size: 14px; margin-bottom: 20px; font-weight: 500; }
-            .notice-box { background: #f8fafc; border-left: 4px solid #0f3d59; padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; font-size: 13px; color: #334155; line-height: 1.5; }
+            .notice-box { background: #f8fafc; border-left: 4px solid #0f3d59; padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; font-size: 13px; color: #334155; line-height: 1.4; }
             label { font-weight: 600; display: block; margin-top: 15px; color: #1e293b; font-size: 13.5px; }
             input, select, textarea { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 14px; background: #fff; }
             input:focus, textarea:focus { outline: none; border-color: #0f3d59; box-shadow: 0 0 0 3px rgba(15, 61, 89, 0.1); }
@@ -72,14 +71,14 @@ def read_root():
             button.btn-clear:hover { background-color: #475569; }
             
             #resultadoContainer { margin-top: 20px; display: none; }
-            .result-card { background: #f8fafc; border: 1px solid #e2e8f0; padding: 20px; border-radius: 10px; line-height: 1.6; }
+            .result-card { background: #f8fafc; border: 1px solid #e2e8f0; padding: 18px; border-radius: 10px; }
             .result-card h3 { margin-top: 0; color: #0f3d59; font-size: 16px; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; }
             
             table.custom-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; background: #fff; }
             table.custom-table th, table.custom-table td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
             table.custom-table th { background-color: #0f3d59; color: #fff; }
 
-            .legal-footer { text-align: center; margin-top: 30px; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 15px; line-height: 1.5; }
+            .legal-footer { text-align: center; margin-top: 30px; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 15px; line-height: 1.4; }
 
             #devModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center; }
             .dev-box { background: white; padding: 25px; border-radius: 12px; width: 290px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
@@ -89,29 +88,21 @@ def read_root():
     <body>
         <div class="container" id="mainContainer">
             <h1>¿Qué Quieres Llevar?</h1>
-            <p class="sub">May Roga LLC — Asesoría Especializada Multimodal</p>
+            <p class="sub">May Roga LLC — Asesoría Especializada de Viaje</p>
             
             <div class="notice-box">
-                <strong>Orientación Profesional:</strong> Diseñado para brindarte soluciones claras, directas y seguras en el traslado de cualquier tipo de carga, equipaje o mercancía por vía aérea, terrestre o marítima.
+                <strong>Orientación Profesional:</strong> Escribe los detalles de tu itinerario de vuelo y el artículo o mercancía que deseas llevar. Te ayudaremos de forma directa y clara a verificar las normativas aplicables.
             </div>
 
             <form id="travelForm" onsubmit="event.preventDefault();">
-                <label>1. ¿Cómo es tu ruta o itinerario general? (Ej: Miami a La Habana, carga comercial, mudanza o envío terrestre)</label>
-                <textarea id="natural_query" rows="2" placeholder="Describe tu trayecto, fechas o necesidades logísticas..."></textarea>
+                <label>1. ¿Cómo es tu viaje? (Ej: Miami 30 de diciembre a Habana, regreso el 3 de enero)</label>
+                <textarea id="natural_query" rows="2" placeholder="Escribe tu ruta y fechas de ida y vuelta..."></textarea>
                 <div style="display: flex; gap: 10px; margin-top: 6px;">
-                    <button type="button" onclick="buscarVueloEnPantalla()" style="flex: 1; padding: 10px; font-size: 13px; background: #1e293b;">Analizar Rutas y Opciones</button>
+                    <button type="button" onclick="buscarVueloEnPantalla()" style="flex: 1; padding: 10px; font-size: 13px; background: #1e293b;">Buscar Vuelo / Opciones</button>
                 </div>
 
-                <label>2. ¿Qué artículo, mercancía o carga universal deseas consultar?</label>
-                <input type="text" id="item_description" placeholder="Ej: Maquinaria, alimentos, repuestos, baterías, químicos, menaje...">
-
-                <label>3. Selecciona el medio o modalidad de transporte</label>
-                <select id="transport_mode">
-                    <option value="general">Multimodal / General (Aéreo, Marítimo, Terrestre)</option>
-                    <option value="aereo">Transporte Aéreo (Pasajero o Carga)</option>
-                    <option value="maritimo">Transporte Marítimo (Contenedores / Carga suelta)</option>
-                    <option value="terrestre">Transporte Terrestre (Camiones / Courier)</option>
-                </select>
+                <label>2. ¿Qué artículo u objeto deseas consultar?</label>
+                <input type="text" id="item_description" placeholder="Escribe cualquier artículo, equipo, mercancía o equipaje...">
 
                 <div class="btn-group">
                     <button type="button" onclick="consultarReglas()">Consultar Asesoría</button>
@@ -124,7 +115,7 @@ def read_root():
             </div>
 
             <div class="legal-footer">
-                <strong>Aviso Legal:</strong> May Roga LLC ofrece esta asesoría preventiva basada en normativas públicas y estándares internacionales de la industria. No sustituye la validación final en puerto, aduana o counter autorizado.<br>
+                <strong>Aviso Legal:</strong> May Roga LLC ofrece esta asesoría preventiva basada en normativas públicas y estándares operativos. No sustituye la validación final en counter de la aerolínea u autoridad competente.<br>
                 &copy; 2026 May Roga LLC. Todos los derechos reservados.
             </div>
         </div>
@@ -198,7 +189,7 @@ def read_root():
             async function buscarVueloEnPantalla() {
                 const query = document.getElementById('natural_query').value;
                 if (!query) {
-                    alert("Por favor escribe los detalles de tu ruta o trayecto primero.");
+                    alert("Por favor escribe los datos de tu viaje primero.");
                     return;
                 }
 
@@ -209,7 +200,7 @@ def read_root():
                 const resContainer = document.getElementById('resultadoContainer');
                 const resContent = document.getElementById('resultadoContent');
                 resContainer.style.display = 'block';
-                resContent.innerHTML = "<p style='text-align:center;'>Analizando opciones logísticas y de transporte...</p>";
+                resContent.innerHTML = "<p style='text-align:center;'>Consultando opciones y disponibilidad de vuelos...</p>";
 
                 try {
                     const response = await fetch('/api/v1/flight/search-external', {
@@ -220,12 +211,12 @@ def read_root():
                     const data = await response.json();
                     if (response.ok) {
                         let htmlVuelos = `
-                            <h3>Opciones de Ruta y Conectividad Multimodal</h3>
-                            <p style="font-size: 13px; margin-bottom: 10px;"><strong>Consulta analizada:</strong> ${query}</p>
+                            <h3>Itinerario y Opciones de Vuelo</h3>
+                            <p style="font-size: 13px; margin-bottom: 10px;"><strong>Ruta analizada:</strong> ${query}</p>
                             <table class="custom-table">
                                 <tr>
-                                    <th>Canal / Operador</th>
-                                    <th>Especificación de la Ruta</th>
+                                    <th>Servicio / Aerolínea</th>
+                                    <th>Detalle del Trayecto</th>
                                     <th>Acción Opcional</th>
                                 </tr>
                         `;
@@ -234,25 +225,24 @@ def read_root():
                                 <tr>
                                     <td><strong>${f.airline}</strong></td>
                                     <td>${f.route}<br><span style="color: #16a34a; font-size:11px;">✓ ${f.status}</span></td>
-                                    <td><a href="${f.booking_url}" target="_blank" style="background: #0f3d59; color: #fff; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; display: inline-block;">Ver / Cotizar</a></td>
+                                    <td><a href="${f.booking_url}" target="_blank" style="background: #0f3d59; color: #fff; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; display: inline-block;">Ver / Cotizar Vuelo</a></td>
                                 </tr>
                             `;
                         });
-                        htmlVuelos += `</table><p style="font-size: 11px; color:#555; margin-top: 10px;">Nota: La gestión y contratación de servicios es completamente opcional y directa a través de las plataformas vinculadas.</p>`;
+                        htmlVuelos += `</table><p style="font-size: 11px; color:#555; margin-top: 10px;">Nota: La compra de pasajes es completamente opcional y se realiza directamente a través de las plataformas asociadas si el cliente así lo desea.</p>`;
                         resContent.innerHTML = htmlVuelos;
                     } else {
                         resContent.innerHTML = `<p style="color: red;">${data.detail || "Requiere validación."}</p>`;
                     }
                 } catch(e) {
-                    resContent.innerHTML = `<p style="color: red;">Error al procesar la búsqueda logística.</p>`;
+                    resContent.innerHTML = `<p style="color: red;">Error al procesar la búsqueda de vuelo.</p>`;
                 }
             }
 
             async function consultarReglas() {
                 const item = document.getElementById('item_description').value;
-                const mode = document.getElementById('transport_mode').value;
                 if (!item) {
-                    alert("Por favor escribe el artículo o mercancía que deseas consultar.");
+                    alert("Por favor escribe el artículo que deseas consultar.");
                     return;
                 }
 
@@ -263,18 +253,18 @@ def read_root():
                 const resContainer = document.getElementById('resultadoContainer');
                 const resContent = document.getElementById('resultadoContent');
                 resContainer.style.display = 'block';
-                resContent.innerHTML = "<p style='text-align:center;'>Procesando asesoría especializada...</p>";
+                resContent.innerHTML = "<p style='text-align:center;'>Verificando normativas de equipaje...</p>";
 
                 try {
                     const response = await fetch('/api/v1/consultar-articulo', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ session_token: internalSessionToken, item_description: item, transport_mode: mode })
+                        body: JSON.stringify({ session_token: internalSessionToken, item_description: item })
                     });
                     const data = await response.json();
                     if (response.ok) {
                         resContent.innerHTML = `
-                            <h3>Resultado de Asesoría Multimodal</h3>
+                            <h3>Resultado de Asesoría de Carga / Equipaje</h3>
                             <p style="font-size: 15px; font-weight: bold; color: #0f3d59;">${data.status_category}</p>
                             <p><strong>Respuesta:</strong> ${data.short_answer}</p>
                             <div style="white-space: pre-line; margin-top: 10px;"><strong>Detalles:</strong><br>${data.details}</div>
@@ -284,7 +274,7 @@ def read_root():
                         resContent.innerHTML = `<p style="color: red;">${data.detail || "Sesión requerida o expirada."}</p>`;
                     }
                 } catch(e) {
-                    resContent.innerHTML = `<p style="color: red;">Error al procesar la consulta del artículo.</p>`;
+                    resContent.innerHTML = `<p style="color: red;">Error al consultar el artículo.</p>`;
                 }
             }
 
@@ -299,7 +289,7 @@ def read_root():
     """
     return HTMLResponse(content=html_content)
 
-# ENDPOINTS DE CONTROL Y BACKEND UNIVERSAL
+# ENDPOINTS DE CONTROL Y BACKEND
 @app.post("/api/v1/admin/login")
 def admin_login(payload: AdminLoginRequest):
     if payload.username == ADMIN_USER and payload.password == ADMIN_PASS:
@@ -331,45 +321,45 @@ def search_flight_via_gemini(payload: FlightSearchRequest):
         "status": "success",
         "flights": [
             {
-                "airline": "Buscador Global Multimodal",
-                "route": f"Trayecto solicitado: {payload.natural_query}",
-                "status": "Comparador universal de pasajes, carga y conexiones.",
+                "airline": "Buscador General de Vuelos",
+                "route": f"Itinerario solicitado: {payload.natural_query}",
+                "status": "Comparador global de precios y horarios.",
                 "booking_url": "https://www.google.com/travel/flights"
             },
             {
                 "airline": "Avianca",
                 "route": f"Ruta optimizada para: {payload.natural_query}",
-                "status": "Conectividad de pasajeros y carga especializada.",
+                "status": "Conexiones, pasajeros y carga especializada.",
                 "booking_url": "https://www.avianca.com"
             },
             {
                 "airline": "American Airlines",
                 "route": f"Ruta optimizada para: {payload.natural_query}",
-                "status": "Red internacional de transporte de pasajeros.",
+                "status": "Amplia red de conexiones norte y sur.",
                 "booking_url": "https://www.aa.com"
             },
             {
                 "airline": "JetBlue",
                 "route": f"Ruta optimizada para: {payload.natural_query}",
-                "status": "Conexiones en América del Norte y Caribe.",
+                "status": "Conexiones en el Caribe y Estados Unidos.",
                 "booking_url": "https://www.jetblue.com"
             },
             {
                 "airline": "Copa Airlines",
                 "route": f"Ruta optimizada para: {payload.natural_query}",
-                "status": "Conexión continental mediante Hub central.",
+                "status": "Conexión a través del Hub de las Américas.",
                 "booking_url": "https://www.copaair.com"
             },
             {
                 "airline": "Southwest Airlines",
                 "route": f"Ruta optimizada para: {payload.natural_query}",
-                "status": "Flexibilidad en equipaje y traslados regionales.",
+                "status": "Vuelos flexibles y política de equipaje.",
                 "booking_url": "https://www.southwest.com"
             },
             {
                 "airline": "Aeroméxico",
                 "route": f"Ruta optimizada para: {payload.natural_query}",
-                "status": "Conectividad hacia México y enlaces globales.",
+                "status": "Conexiones hacia México y conexiones internacionales.",
                 "booking_url": "https://www.aeromexico.com"
             }
         ]
@@ -378,100 +368,83 @@ def search_flight_via_gemini(payload: FlightSearchRequest):
 @app.post("/api/v1/consultar-articulo")
 def consultar_articulo(payload: ItemCheckRequest):
     item = payload.item_description.lower()
-    mode = payload.transport_mode.lower()
     
-    # Detección inteligente ampliada y universal de categorías
-    tiene_bateria = any(k in item for k in ["bateria", "batería", "wh", "watt", "watts", "litio", "acumulador", "pila"])
-    tiene_maletas = any(k in item for k in ["maleta", "maletas", "equipaje", "bolso", "libra", "libras", "mochila", "valija"])
-    tiene_paneles = any(k in item for k in ["panel", "paneles", "solar", "fotovoltaico", "inversor"])
-    tiene_medicina = any(k in item for k in ["medicina", "medicamento", "insulina", "vacuna", "alimento", "carne", "perecedero", "suplemento", "farmaco"])
-    tiene_soda = any(k in item for k in ["soda", "soda caustica", "cáustica", "hidroxido", "quimico", "corrosivo", "sustancia", "liquido"])
-    tiene_maquinaria = any(k in item for k in ["motor", "maquina", "maquinaria", "repuesto", "pieza", "metal", "acero", "herramienta"])
-
-    # Lógica combinada / múltiple universal
+    tiene_bateria = any(k in item for k in ["bateria", "batería", "wh", "watt", "watts", "litio", "acumulador"])
+    tiene_maletas = any(k in item for k in ["maleta", "maletas", "equipaje", "bolso", "libra", "libras"])
+    tiene_paneles = any(k in item for k in ["panel", "paneles", "solar", "fotovoltaico"])
+    tiene_medicina = any(k in item for k in ["medicina", "medicamento", "insulina", "vacuna", "alimento", "carne", "perecedero", "suplemento"])
+    tiene_soda = any(k in item for k in ["soda", "soda caustica", "cáustica", "hidroxido", "quimico", "corrosivo"])
+    
     if (tiene_soda and tiene_maletas) or (tiene_paneles and tiene_maletas) or (tiene_soda and tiene_paneles) or (tiene_bateria and tiene_maletas):
         return {
-            "status_category": "ORIENTACIÓN Y SOLUCIÓN DE CARGA MULTIMODAL",
-            "short_answer": "Tranquilo, todo tiene solución. Lo mejor es separar las mercancías según su naturaleza para viajar o enviar sin contratiempos.",
+            "status_category": "ORIENTACIÓN Y SOLUCIÓN DE CARGA",
+            "short_answer": "Tranquilo, todo tiene solución. Lo mejor es separar las cosas para viajar sin contratiempos.",
             "details": "PASOS SENCILLOS A SEGUIR:\n\n"
-                       "Sustancias o equipos especiales: Nuestra sugerencia es canalizarlos mediante carga comercial autorizada y no en equipaje de mano o maletas personales.\n\n"
-                       "Soportes o componentes frágiles: Sugerimos un embalaje firme con protección reforzada para asegurar su integridad en cualquier trayecto.\n\n"
-                       "Equipaje personal: Te aconsejamos ajustar el peso y dimensiones estándar (como 50 lbs / 23 kg) para evitar inconvenientes en los puntos de recepción.",
-            "source_reference": "Normas Internacionales de Logística y Transporte (Verificado 2026)",
+                       "Productos químicos: Nuestra sugerencia es enviarlos por carga comercial especializada, ya que no van en maletas de pasajeros.\n\n"
+                       "Paneles o equipos: Sugerimos un embalaje firme y canalizarlos como carga protegida.\n\n"
+                       "Maletas personales: Te aconsejamos ajustar el peso a unas 50 lbs (23 kg) por pieza para evitar cobros extras en el mostrador.",
+            "source_reference": "Orientación de la industria (Verificado 2026)",
             "official_links": [
                 {"title": "Guía de Referencia IATA DGR", "url": "https://www.iata.org/en/programs/cargo/dgr/"},
-                {"title": "Directrices de Seguridad Logística", "url": "https://www.transportation.gov/"}
+                {"title": "Directrices de Artículos TSA", "url": "https://www.tsa.gov/travel/security-screening/whatcanibring/"},
+                {"title": "Departamento de Transporte (DOT)", "url": "https://www.transportation.gov/"}
             ],
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    if tiene_soda or (mode == "maritimo" and tiene_quimicos_gen(item)):
+    if tiene_soda:
         return {
-            "status_category": "ORIENTACIÓN SOBRE PRODUCTOS Y SUSTANCIAS",
-            "short_answer": "No te preocupes, este tipo de producto se gestiona adecuadamente a través de la vía logística correcta.",
+            "status_category": "ORIENTACIÓN SOBRE PRODUCTOS QUÍMICOS",
+            "short_answer": "No te preocupes, esto se resuelve fácil canalizándolo por la vía correcta.",
             "details": "SUGERENCIA PRÁCTICA:\n\n"
-                       "Las normativas generales sugieren transportar componentes químicos o industriales mediante un agente de carga especializado y documentado.\n\n"
-                       "Te recomendamos mantener a la mano la hoja de seguridad (MSDS), factura o ficha técnica del producto al momento de cotizar el envío.",
-            "source_reference": "Pautas de Logística Multimodal (Verificado 2026)",
+                       "Las normas generales sugieren transportar sustancias especiales mediante un agente de carga comercial autorizado.\n\n"
+                       "Te recomendamos tener a la mano la hoja técnica o factura del producto al cotizar.",
+            "source_reference": "Pautas de Logística y Transporte (Verificado 2026)",
             "official_links": [
-                {"title": "Dangerous Goods Regulations", "url": "https://www.iata.org/en/programs/cargo/dgr/"},
-                {"title": "PHMSA Materials Safety", "url": "https://www.phmsa.dot.gov/"}
+                {"title": "IATA Dangerous Goods Regulations", "url": "https://www.iata.org/en/programs/cargo/dgr/"},
+                {"title": "PHMSA Hazardous Materials Safety", "url": "https://www.phmsa.dot.gov/"}
             ],
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
     if tiene_bateria:
         return {
-            "status_category": "ORIENTACIÓN TÉCNICA DE ACUMULADORES Y ENERGÍA",
-            "short_answer": "Respira hondo, existe un procedimiento seguro y directo para enviar o trasladar este acumulador.",
+            "status_category": "ORIENTACIÓN TÉCNICA DE ACUMULADORES",
+            "short_answer": "Respira hondo, hay una forma segura y sencilla de enviarlo.",
             "details": "SUGERENCIA PRÁCTICA:\n\n"
-                       "Los dispositivos de alta potencia o capacidad suelen requerir canalización por carga comercial o restricciones específicas según su capacidad en Vatios-hora (Wh).\n\n"
-                       "Te sugerimos proteger adecuadamente los bornes o terminales y consultar con un especialista en embalaje para garantizar un tránsito sin contratiempos.",
-            "source_reference": "Estándares de Transporte de Energía (Verificado 2026)",
+                       "Los equipos de gran potencia suelen requerir envío por carga comercial.\n\n"
+                       "Te sugerimos acudir con un especialista en embalaje para proteger bien los terminales y viajar con tranquilidad.",
+            "source_reference": "Estándares de Transporte (Verificado 2026)",
             "official_links": [
-                {"title": "IATA Lithium Batteries Guidelines", "url": "https://www.iata.org/en/programs/cargo/dgr/lithium-batteries/"}
+                {"title": "IATA Lithium Batteries Guidance", "url": "https://www.iata.org/en/programs/cargo/dgr/lithium-batteries/"}
             ],
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
     if tiene_paneles:
         return {
-            "status_category": "ORIENTACIÓN SOBRE EQUIPAMIENTO SOLAR Y FOTOVOLTAICO",
-            "short_answer": "Todo tiene solución. Cuidaremos que tu inversión y paneles lleguen en óptimas condiciones.",
+            "status_category": "ORIENTACIÓN SOBRE EQUIPAMIENTO FOTOVOLTAICO",
+            "short_answer": "Todo tiene solución. Cuidaremos que tus paneles lleguen seguros.",
             "details": "SUGERENCIA PRÁCTICA:\n\n"
-                       "Debido a la sensibilidad de los componentes y su estructura de cristal, nuestra recomendación es cotizar el envío mediante carga protegida con soportes de madera o estructura rígida.\n\n"
-                       "De esta manera garantizamos estabilidad y prevención de daños durante el transporte aéreo, marítimo o terrestre.",
-            "source_reference": "Estándares Logísticos Especializados (Verificado 2026)",
+                       "Por su tamaño y fragilidad, nuestra recomendación es cotizarlos mediante carga especializada con soporte rígido.\n\n"
+                       "Así evitas sorpresas y proteges tu inversión durante el trayecto.",
+            "source_reference": "Estándares Logísticos (Verificado 2026)",
             "official_links": [
-                {"title": "U.S. Customs and Border Protection", "url": "https://www.cbp.gov/"}
+                {"title": "U.S. Customs and Border Protection (CBP)", "url": "https://www.cbp.gov/"}
             ],
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
     if tiene_medicina:
         return {
-            "status_category": "ORIENTACIÓN PARA PRODUCTOS MÉDICOS Y PERECEDEROS",
-            "short_answer": "Lleva tus insumos con calma; aquí te mostramos la mejor manera de organizarlos.",
+            "status_category": "ORIENTACIÓN PARA PRODUCTOS MÉDICOS",
+            "short_answer": "Lleva tus medicinas con calma; aquí te mostramos cómo organizarlas.",
             "details": "SUGERENCIA PRÁCTICA:\n\n"
-                       "Para uso personal o médico inmediato, lo ideal es llevarlos en el equipaje de mano acompañados de su debida prescripción o receta visible.\n\n"
-                       "Para volúmenes comerciales o de cadena de frío, te aconsejamos coordinar contenedores térmicos certificados con la aerolínea o courier.",
-            "source_reference": "Directrices de Manejo Sanitario y Logístico (Verificado 2026)",
+                       "Lo ideal para uso personal es llevarlas en la maleta de mano junto a tu receta médica visible.\n\n"
+                       "Para cantidades mayores, te aconsejamos consultar contenedores térmicos especializados.",
+            "source_reference": "Directrices de Seguridad (Verificado 2026)",
             "official_links": [
-                {"title": "Medical Guidelines & Procedures", "url": "https://www.tsa.gov/travel/special-procedures"}
-            ],
-            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
-        }
-
-    if tiene_maquinaria:
-        return {
-            "status_category": "ORIENTACIÓN DE MAQUINARIA Y REPUESTOS INDUSTRIALES",
-            "short_answer": "Tranquilo, cualquier pieza o herramienta pesada se puede organizar de forma eficiente.",
-            "details": "SUGERENCIA PRÁCTICA:\n\n"
-                       "Para maquinaria o repuestos con presencia de fluidos o peso elevado, sugerimos un drenaje completo previo y un pallet de madera resistente.\n\n"
-                       "Te aconsejamos preparar la factura comercial y descripción arancelaria para agilizar cualquier revisión en destino.",
-            "source_reference": "Guía de Carga Comercial Multimodal (Verificado 2026)",
-            "official_links": [
-                {"title": "Comercio y Aduanas Internacionales", "url": "https://www.cbp.gov/"}
+                {"title": "TSA Medical Conditions Guidance", "url": "https://www.tsa.gov/travel/special-procedures"}
             ],
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
@@ -479,18 +452,17 @@ def consultar_articulo(payload: ItemCheckRequest):
     if tiene_maletas:
         return {
             "status_category": "ORIENTACIÓN DE PESO Y MEDIDAS DE EQUIPAJE",
-            "short_answer": "No te preocupes por el peso, con una pequeña organización todo saldrá perfecto.",
+            "short_answer": "No te preocupes por el peso, con un pequeño ajuste todo saldrá bien.",
             "details": "INSTRUCCIÓN DIRECTA:\n\n"
-                       "Te sugerimos mantener cada pieza de equipaje dentro del límite estándar (generalmente 50 lbs / 23 kg) para evitar cobros adicionales inesperados en el mostrador.\n\n"
-                       "Verifica el pesaje en casa antes de partir y viaja con absoluta tranquilidad.",
+                       "Te sugerimos mantener cada maleta cerca de las 50 lbs (23 kg) para evitar cobros sorpresas en el mostrador.\n\n"
+                       "Pesa tu equipaje en casa antes de salir y viaja con absoluta tranquilidad.",
             "source_reference": "Políticas Internacionales de Equipaje (Verificado 2026)",
             "official_links": [
-                {"title": "Baggage Consumer Protection", "url": "https://www.transportation.gov/airconsumer/baggage"}
+                {"title": "DOT Aviation Consumer Protection - Baggage", "url": "https://www.transportation.gov/airconsumer/baggage"}
             ],
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    # Búsqueda universal por motor de reglas o respuesta abierta universal
     rule = rule_repo.find_rule(payload.airline or "General", item)
     if rule and rule.status == RuleStatus.ACTIVA:
         return {
@@ -505,18 +477,15 @@ def consultar_articulo(payload: ItemCheckRequest):
         }
     else:
         return {
-            "status_category": "ORIENTACIÓN LOGÍSTICA UNIVERSAL",
-            "short_answer": f"Todo tiene solución para el traslado de '{payload.item_description}'. Respira y organicémoslo paso a paso.",
-            "details": "PASOS SUGERIDOS:\n\n"
-                       "Evaluación del objeto: Si el artículo es voluminoso, pesado o de características especiales, nuestra recomendación es canalizarlo mediante un servicio de carga o courier autorizado.\n\n"
-                       "Preparación y empaque: Mide y pesa tu bulto, asegura un embalaje firme y ten listos los documentos de respaldo para viajar o enviar sin contratiempos.",
-            "source_reference": "Asesoría Logística Multimodal Internacional (Verificado 2026)",
+            "status_category": "ORIENTACIÓN LOGÍSTICA INTEGRAL",
+            "short_answer": f"Todo tiene solución para el traslado de '{payload.item_description}'. Respira y organicémoslo.",
+            "details": "PASO SUGERIDO:\n\n"
+                       "Si el objeto es pesado o voluminoso, nuestra recomendación es revisarlo con un servicio de carga o courier.\n\n"
+                       "Mide tu bulto y asegura un empaque firme para viajar sin contratiempos.",
+            "source_reference": "Asesoría Logística Multimodal (Verificado 2026)",
             "official_links": [
                 {"title": "IATA Official Website", "url": "https://www.iata.org/"},
                 {"title": "U.S. Customs and Border Protection", "url": "https://www.cbp.gov/"}
             ],
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
-
-def tiene_quimicos_gen(txt):
-    return any(w in txt for w in ["liquido", "aceite", "pintura", "gas", "inflamable", "compuesto"])
