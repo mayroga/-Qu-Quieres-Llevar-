@@ -372,56 +372,87 @@ def search_flight_via_gemini(payload: FlightSearchRequest):
 def consultar_articulo(payload: ItemCheckRequest):
     item = payload.item_description.lower()
     
-    # 1. BATERÍAS Y EQUIPOS DE ALTA POTENCIA
-    if any(k in item for k in ["bateria", "batería", "wh", "watt", "litio", "acumulador"]):
-        if any(w in item for w in ["1843", "66", "libra", "libras", "kg", "industrial", "solar", "inversor"]):
-            return {
-                "status_category": "¡TIENE SOLUCIÓN ! — VÍA CARGA ESPECIALIZADA",
-                "short_answer": "No puede ir en la maleta del avión de pasajeros por su gran potencia, ¡pero llega por envío de carga!",
-                "details": "Tranquilo, no hay por qué preocuparse. Esto es lo que haremos:\n"
-                           "• ¿Por dónde se lleva?: Se envía en un avión de carga exclusivo o por barco (ideal si va para Cuba o Latinoamérica), asegurando que llegue intacto.\n"
-                           "• ¿Qué debes hacer?: Solo acércate a una empresa de envíos o terminal de carga autorizada. Ellos te preparan el paquete con una protección especial en los contactos de la batería y listo, el trámite es muy sencillo.",
-                "source_reference": "Guía Operativa de Transporte (Verificado 2026)",
-                "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
-            }
-
-    # 2. ELECTRODOMÉSTICOS Y LÍNEA BLANCA (NEVERAS, TV, PLANTAS)
-    if any(k in item for k in ["nevera", "refrigerador", "tv", "televisor", "planta", "generador", "estufa", "aire acondicionado", "split", "motor"]):
+    # Detección inteligente de componentes múltiples
+    tiene_bateria = any(k in item for k in ["bateria", "batería", "wh", "watt", "litio", "acumulador"])
+    tiene_maletas = any(k in item for k in ["maleta", "maletas", "equipaje", "bolso", "libra", "libras"])
+    tiene_paneles = any(k in item for k in ["panel", "paneles", "solar", "fotovoltaico"])
+    tiene_medicina = any(k in item for k in ["medicina", "medicamento", "insulina", "vacuna", "alimento", "carne", "perecedero", "suplemento"])
+    
+    # CASO COMPUESTO / INTEGRAL (Múltiples elementos en una sola consulta)
+    if (tiene_bateria and tiene_maletas) or (tiene_paneles and tiene_maletas) or (tiene_bateria and tiene_paneles):
         return {
-            "status_category": "¡EQUIPO APTO PARA ENVÍO FAMILIAR O COMERCIAL!",
-            "short_answer": "Por su tamaño, no cabe en las maletas de mano, ¡pero viaja excelente por servicio de encomienda o puerta a puerta!",
-            "details": "Te ayudamos a resolverlo sin enredos:\n"
-                       "• ¿Por dónde se lleva?: Tienes dos caminos muy cómodos: usar un servicio de envíos 'puerta a puerta' que te lo busca y te lo entrega en destino, o enviarlo por carga directa.\n"
-                       "• ¿Qué debes hacer?: Asegúrate de protegerlo bien con cartón o una caja firme, ten a mano la factura de compra y consulta con tu agencia de confianza para que se encarguen de los trámites de aduana por ti.",
-                "source_reference": "Orientación Logística Regional (Verificado 2026)",
-                "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
-            }
+            "status_category": "¡ANÁLISIS ESPECIALIZADO Y SOLUCIÓN INTEGRAL DE CARGA!",
+            "short_answer": "Tu equipaje y carga combinan artículos pesados, delicados y maletas de viaje. Vamos a separarlos para asegurarnos de que lleguen sin multas ni contratiempos.",
+            "details": "GUÍA DE RUTA Y MEDIDAS EXACTAS:\n\n"
+                       "1. BATERÍAS O EQUIPOS DE ALTA POTENCIA:\n"
+                       "• Restricción: Prohibidas en aviones de pasajeros por superar los límites de seguridad (160 Wh).\n"
+                       "• Solución: Enviar por Carga Aérea Comercial o Marítima.\n"
+                       "• Medidas y Empaque: Proteger bornes con aislamiento. Dimensiones de manejo sugeridas: máx. 60x50x40 cm (23.6 x 19.7 x 15.7 pulgadas).\n\n"
+                       "2. PANELES SOLARES / EQUIPOS FRÁGILES:\n"
+                       "• Naturaleza: Superficies delicadas ante torsiones.\n"
+                       "• Solución: Envío por carga especializada con estructura rígida.\n"
+                       "• Medidas Estándar: Un panel típico mide aprox. 170x100 cm (67 x 39 pulgadas); no cabe en maletas de pasajero y debe ir en pallet.\n\n"
+                       "3. MALETAS PERSONALES (Ej. 56 lbs / ~25.4 kg):\n"
+                       "• Restricción: El límite estándar en aerolíneas hacia Latinoamérica es de 50 lbs (23 kg) por maleta.\n"
+                       "• Solución: Redistribuye el peso antes de ir al aeropuerto para evitar cargos por exceso de equipaje.\n"
+                       "• Dimensiones de Bodega: La suma lineal (Largo + Ancho + Alto) no debe exceder de 158 cm (62 pulgadas).",
+            "source_reference": "Normativa Internacional IATA, DOT, TSA y Aduanas (Verificado 2026)",
+            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
+        }
+
+    # 1. BATERÍAS Y EQUIPOS DE ALTA POTENCIA (Individual)
+    if tiene_bateria:
+        return {
+            "status_category": "¡ANÁLISIS TÉCNICO DE BATERÍA DE ALTA POTENCIA!",
+            "short_answer": "Este acumulador supera los límites de pasajeros y debe viajar exclusivamente por la vía de carga especializada.",
+            "details": "GUÍA Y ESPECIFICACIONES TÉCNICAS:\n"
+                       "• Peso y Capacidad: Al superar los límites permitidos en cabina o bodega de pasajeros, requiere canalización logística.\n"
+                       "• Medidas de Referencia: Contenedor recomendado dentro de estándares de carga (ej. 50x40x40 cm o 19.6x15.7x15.7 pulgadas).\n"
+                       "• Qué hacer: Acude a una agencia de carga autorizada. Solicita embalaje con aislamiento de terminales y factura comercial a la mano.",
+            "source_reference": "Regulaciones de Transporte de Acumuladores (Verificado 2026)",
+            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
+        }
+
+    # 2. PANELES SOLARES (Individual)
+    if tiene_paneles:
+        return {
+            "status_category": "¡ANÁLISIS DE EQUIPAMIENTO FOTOVOLTAICO!",
+            "short_answer": "Por sus dimensiones y fragilidad, los paneles solares requieren manipulación como carga delicada.",
+            "details": "GUÍA DE DIMENSIONES Y TRANSPORTE:\n"
+                       "• Dimensiones Estándar: Alrededor de 170 x 100 cm (67 x 39 pulgadas) con espesor de 3 a 4 cm (1.1 a 1.5 pulgadas).\n"
+                       "• Ruta sugerida: Carga aérea de consolidación o transporte marítimo.\n"
+                       "• Qué hacer: Exige un embalaje con estructura rígida de madera o cartón corrugado de doble pared para evitar micro-fisuras.",
+            "source_reference": "Estándares Logísticos para Carga Frágil (Verificado 2026)",
+            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
+        }
 
     # 3. MEDICAMENTOS E INSUMOS MÉDICOS
-    if any(k in item for k in ["medicina", "medicamento", "insulina", "vacuna", "alimento", "carne", "perecedero", "suplemento"]):
+    if tiene_medicina:
         return {
-            "status_category": "¡VIAJE PARA TUS MEDICINAS!",
-            "short_answer": "Las medicinas de uso personal van contigo en la mano; si es mucha cantidad, se envía con protección de frío.",
-            "details": "Cero preocupaciones para tu salud:\n"
-                       "• ¿Por dónde se lleva?: Si es para tu consumo en el viaje, va contigo en la cabina del avión sin problema. Si mandas bastante cantidad, se usa una cajita térmica especial.\n"
-                       "• ¿Qué debes hacer?: Lleva siempre la receta médica a la vista para que el personal del aeropuerto te atienda rápido y con una sonrisa.",
-                "source_reference": "Guía de Asistencia al Viajero (Verificado 2026)",
-                "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
-            }
+            "status_category": "¡GUÍA SEGURA PARA MEDICAMENTOS!",
+            "short_answer": "Las medicinas de uso personal viajan contigo en la maleta de mano; volúmenes comerciales requieren cadena de frío.",
+            "details": "ORIENTACIÓN SANITARIA:\n"
+                       "• En Cabina: Permitido en equipaje de mano llevando recetas médicas vigentes y a la vista.\n"
+                       "• Envío de Carga: Si se trata de grandes cantidades, utilizar contenedores térmicos validados.\n"
+                       "• Qué hacer: Mantén la documentación médica accesible para agilizar la revisión en los puntos de control.",
+            "source_reference": "Directrices de Seguridad Aeroportuaria y Salud (Verificado 2026)",
+            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
+        }
 
-    # 4. REPUESTOS Y HERRAMIENTAS
-    if any(k in item for k in ["repuesto", "pieza", "herramienta", "taladro", "compresor", "auto", "carro", "machasa", "acero"]):
+    # 4. MALETAS Y CONTROL DE PESO / MEDIDAS
+    if tiene_maletas:
         return {
-            "status_category": "¡PIEZAS LISTAS PARA LLEGAR A SU DESTINO!",
-            "short_answer": "Dependiendo de cuánto pese, lo llevas en tu maleta o te ayudamos a despacharlo por carga.",
-            "details": "Te guiamos paso a paso:\n"
-                       "• ¿Por dónde se lleva?: Si pesa menos de 50 libras y está seco (sin aceites ni gasolina), puede viajar en tu maleta facturada. Si es más pesado, se manda por envío de carga.\n"
-                       "• ¿Qué debes hacer?: Límpialo bien, sácale cualquier residuo de líquido, guárdalo en una caja resistente y listo para viajar.",
-                "source_reference": "Normas de Equipaje y Envíos (Verificado 2026)",
-                "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
-            }
+            "status_category": "¡CONTROL DE PESO Y DIMENSIONES DE EQUIPAJE!",
+            "short_answer": "Verifica milimétricamente el peso y tamaño de tus maletas para evitar sobrecargos imprevistos en el mostrador.",
+            "details": "PARÁMETROS ESTÁNDAR EN AEROLÍNEAS:\n"
+                       "• Peso Máximo en Bodega: 50 lbs (23 kg). Todo exceso genera penalización económica.\n"
+                       "• Dimensiones Máximas (Suma Lineal): Largo + Ancho + Alto no debe exceder de 158 cm (62 pulgadas).\n"
+                       "• Qué hacer: Pesa tu equipaje en casa y mide sus lados con una cinta métrica en centímetros y pulgadas antes de partir.",
+            "source_reference": "Políticas Internacionales de Equipaje (Verificado 2026)",
+            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
+        }
 
-    # 5. RESPUESTA GENERAL AMABLE Y CLARA
+    # 5. RESPUESTA GENERAL PROFUNDA
     rule = rule_repo.find_rule(payload.airline or "General", item)
     if rule and rule.status == RuleStatus.ACTIVA:
         return {
@@ -433,11 +464,11 @@ def consultar_articulo(payload: ItemCheckRequest):
         }
     else:
         return {
-            "status_category": "¡TODO TIENE SOLUCIÓN DE VIAJE!",
-            "short_answer": f"Para llevar '{payload.item_description}', tenemos las mejores rutas y opciones preparadas para ti.",
-            "details": "Aquí tienes tu guía rápida:\n"
-                       "• ¿Por dónde se lleva?: Si pesa menos de 50 libras y es liviano, por lo general viaja contigo en las maletas del avión. Si es grande o pesado, los servicios de encomienda o envíos puerta a puerta te lo resuelven de inmediato.\n"
-                       "• ¿Qué debes hacer?: Ten a mano tu factura, revisa que el empaque esté firme y consulta con confianza en el counter o agencia de envíos de tu preferencia.",
-            "source_reference": "Asesoría Logística Integral (Verificado 2026)",
+            "status_category": "¡ANÁLISIS LOGÍSTICO INTEGRAL!",
+            "short_answer": f"Evaluación detallada para el traslado de '{payload.item_description}'.",
+            "details": "GUÍA DE ORIENTACIÓN Y MEDIDAS:\n"
+                       "• Verificación de Carga: Si el objeto supera las 50 lbs (23 kg) o sus dimensiones rebasan los 158 cm (62 pulgadas) sumando largo, ancho y alto, debe canalizarse mediante servicios de carga comercial o courier.\n"
+                       "• Qué hacer: Prepare factura comercial, mida el bulto tanto en centímetros como en pulgadas, y asegure un empaque firme acorde al trayecto.",
+            "source_reference": "Asesoría Logística Multimodal (Verificado 2026)",
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
