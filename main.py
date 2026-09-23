@@ -11,8 +11,8 @@ from legal_disclaimer import LegalNoticeManager
 
 app = FastAPI(
     title="¿Qué Quieres Llevar?",
-    description="Aplicación completa de búsqueda de vuelo, control de pago único de 15 minutos y reglas verificadas.",
-    version="3.5.0"
+    description="Aplicación completa de búsqueda de vuelo, control de pago único de 15 minutos, reglas verificadas y acceso administrativo.",
+    version="3.6.0"
 )
 
 app.add_middleware(
@@ -26,23 +26,31 @@ app.add_middleware(
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_test_mock")
 rule_repo = RuleRepository()
 
-# Almacenamiento temporal en servidor para el token de pago único de 15 minutos
+# Credenciales de administrador desde variables de entorno (con valores por defecto para pruebas)
+ADMIN_USER = os.getenv("ADMIN_USERNAME", "admin")
+ADMIN_PASS = os.getenv("ADMIN_PASSWORD", "admin123")
+
+# Almacenamiento temporal en servidor para el token de pago único o sesión de admin
 ACTIVE_PAID_SESSIONS = {}
 
 class FlightSearchRequest(BaseModel):
-    natural_query: Optional[str] = Field(None, description="Búsqueda en lenguaje natural (ej. Vuelo de miami a cuba del 28 al 30 de diciembre)")
+    natural_query: Optional[str] = Field(None, description="Búsqueda en lenguaje natural")
     origin: Optional[str] = Field(None, description="Ciudad o aeropuerto de origen")
     destination: Optional[str] = Field(None, description="Ciudad o país de destino")
     travel_date: Optional[str] = Field(None, description="Fecha del viaje")
     passengers_count: int = Field(1, description="Cantidad de personas / pasajeros")
     airline_hint: Optional[str] = Field(None, description="Aerolínea si se conoce")
-    session_token: str = Field(..., description="Token de pago verificado")
+    session_token: str = Field(..., description="Token de pago verificado o sesión de admin")
 
 class ItemCheckRequest(BaseModel):
     session_token: str
     item_description: str
     airline: Optional[str] = None
     destination: str
+
+class AdminLoginRequest(BaseModel):
+    username: str
+    password: str
 
 @app.get("/")
 def read_root():
@@ -53,6 +61,22 @@ def read_root():
         "principle": "Dime qué quieres llevar y te ayudaremos a revisar si puede viajar contigo según los datos de tu vuelo y las reglas verificadas."
     }
 
+@app.post("/api/v1/admin/login")
+def admin_login(payload: AdminLoginRequest):
+    """Acceso gratuito para administradores mediante credenciales de entorno."""
+    if payload.username == ADMIN_USER and payload.password == ADMIN_PASS:
+        admin_token = f"admin_tkn_{datetime.datetime.utcnow().timestamp()}"
+        # Las sesiones de administrador tienen una vigencia extendida de 24 horas
+        expires_at = datetime.datetime.utcnow() + datetime.timedelta(hours=24)
+        ACTIVE_PAID_SESSIONS[admin_token] = expires_at
+        return {
+            "status": "success",
+            "message": "Acceso de administrador autorizado con éxito.",
+            "session_token": admin_token,
+            "expires_in_hours": 24
+        }
+    raise HTTPException(status_code=401, detail="Credenciales de administrador inválidas.")
+
 @app.post("/api/v1/stripe/webhook")
 async def stripe_webhook(request: Request):
     payload = await request.body()
@@ -62,7 +86,6 @@ async def stripe_webhook(request: Request):
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
     except Exception:
-        # Fallback de simulación para entorno de pruebas local
         event = {"type": "checkout.session.completed", "data": {"object": {"id": "cs_test_success"}}}
     
     issued_token = None
@@ -75,18 +98,15 @@ async def stripe_webhook(request: Request):
 
 @app.post("/api/v1/flight/search-external")
 def search_flight_via_gemini(payload: FlightSearchRequest):
-    # Validar sesión de pago activa antes de permitir la búsqueda
     if payload.session_token not in ACTIVE_PAID_SESSIONS:
-        raise HTTPException(status_code=403, detail="Sesión no válida o no encontrada. Debe realizar el pago correspondiente.")
+        raise HTTPException(status_code=403, detail="Sesión no válida o no encontrada. Debe realizar el pago correspondiente o iniciar sesión como administrador.")
     
     if datetime.datetime.utcnow() > ACTIVE_PAID_SESSIONS[payload.session_token]:
         del ACTIVE_PAID_SESSIONS[payload.session_token]
-        raise HTTPException(status_code=401, detail="Su sesión de 15 minutos ha expirado. Debe iniciar de nuevo y efectuar el pago.")
+        raise HTTPException(status_code=401, detail="Su sesión ha expirado. Debe iniciar de nuevo.")
 
-    # El usuario escribe su consulta en lenguaje natural o datos directos
     query_text = payload.natural_query or f"Vuelo de {payload.origin} a {payload.destination}"
     
-    # Simulación estructurada del resultado devuelto para mostrar en pantalla al usuario
     flight_options_found = [
         {
             "flight_id": "FL-990",
@@ -108,11 +128,11 @@ def search_flight_via_gemini(payload: FlightSearchRequest):
 @app.post("/api/v1/consultar-articulo")
 def consultar_articulo(payload: ItemCheckRequest):
     if payload.session_token not in ACTIVE_PAID_SESSIONS:
-        raise HTTPException(status_code=403, detail="Sesión no válida o no encontrada. Debe realizar el pago correspondiente.")
+        raise HTTPException(status_code=403, detail="Sesión no válida o no encontrada. Debe realizar el pago correspondiente o iniciar sesión como administrador.")
     
     if datetime.datetime.utcnow() > ACTIVE_PAID_SESSIONS[payload.session_token]:
         del ACTIVE_PAID_SESSIONS[payload.session_token]
-        raise HTTPException(status_code=401, detail="Su sesión de 15 minutos ha expirado.")
+        raise HTTPException(status_code=401, detail="Su sesión ha expirado.")
 
     item = payload.item_description.lower()
     airline = payload.airline or "General"
