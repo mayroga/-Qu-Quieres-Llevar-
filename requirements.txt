@@ -4,3 +4,4 @@ pydantic
 stripe
 requests
 pytest
+google-genai
