@@ -381,7 +381,7 @@ def consultar_articulo(payload: ItemCheckRequest):
                 "details": "Tranquilo, no hay por qué preocuparse. Esto es lo que haremos:\n"
                            "• ¿Por dónde se lleva?: Se envía en un avión de carga exclusivo o por barco (ideal si va para Cuba o Latinoamérica), asegurando que llegue intacto.\n"
                            "• ¿Qué debes hacer?: Solo acércate a una empresa de envíos o terminal de carga autorizada. Ellos te preparan el paquete con una protección especial en los contactos de la batería y listo, el trámite es muy sencillo.",
-                "source_reference": "Guía Operativa de Transporte Seguro (Verificado 2026)",
+                "source_reference": "Guía Operativa de Transporte (Verificado 2026)",
                 "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
             }
 
@@ -400,7 +400,7 @@ def consultar_articulo(payload: ItemCheckRequest):
     # 3. MEDICAMENTOS E INSUMOS MÉDICOS
     if any(k in item for k in ["medicina", "medicamento", "insulina", "vacuna", "alimento", "carne", "perecedero", "suplemento"]):
         return {
-            "status_category": "¡VIAJE SEGURO PARA TUS MEDICINAS!",
+            "status_category": "¡VIAJE PARA TUS MEDICINAS!",
             "short_answer": "Las medicinas de uso personal van contigo en la mano; si es mucha cantidad, se envía con protección de frío.",
             "details": "Cero preocupaciones para tu salud:\n"
                        "• ¿Por dónde se lleva?: Si es para tu consumo en el viaje, va contigo en la cabina del avión sin problema. Si mandas bastante cantidad, se usa una cajita térmica especial.\n"
