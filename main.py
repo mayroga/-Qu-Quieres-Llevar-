@@ -377,82 +377,117 @@ def consultar_articulo(payload: ItemCheckRequest):
     tiene_maletas = any(k in item for k in ["maleta", "maletas", "equipaje", "bolso", "libra", "libras"])
     tiene_paneles = any(k in item for k in ["panel", "paneles", "solar", "fotovoltaico"])
     tiene_medicina = any(k in item for k in ["medicina", "medicamento", "insulina", "vacuna", "alimento", "carne", "perecedero", "suplemento"])
+    tiene_soda = any(k in item for k in ["soda", "soda caustica", "cáustica", "hidroxido", "quimico", "corrosivo"])
     
-    # CASO COMPUESTO / INTEGRAL (Múltiples elementos en una sola consulta)
-    if (tiene_bateria and tiene_maletas) or (tiene_paneles and tiene_maletas) or (tiene_bateria and tiene_paneles):
+    # CASO COMPUESTO / INTEGRAL
+    if (tiene_soda and tiene_maletas) or (tiene_paneles and tiene_maletas) or (tiene_soda and tiene_paneles) or (tiene_bateria and tiene_maletas):
         return {
-            "status_category": "¡ANÁLISIS ESPECIALIZADO Y SOLUCIÓN INTEGRAL DE CARGA!",
-            "short_answer": "Tu equipaje y carga combinan artículos pesados, delicados y maletas de viaje. Vamos a separarlos para asegurarnos de que lleguen sin multas ni contratiempos.",
-            "details": "GUÍA DE RUTA Y MEDIDAS EXACTAS:\n\n"
-                       "1. BATERÍAS O EQUIPOS DE ALTA POTENCIA:\n"
-                       "• Límite Legal y Restricción: Prohibidas en aviones de pasajeros (cabina y bodega). Las normativas internacionales (IATA/TSA) permiten máximo 100Wh–160Wh; cualquier estación superior (ej. 999W) queda estrictamente excluida del equipaje de pasajeros.\n"
-                       "• Solución: Enviar por Carga Aérea Comercial o Marítima.\n"
-                       "• Medidas y Empaque: Aislar bornes con cinta protectora. Dimensiones de manejo sugeridas: máx. 60x50x40 cm (23.6 x 19.7 x 15.7 pulgadas).\n\n"
-                       "2. PANELES SOLARES / EQUIPOS FRÁGILES:\n"
+            "status_category": "ANÁLISIS DE ORIENTACIÓN Y SOLUCIÓN INTEGRAL DE CARGA",
+            "short_answer": "Tu carga combina elementos químicos, equipos especiales y maletas de viaje. Nuestra sugerencia es separarlos para evitar contratiempos o recargos en los puntos de control.",
+            "details": "GUÍA DE RUTA Y SEPARACIÓN RECOMENDADA:\n\n"
+                       "🔹 1. PRODUCTOS QUÍMICOS / SODA CÁUSTICA:\n"
+                       "• Sugerencia de Manejo: Generalmente no se aceptan en cabina ni en equipaje facturado de pasajeros debido a sus propiedades corrosivas.\n"
+                       "• Solución Propuesta: Canalizar el envío mediante una agencia de carga comercial especializada.\n"
+                       "• Empaque: Se sugiere utilizar envases sellados herméticamente y aptos para sustancias delicadas.\n\n"
+                       "🔹 2. PANELES SOLARES / EQUIPOS FRÁGILES:\n"
                        "• Naturaleza: Superficies delicadas ante torsiones e impactos.\n"
-                       "• Solución: Envío por carga especializada con estructura rígida.\n"
-                       "• Medidas Estándar: Un panel típico mide aprox. 170x100 cm (67 x 39 pulgadas); no cabe en maletas de pasajero y debe ir en pallet de carga.\n\n"
-                       "3. MALETAS PERSONALES (Ej. 56 lbs / ~25.4 kg):\n"
-                       "• Límite Legal y Estándar: El límite máximo en aerolíneas hacia Latinoamérica es de 50 lbs (23 kg) por maleta de bodega.\n"
-                       "• Solución: Redistribuye el peso antes de ir al mostrador para evitar cargos punitivos por exceso.\n"
-                       "• Dimensiones de Bodega: La suma lineal (Largo + Ancho + Alto) no debe exceder de 158 cm (62 pulgadas).",
-            "source_reference": "Normativa Internacional IATA, DOT, TSA y Aduanas (Verificado 2026)",
+                       "• Solución Propuesta: Envío por carga especializada con estructura rígida de soporte o pallet.\n"
+                       "• Medidas Estándar: Un panel típico mide aprox. 170x100 cm (67 x 39 pulgadas) y excede las medidas de equipaje común.\n\n"
+                       "🔹 3. MALETAS PERSONALES (Ej. 59 lbs / exceso):\n"
+                       "• Parámetro Habitual: El límite más común en aerolíneas hacia Latinoamérica es de 50 lbs (23 kg) por maleta en bodega. Superar este peso suele activar cobros adicionales.\n"
+                       "• Solución Propuesta: Sugerimos redistribuir el peso en dos maletas antes de llegar al mostrador.\n"
+                       "• Dimensiones de Bodega: La suma lineal sugerida (Largo + Ancho + Alto) es de hasta 158 cm (62 pulgadas).",
+            "source_reference": "Orientación basada en estándares internacionales de la industria (Verificado 2026)",
+            "official_links": [
+                {"title": "Guía de Referencia IATA DGR", "url": "https://www.iata.org/en/programs/cargo/dgr/"},
+                {"title": "Directrices de Artículos TSA", "url": "https://www.tsa.gov/travel/security-screening/whatcanibring/"},
+                {"title": "Departamento de Transporte (DOT)", "url": "https://www.transportation.gov/"}
+            ],
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    # 1. BATERÍAS Y EQUIPOS DE ALTA POTENCIA (Individual)
+    # 1. SODA CÁUSTICA / PRODUCTOS QUÍMICOS (Individual)
+    if tiene_soda:
+        return {
+            "status_category": "ORIENTACIÓN SOBRE PRODUCTOS QUÍMICOS",
+            "short_answer": "Este tipo de producto suele requerir manejo especial como carga comercial y habitualmente no se permite en el equipaje de pasajeros.",
+            "details": "SUGERENCIAS Y PAUTAS TÉCNICAS:\n\n"
+                       "• Condición Habitual: Las políticas de aerolíneas de pasajeros suelen restringir sustancias corrosivas en cabina y bodega.\n"
+                       "• Ruta Sugerida: Consultar con un consolidador o agente de carga autorizado para un despacho comercial adecuado.\n"
+                       "• Recomendación: Disponer de la hoja técnica o factura comercial al cotizar el envío.",
+            "source_reference": "Pautas de la Industria Logística y Transporte (Verificado 2026)",
+            "official_links": [
+                {"title": "IATA Dangerous Goods Regulations", "url": "https://www.iata.org/en/programs/cargo/dgr/"},
+                {"title": "PHMSA Hazardous Materials Safety", "url": "https://www.phmsa.dot.gov/"}
+            ],
+            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
+        }
+
+    # 2. BATERÍAS Y EQUIPOS DE ALTA POTENCIA (Individual)
     if tiene_bateria:
         return {
-            "status_category": "¡ANÁLISIS TÉCNICO DE BATERÍA DE ALTA POTENCIA!",
-            "short_answer": "Este acumulador supera por mucho el límite legal de pasajeros y debe viajar exclusivamente por la vía de carga especializada.",
-            "details": "GUÍA Y ESPECIFICACIONES TÉCNICAS:\n"
-                       "• Límite Legal: Las regulaciones de aviación comercial prohíben equipos mayores a 100Wh–160Wh en aviones de pasajeros. Intentar llevarlo al mostrador expone a decomisos y multas.\n"
-                       "• Medidas y Peso de Referencia: Equipos de alta capacidad (como 999W) suelen medir aprox. 34x23x23 cm (13.3 x 9 x 9 pulgadas) y pesar entre 20 y 30 lbs (9 a 13.5 kg).\n"
-                       "• Qué hacer: Acude a una agencia de carga autorizada para despacho comercial o marítimo. Solicita aislamiento en los bornes y lleva factura comercial.",
-            "source_reference": "Regulaciones de Transporte de Acumuladores y Materiales Peligrosos IATA/DOT (Verificado 2026)",
+            "status_category": "ORIENTACIÓN TÉCNICA DE ACUMULADORES",
+            "short_answer": "Los equipos de alta potencia superan los umbrales habituales para pasajeros y se recomienda canalizarlos por la vía de carga.",
+            "details": "SUGERENCIAS Y ESPECIFICACIONES:\n\n"
+                       "• Parámetro de Referencia: Las normativas generales suelen limitar los equipos portátiles a rangos de 100Wh–160Wh en aeronaves de pasajeros.\n"
+                       "• Medidas y Peso Aproximados: Equipos grandes suelen pesar entre 20 y 30 lbs (9 a 13.5 kg).\n"
+                       "• Recomendación: Acudir a una agencia de carga para asegurar un embalaje correcto y proteger los terminales.",
+            "source_reference": "Estándares de Transporte de Acumuladores (Verificado 2026)",
+            "official_links": [
+                {"title": "IATA Lithium Batteries Guidance", "url": "https://www.iata.org/en/programs/cargo/dgr/lithium-batteries/"}
+            ],
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    # 2. PANELES SOLARES (Individual)
+    # 3. PANELES SOLARES (Individual)
     if tiene_paneles:
         return {
-            "status_category": "¡ANÁLISIS DE EQUIPAMIENTO FOTOVOLTAICO!",
-            "short_answer": "Por sus dimensiones y fragilidad, los paneles solares requieren manipulación como carga delicada.",
-            "details": "GUÍA DE DIMENSIONES Y TRANSPORTE:\n"
-                       "• Dimensiones Estándar: Alrededor de 170 x 100 cm (67 x 39 pulgadas) con un espesor de 3 a 4 cm (1.1 a 1.5 pulgadas).\n"
-                       "• Ruta sugerida: Carga aérea de consolidación o transporte marítimo.\n"
-                       "• Qué hacer: Exige un embalaje con estructura rígida de madera o cartón corrugado de doble pared para evitar micro-fisuras y asegurar su integridad.",
+            "status_category": "ORIENTACIÓN SOBRE EQUIPAMIENTO FOTOVOLTAICO",
+            "short_answer": "Debido a su tamaño y fragilidad, sugerimos planificar su transporte mediante carga especializada.",
+            "details": "PAUTAS DE DIMENSIONES Y MANEJO:\n\n"
+                       "• Dimensiones Frecuentes: Alrededor de 170 x 100 cm (67 x 39 pulgadas).\n"
+                       "• Ruta Sugerida: Carga aérea de consolidación o transporte marítimo.\n"
+                       "• Recomendación: Solicitar un embalaje rígido con protección perimetral para cuidar las celdas.",
             "source_reference": "Estándares Logísticos para Carga Frágil (Verificado 2026)",
+            "official_links": [
+                {"title": "U.S. Customs and Border Protection (CBP)", "url": "https://www.cbp.gov/"}
+            ],
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    # 3. MEDICAMENTOS E INSUMOS MÉDICOS
+    # 4. MEDICAMENTOS E INSUMOS MÉDICOS
     if tiene_medicina:
         return {
-            "status_category": "¡GUÍA SEGURA PARA MEDICAMENTOS!",
-            "short_answer": "Las medicinas de uso personal viajan contigo en la maleta de mano; volúmenes comerciales requieren cadena de frío.",
-            "details": "ORIENTACIÓN SANITARIA:\n"
-                       "• En Cabina: Permitido en equipaje de mano llevando recetas médicas vigentes y a la vista.\n"
-                       "• Envío de Carga: Si se trata de grandes cantidades, utilizar contenedores térmicos validados.\n"
-                       "• Qué hacer: Mantén la documentación médica accesible para agilizar la revisión en los puntos de control.",
-            "source_reference": "Directrices de Seguridad Aeroportuaria y Salud (Verificado 2026)",
+            "status_category": "ORIENTACIÓN PARA PRODUCTOS MÉDICOS",
+            "short_answer": "Los artículos de uso personal suelen llevarse en la maleta de mano; los volúmenes mayores o comerciales requieren contenedores térmicos.",
+            "details": "PAUTAS SANITARIAS SUGERIDAS:\n\n"
+                       "• En Cabina: Se aconseja llevar recetas médicas a la mano y visibles.\n"
+                       "• Envíos Comerciales: Utilizar cadenas de frío validadas.\n"
+                       "• Recomendación: Mantener la documentación accesible para agilizar cualquier revisión en los puntos de control.",
+            "source_reference": "Directrices de Seguridad y Salud Aeroportuaria (Verificado 2026)",
+            "official_links": [
+                {"title": "TSA Medical Conditions Guidance", "url": "https://www.tsa.gov/travel/special-procedures"}
+            ],
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    # 4. MALETAS Y CONTROL DE PESO / MEDIDAS
+    # 5. MALETAS Y CONTROL DE PESO / MEDIDAS
     if tiene_maletas:
         return {
-            "status_category": "¡CONTROL DE PESO Y DIMENSIONES DE EQUIPAJE!",
-            "short_answer": "Verifica milimétricamente el peso y tamaño de tus maletas para evitar sobrecargos imprevistos en el mostrador.",
-            "details": "PARÁMETROS ESTÁNDAR EN AEROLÍNEAS:\n"
-                       "• Límite Legal y Peso Máximo en Bodega: 50 lbs (23 kg). Todo exceso sobre este límite genera tarifas de penalización por parte de la aerolínea.\n"
-                       "• Dimensiones Máximas (Suma Lineal): Largo + Ancho + Alto no debe exceder de 158 cm (62 pulgadas).\n"
-                       "• Qué hacer: Pesa tu equipaje en casa y mide sus lados con una cinta métrica en centímetros y pulgadas antes de partir.",
-            "source_reference": "Políticas Internacionales de Equipaje (Verificado 2026)",
+            "status_category": "ORIENTACIÓN DE PESO Y MEDIDAS DE EQUIPAJE",
+            "short_answer": "Sugerimos verificar las medidas y el peso antes de salir para evitar recargos en el mostrador.",
+            "details": "PARÁMETROS HABITUALES EN AEROLÍNEAS:\n\n"
+                       "• Peso Sugerido en Bodega: Mantenerse dentro del límite común de 50 lbs (23 kg) por pieza para evitar tarifas adicionales.\n"
+                       "• Dimensiones Máximas (Suma Lineal): Se recomienda que Largo + Ancho + Alto no rebase los 158 cm (62 pulgadas).\n"
+                       "• Recomendación: Pesar el equipaje en casa utilizando una báscula portátil.",
+            "source_reference": "Políticas Internacionales de Equipaje de Referencia (Verificado 2026)",
+            "official_links": [
+                {"title": "DOT Aviation Consumer Protection - Baggage", "url": "https://www.transportation.gov/airconsumer/baggage"}
+            ],
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    # 5. RESPUESTA GENERAL PROFUNDA
+    # 6. RESPUESTA GENERAL PROFUNDA
     rule = rule_repo.find_rule(payload.airline or "General", item)
     if rule and rule.status == RuleStatus.ACTIVA:
         return {
@@ -460,15 +495,22 @@ def consultar_articulo(payload: ItemCheckRequest):
             "short_answer": rule.short_answer,
             "details": rule.details,
             "source_reference": f"{rule.source_name} (Verificado el {rule.verification_date})",
+            "official_links": [
+                {"title": "Sitio Oficial de Referencia Regulatoria", "url": "https://www.iata.org"}
+            ],
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
     else:
         return {
-            "status_category": "¡ANÁLISIS LOGÍSTICO INTEGRAL!",
-            "short_answer": f"Evaluación detallada para el traslado de '{payload.item_description}'.",
-            "details": "GUÍA DE ORIENTACIÓN Y MEDIDAS:\n"
-                       "• Verificación de Carga: Si el objeto supera el límite de 50 lbs (23 kg) o sus dimensiones rebasan los 158 cm (62 pulgadas) sumando largo, ancho y alto, debe canalizarse mediante servicios de carga comercial o courier.\n"
-                       "• Qué hacer: Prepare factura comercial, mida el bulto tanto en centímetros como en pulgadas, y asegure un empaque firme acorde al trayecto.",
+            "status_category": "ORIENTACIÓN LOGÍSTICA INTEGRAL",
+            "short_answer": f"Evaluación orientativa para el traslado de '{payload.item_description}'.",
+            "details": "PAUTAS Y RECOMENDACIONES:\n\n"
+                       "• Criterio de Carga: Si el objeto supera las 50 lbs (23 kg) o los 158 cm (62 pulgadas) sumando sus lados, nuestra sugerencia es canalizarlo a través de servicios de carga comercial o courier.\n"
+                       "• Recomendación: Preparar factura comercial, medir el bulto y asegurar un empaque firme acorde a la distancia del trayecto.",
             "source_reference": "Asesoría Logística Multimodal (Verificado 2026)",
+            "official_links": [
+                {"title": "IATA Official Website", "url": "https://www.iata.org/"},
+                {"title": "U.S. Customs and Border Protection", "url": "https://www.cbp.gov/"}
+            ],
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
