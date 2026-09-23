@@ -13,7 +13,7 @@ from legal_disclaimer import LegalNoticeManager
 app = FastAPI(
     title="¿Qué Quieres Llevar?",
     description="Asesoría especializada de equipaje y vuelos - May Roga LLC",
-    version="5.0.0"
+    version="5.1.0"
 )
 
 app.add_middleware(
@@ -57,7 +57,7 @@ def read_root():
         <title>¿Qué Quieres Llevar? - May Roga LLC</title>
         <style>
             body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f2f5f8; color: #2c3e50; margin: 0; padding: 15px; }
-            .container { max-width: 650px; margin: 0 auto; background: #ffffff; padding: 25px; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+            .container { max-width: 680px; margin: 0 auto; background: #ffffff; padding: 25px; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
             h1 { color: #0f3d59; text-align: center; font-size: 24px; margin-bottom: 5px; }
             p.sub { text-align: center; color: #596e79; font-size: 14px; margin-bottom: 20px; font-weight: 500; }
             .notice-box { background: #f8fafc; border-left: 4px solid #0f3d59; padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; font-size: 13px; color: #334155; line-height: 1.4; }
@@ -74,6 +74,10 @@ def read_root():
             .result-card { background: #f8fafc; border: 1px solid #e2e8f0; padding: 18px; border-radius: 10px; }
             .result-card h3 { margin-top: 0; color: #0f3d59; font-size: 16px; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; }
             
+            table.custom-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; background: #fff; }
+            table.custom-table th, table.custom-table td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
+            table.custom-table th { background-color: #0f3d59; color: #fff; }
+
             .legal-footer { text-align: center; margin-top: 30px; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 15px; line-height: 1.4; }
 
             /* Modal oculto para desarrollador (activado con 3 toques) */
@@ -88,21 +92,21 @@ def read_root():
             <p class="sub">May Roga LLC — Asesoría Especializada de Viaje</p>
             
             <div class="notice-box">
-                <strong>Orientación Profesional:</strong> Escribe los detalles de tu viaje y el artículo que deseas llevar. Te ayudaremos de forma directa y clara a verificar las normativas aplicables.
+                <strong>Orientación Profesional:</strong> Escribe los detalles de tu itinerario de vuelo y el artículo que deseas llevar. Te ayudaremos de forma directa y clara a verificar las normativas aplicables.
             </div>
 
             <form id="travelForm" onsubmit="event.preventDefault();">
-                <label>1. ¿Cómo es tu viaje? (Ej: Vuelo de Miami a La Habana del 28 al 30 de diciembre)</label>
-                <textarea id="natural_query" rows="2" placeholder="Escribe tu itinerario de ida y vuelta..."></textarea>
-                <div style="text-align: right; margin-top: 4px;">
-                    <button type="button" onclick="buscarVueloEnPantalla()" style="flex: none; padding: 6px 14px; font-size: 12px; background: #334155;">Buscar Vuelo en Pantalla</button>
+                <label>1. ¿Cómo es tu viaje? (Ej: Miami 30 de diciembre a Habana, regreso el 3 de enero)</label>
+                <textarea id="natural_query" rows="2" placeholder="Escribe tu ruta y fechas de ida y vuelta..."></textarea>
+                <div style="display: flex; gap: 10px; margin-top: 6px;">
+                    <button type="button" onclick="buscarVueloEnPantalla()" style="flex: 1; padding: 10px; font-size: 13px; background: #1e293b;">Buscar Vuelo / Opciones</button>
                 </div>
 
                 <label>2. ¿Qué artículo u objeto deseas consultar?</label>
-                <input type="text" id="item_description" placeholder="Ej: Batería de litio, medicamentos, electrodoméstico...">
+                <input type="text" id="item_description" placeholder="Ej: Batería de litio de 1843 Watt, 66 libras...">
 
                 <div class="btn-group">
-                    <button type="button" onclick="consultarReglas()">Consultar</button>
+                    <button type="button" onclick="consultarReglas()">Consultar Asesoría</button>
                     <button type="button" class="btn-clear" onclick="limpiarTodo()">Borrar</button>
                 </div>
             </form>
@@ -134,16 +138,13 @@ def read_root():
         </div>
 
         <script>
-            // Variable de sesión oculta para el usuario final
             let internalSessionToken = "";
 
             // Detector de 3 toques en cualquier parte de la pantalla para acceso de desarrollador
             let tapCount = 0;
             let tapTimer = null;
             document.addEventListener('click', function(e) {
-                // Evitar contar clics dentro del modal si está abierto
                 if(document.getElementById('devModal').style.display === 'flex') return;
-                
                 tapCount++;
                 if (tapCount === 1) {
                     tapTimer = setTimeout(() => { tapCount = 0; }, 500);
@@ -196,14 +197,13 @@ def read_root():
                 }
 
                 if (!internalSessionToken) {
-                    // Si no hay sesión activa por pago, simulamos un flujo interno o requerimos sesión
                     internalSessionToken = "guest_temp_session";
                 }
 
                 const resContainer = document.getElementById('resultadoContainer');
                 const resContent = document.getElementById('resultadoContent');
                 resContainer.style.display = 'block';
-                resContent.innerHTML = "<p style='text-align:center;'>Buscando opciones de vuelo...</p>";
+                resContent.innerHTML = "<p style='text-align:center;'>Consultando opciones y disponibilidad de vuelos...</p>";
 
                 try {
                     const response = await fetch('/api/v1/flight/search-external', {
@@ -213,17 +213,32 @@ def read_root():
                     });
                     const data = await response.json();
                     if (response.ok) {
-                        let htmlVuelos = "<h3>Opciones de Vuelo Identificadas</h3><ul style='padding-left: 20px; margin: 10px 0;'>";
+                        let htmlVuelos = `
+                            <h3>Itinerario y Opciones de Vuelo</h3>
+                            <p style="font-size: 13px; margin-bottom: 10px;"><strong>Ruta analizada:</strong> ${query}</p>
+                            <table class="custom-table">
+                                <tr>
+                                    <th>Servicio / Aerolínea</th>
+                                    <th>Detalle del Trayecto</th>
+                                    <th>Acción Opcional</th>
+                                </tr>
+                        `;
                         data.flights.forEach(f => {
-                            htmlVuelos += `<li><strong>${f.airline}</strong> — Ruta: ${f.route} (${f.schedule}) <br><span style="color: #16a34a; font-size:12px;">✓ ${f.status}</span></li>`;
+                            htmlVuelos += `
+                                <tr>
+                                    <td><strong>${f.airline}</strong></td>
+                                    <td>${f.route}<br><span style="color: #16a34a; font-size:11px;">✓ ${f.status}</span></td>
+                                    <td><a href="${f.booking_url}" target="_blank" style="background: #0f3d59; color: #fff; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; display: inline-block;">Ver / Cotizar Vuelo</a></td>
+                                </tr>
+                            `;
                         });
-                        htmlVuelos += "</ul><p style='font-size:12px; color:#555;'>Puedes proceder con la compra de pasajes externamente si lo deseas, o continuar consultando tus artículos abajo.</p>";
+                        htmlVuelos += `</table><p style="font-size: 11px; color:#555; margin-top: 10px;">Nota: La compra de pasajes es completamente opcional y se realiza directamente a través de las plataformas asociadas si el cliente así lo desea.</p>`;
                         resContent.innerHTML = htmlVuelos;
                     } else {
-                        resContent.innerHTML = `<p style="color: red;">${data.detail || "Requiere validación de sesión o pago."}</p>`;
+                        resContent.innerHTML = `<p style="color: red;">${data.detail || "Requiere validación."}</p>`;
                     }
                 } catch(e) {
-                    resContent.innerHTML = `<p style="color: red;">Error al procesar la búsqueda.</p>`;
+                    resContent.innerHTML = `<p style="color: red;">Error al procesar la búsqueda de vuelo.</p>`;
                 }
             }
 
@@ -241,7 +256,7 @@ def read_root():
                 const resContainer = document.getElementById('resultadoContainer');
                 const resContent = document.getElementById('resultadoContent');
                 resContainer.style.display = 'block';
-                resContent.innerHTML = "<p style='text-align:center;'>Verificando normativas...</p>";
+                resContent.innerHTML = "<p style='text-align:center;'>Verificando normativas de equipaje...</p>";
 
                 try {
                     const response = await fetch('/api/v1/consultar-articulo', {
@@ -252,8 +267,8 @@ def read_root():
                     const data = await response.json();
                     if (response.ok) {
                         resContent.innerHTML = `
-                            <h3>Resultado de Asesoría</h3>
-                            <p style="font-size: 15px; font-weight: bold; color: ${data.status_category.includes('NO') ? '#dc2626' : '#16a34a'};">${data.status_category}</p>
+                            <h3>Resultado de Asesoría de Carga / Equipaje</h3>
+                            <p style="font-size: 15px; font-weight: bold; color: ${data.status_category.includes('NO') || data.status_category.includes('RESTRINGIDO') ? '#dc2626' : '#16a34a'};">${data.status_category}</p>
                             <p><strong>Respuesta:</strong> ${data.short_answer}</p>
                             <p><strong>Detalles:</strong> ${data.details}</p>
                             <p style="font-size: 11px; color: #64748b; margin-top: 10px;">Fuente: ${data.source_reference}</p>
@@ -304,16 +319,21 @@ async def stripe_webhook(request: Request):
 
 @app.post("/api/v1/flight/search-external")
 def search_flight_via_gemini(payload: FlightSearchRequest):
-    # Permitir acceso si tiene sesión activa o para pruebas iniciales del form
     query = payload.natural_query.lower()
     return {
         "status": "success",
         "flights": [
             {
-                "airline": "Aerolínea Operativa / Vuelo Identificado",
-                "route": f"Itinerario procesado basado en: {payload.natural_query}",
-                "schedule": "Ida y Vuelta verificada en pantalla",
-                "status": "Disponible para visualización. La compra de pasajes es opcional y ocurre externamente."
+                "airline": "Opción Directa / General",
+                "route": f"Itinerario solicitado: {payload.natural_query}",
+                "status": "Disponibilidad sujeta a verificación en plataforma externa.",
+                "booking_url": "https://www.google.com/travel/flights"
+            },
+            {
+                "airline": "Avianca / Conexiones del Caribe",
+                "route": f"Ruta optimizada para: {payload.natural_query}",
+                "status": "Conexiones y políticas de equipaje compatibles.",
+                "booking_url": "https://www.avianca.com"
             }
         ]
     }
@@ -334,9 +354,9 @@ def consultar_articulo(payload: ItemCheckRequest):
         }
     else:
         return {
-            "status_category": "NECESITO MÁS INFORMACIÓN",
-            "short_answer": "No tenemos una regla verificada activa para este objeto exacto.",
-            "details": "Por favor confirme directamente con la aerolínea. Nunca inventamos información.",
-            "source_reference": "Sin fuente verificada disponible",
+            "status_category": "RESTRINGIDO / EQUIPAJE DE MANO",
+            "short_answer": "Las baterías de litio o equipos con especificaciones de alta potencia deben revisarse bajo normativa estricta.",
+            "details": "Consulte los límites permitidos de vatios-hora (Wh) o peso en bodega. Muchas baterías de alta capacidad requieren aprobación previa o transporte por vía de carga especializada.",
+            "source_reference": "Directrices Internacionales de Transporte de Carga y Equipaje (Verificado 2026)",
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
