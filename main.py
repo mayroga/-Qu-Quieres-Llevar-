@@ -30,9 +30,10 @@ rule_repo = RuleRepository()
 ACTIVE_PAID_SESSIONS = {}
 
 class FlightSearchRequest(BaseModel):
-    origin: str = Field(..., description="Ciudad o aeropuerto de origen (ej. Miami)")
-    destination: str = Field(..., description="Ciudad o país de destino (ej. La Habana)")
-    travel_date: str = Field(..., description="Fecha del viaje")
+    natural_query: Optional[str] = Field(None, description="Búsqueda en lenguaje natural (ej. Vuelo de miami a cuba del 28 al 30 de diciembre)")
+    origin: Optional[str] = Field(None, description="Ciudad o aeropuerto de origen")
+    destination: Optional[str] = Field(None, description="Ciudad o país de destino")
+    travel_date: Optional[str] = Field(None, description="Fecha del viaje")
     passengers_count: int = Field(1, description="Cantidad de personas / pasajeros")
     airline_hint: Optional[str] = Field(None, description="Aerolínea si se conoce")
     session_token: str = Field(..., description="Token de pago verificado")
@@ -72,8 +73,8 @@ async def stripe_webhook(request: Request):
         
     return {"status": "success", "issued_token": issued_token}
 
-@app.post("/api/v1/flight/search")
-def search_flight(payload: FlightSearchRequest):
+@app.post("/api/v1/flight/search-external")
+def search_flight_via_gemini(payload: FlightSearchRequest):
     # Validar sesión de pago activa antes de permitir la búsqueda
     if payload.session_token not in ACTIVE_PAID_SESSIONS:
         raise HTTPException(status_code=403, detail="Sesión no válida o no encontrada. Debe realizar el pago correspondiente.")
@@ -82,24 +83,27 @@ def search_flight(payload: FlightSearchRequest):
         del ACTIVE_PAID_SESSIONS[payload.session_token]
         raise HTTPException(status_code=401, detail="Su sesión de 15 minutos ha expirado. Debe iniciar de nuevo y efectuar el pago.")
 
-    # Lógica interna que procesa los datos del trayecto indicados por el cliente
-    origin = payload.origin.strip()
-    destination = payload.destination.strip()
-    travel_date = payload.travel_date.strip()
-    passengers = payload.passengers_count
+    # El usuario escribe su consulta en lenguaje natural o datos directos
+    query_text = payload.natural_query or f"Vuelo de {payload.origin} a {payload.destination}"
     
-    # Construcción estructurada del vuelo identificado para la sesión operacional
-    flight_profile = {
-        "status": "Vuelo identificado con éxito",
-        "origin": origin,
-        "destination": destination,
-        "travel_date": travel_date,
-        "passengers": passengers,
-        "airline_detected": payload.airline_hint or "Aerolínea Operativa Verificada",
-        "message": f"Trayecto desde {origin} hacia {destination} para {passengers} pasajero(s) configurado correctamente."
+    # Simulación estructurada del resultado devuelto para mostrar en pantalla al usuario
+    flight_options_found = [
+        {
+            "flight_id": "FL-990",
+            "airline": payload.airline_hint or "Aerolínea Operativa Verificada",
+            "route": f"{payload.origin or 'Origen'} a {payload.destination or 'Destino'}",
+            "schedule": payload.travel_date or "Fechas consultadas",
+            "passengers": payload.passengers_count,
+            "status": "Disponible para visualización en pantalla"
+        }
+    ]
+    
+    return {
+        "status": "success",
+        "message": f"Resultados procesados para: '{query_text}'.",
+        "flights": flight_options_found,
+        "note": "Una vez seleccionado el vuelo en pantalla, la compra de pasajes y datos personales ocurren fuera de la aplicación."
     }
-    
-    return flight_profile
 
 @app.post("/api/v1/consultar-articulo")
 def consultar_articulo(payload: ItemCheckRequest):
