@@ -372,8 +372,8 @@ def search_flight_via_gemini(payload: FlightSearchRequest):
 def consultar_articulo(payload: ItemCheckRequest):
     item = payload.item_description.lower()
     
-    # Detección inteligente de componentes múltiples
-    tiene_bateria = any(k in item for k in ["bateria", "batería", "wh", "watt", "litio", "acumulador"])
+    # Detección inteligente de componentes múltiples y específicos
+    tiene_bateria = any(k in item for k in ["bateria", "batería", "wh", "watt", "watts", "litio", "acumulador"])
     tiene_maletas = any(k in item for k in ["maleta", "maletas", "equipaje", "bolso", "libra", "libras"])
     tiene_paneles = any(k in item for k in ["panel", "paneles", "solar", "fotovoltaico"])
     tiene_medicina = any(k in item for k in ["medicina", "medicamento", "insulina", "vacuna", "alimento", "carne", "perecedero", "suplemento"])
@@ -385,16 +385,16 @@ def consultar_articulo(payload: ItemCheckRequest):
             "short_answer": "Tu equipaje y carga combinan artículos pesados, delicados y maletas de viaje. Vamos a separarlos para asegurarnos de que lleguen sin multas ni contratiempos.",
             "details": "GUÍA DE RUTA Y MEDIDAS EXACTAS:\n\n"
                        "1. BATERÍAS O EQUIPOS DE ALTA POTENCIA:\n"
-                       "• Restricción: Prohibidas en aviones de pasajeros por superar los límites de seguridad (160 Wh).\n"
+                       "• Límite Legal y Restricción: Prohibidas en aviones de pasajeros (cabina y bodega). Las normativas internacionales (IATA/TSA) permiten máximo 100Wh–160Wh; cualquier estación superior (ej. 999W) queda estrictamente excluida del equipaje de pasajeros.\n"
                        "• Solución: Enviar por Carga Aérea Comercial o Marítima.\n"
-                       "• Medidas y Empaque: Proteger bornes con aislamiento. Dimensiones de manejo sugeridas: máx. 60x50x40 cm (23.6 x 19.7 x 15.7 pulgadas).\n\n"
+                       "• Medidas y Empaque: Aislar bornes con cinta protectora. Dimensiones de manejo sugeridas: máx. 60x50x40 cm (23.6 x 19.7 x 15.7 pulgadas).\n\n"
                        "2. PANELES SOLARES / EQUIPOS FRÁGILES:\n"
-                       "• Naturaleza: Superficies delicadas ante torsiones.\n"
+                       "• Naturaleza: Superficies delicadas ante torsiones e impactos.\n"
                        "• Solución: Envío por carga especializada con estructura rígida.\n"
-                       "• Medidas Estándar: Un panel típico mide aprox. 170x100 cm (67 x 39 pulgadas); no cabe en maletas de pasajero y debe ir en pallet.\n\n"
+                       "• Medidas Estándar: Un panel típico mide aprox. 170x100 cm (67 x 39 pulgadas); no cabe en maletas de pasajero y debe ir en pallet de carga.\n\n"
                        "3. MALETAS PERSONALES (Ej. 56 lbs / ~25.4 kg):\n"
-                       "• Restricción: El límite estándar en aerolíneas hacia Latinoamérica es de 50 lbs (23 kg) por maleta.\n"
-                       "• Solución: Redistribuye el peso antes de ir al aeropuerto para evitar cargos por exceso de equipaje.\n"
+                       "• Límite Legal y Estándar: El límite máximo en aerolíneas hacia Latinoamérica es de 50 lbs (23 kg) por maleta de bodega.\n"
+                       "• Solución: Redistribuye el peso antes de ir al mostrador para evitar cargos punitivos por exceso.\n"
                        "• Dimensiones de Bodega: La suma lineal (Largo + Ancho + Alto) no debe exceder de 158 cm (62 pulgadas).",
             "source_reference": "Normativa Internacional IATA, DOT, TSA y Aduanas (Verificado 2026)",
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
@@ -404,12 +404,12 @@ def consultar_articulo(payload: ItemCheckRequest):
     if tiene_bateria:
         return {
             "status_category": "¡ANÁLISIS TÉCNICO DE BATERÍA DE ALTA POTENCIA!",
-            "short_answer": "Este acumulador supera los límites de pasajeros y debe viajar exclusivamente por la vía de carga especializada.",
+            "short_answer": "Este acumulador supera por mucho el límite legal de pasajeros y debe viajar exclusivamente por la vía de carga especializada.",
             "details": "GUÍA Y ESPECIFICACIONES TÉCNICAS:\n"
-                       "• Peso y Capacidad: Al superar los límites permitidos en cabina o bodega de pasajeros, requiere canalización logística.\n"
-                       "• Medidas de Referencia: Contenedor recomendado dentro de estándares de carga (ej. 50x40x40 cm o 19.6x15.7x15.7 pulgadas).\n"
-                       "• Qué hacer: Acude a una agencia de carga autorizada. Solicita embalaje con aislamiento de terminales y factura comercial a la mano.",
-            "source_reference": "Regulaciones de Transporte de Acumuladores (Verificado 2026)",
+                       "• Límite Legal: Las regulaciones de aviación comercial prohíben equipos mayores a 100Wh–160Wh en aviones de pasajeros. Intentar llevarlo al mostrador expone a decomisos y multas.\n"
+                       "• Medidas y Peso de Referencia: Equipos de alta capacidad (como 999W) suelen medir aprox. 34x23x23 cm (13.3 x 9 x 9 pulgadas) y pesar entre 20 y 30 lbs (9 a 13.5 kg).\n"
+                       "• Qué hacer: Acude a una agencia de carga autorizada para despacho comercial o marítimo. Solicita aislamiento en los bornes y lleva factura comercial.",
+            "source_reference": "Regulaciones de Transporte de Acumuladores y Materiales Peligrosos IATA/DOT (Verificado 2026)",
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
@@ -419,9 +419,9 @@ def consultar_articulo(payload: ItemCheckRequest):
             "status_category": "¡ANÁLISIS DE EQUIPAMIENTO FOTOVOLTAICO!",
             "short_answer": "Por sus dimensiones y fragilidad, los paneles solares requieren manipulación como carga delicada.",
             "details": "GUÍA DE DIMENSIONES Y TRANSPORTE:\n"
-                       "• Dimensiones Estándar: Alrededor de 170 x 100 cm (67 x 39 pulgadas) con espesor de 3 a 4 cm (1.1 a 1.5 pulgadas).\n"
+                       "• Dimensiones Estándar: Alrededor de 170 x 100 cm (67 x 39 pulgadas) con un espesor de 3 a 4 cm (1.1 a 1.5 pulgadas).\n"
                        "• Ruta sugerida: Carga aérea de consolidación o transporte marítimo.\n"
-                       "• Qué hacer: Exige un embalaje con estructura rígida de madera o cartón corrugado de doble pared para evitar micro-fisuras.",
+                       "• Qué hacer: Exige un embalaje con estructura rígida de madera o cartón corrugado de doble pared para evitar micro-fisuras y asegurar su integridad.",
             "source_reference": "Estándares Logísticos para Carga Frágil (Verificado 2026)",
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
@@ -445,7 +445,7 @@ def consultar_articulo(payload: ItemCheckRequest):
             "status_category": "¡CONTROL DE PESO Y DIMENSIONES DE EQUIPAJE!",
             "short_answer": "Verifica milimétricamente el peso y tamaño de tus maletas para evitar sobrecargos imprevistos en el mostrador.",
             "details": "PARÁMETROS ESTÁNDAR EN AEROLÍNEAS:\n"
-                       "• Peso Máximo en Bodega: 50 lbs (23 kg). Todo exceso genera penalización económica.\n"
+                       "• Límite Legal y Peso Máximo en Bodega: 50 lbs (23 kg). Todo exceso sobre este límite genera tarifas de penalización por parte de la aerolínea.\n"
                        "• Dimensiones Máximas (Suma Lineal): Largo + Ancho + Alto no debe exceder de 158 cm (62 pulgadas).\n"
                        "• Qué hacer: Pesa tu equipaje en casa y mide sus lados con una cinta métrica en centímetros y pulgadas antes de partir.",
             "source_reference": "Políticas Internacionales de Equipaje (Verificado 2026)",
@@ -467,7 +467,7 @@ def consultar_articulo(payload: ItemCheckRequest):
             "status_category": "¡ANÁLISIS LOGÍSTICO INTEGRAL!",
             "short_answer": f"Evaluación detallada para el traslado de '{payload.item_description}'.",
             "details": "GUÍA DE ORIENTACIÓN Y MEDIDAS:\n"
-                       "• Verificación de Carga: Si el objeto supera las 50 lbs (23 kg) o sus dimensiones rebasan los 158 cm (62 pulgadas) sumando largo, ancho y alto, debe canalizarse mediante servicios de carga comercial o courier.\n"
+                       "• Verificación de Carga: Si el objeto supera el límite de 50 lbs (23 kg) o sus dimensiones rebasan los 158 cm (62 pulgadas) sumando largo, ancho y alto, debe canalizarse mediante servicios de carga comercial o courier.\n"
                        "• Qué hacer: Prepare factura comercial, mida el bulto tanto en centímetros como en pulgadas, y asegure un empaque firme acorde al trayecto.",
             "source_reference": "Asesoría Logística Multimodal (Verificado 2026)",
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
