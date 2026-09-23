@@ -140,7 +140,6 @@ def read_root():
         <script>
             let internalSessionToken = "";
 
-            // Detector de 3 toques en cualquier parte de la pantalla para acceso de desarrollador
             let tapCount = 0;
             let tapTimer = null;
             document.addEventListener('click', function(e) {
@@ -372,14 +371,12 @@ def search_flight_via_gemini(payload: FlightSearchRequest):
 def consultar_articulo(payload: ItemCheckRequest):
     item = payload.item_description.lower()
     
-    # Detección inteligente de componentes múltiples y específicos
     tiene_bateria = any(k in item for k in ["bateria", "batería", "wh", "watt", "watts", "litio", "acumulador"])
     tiene_maletas = any(k in item for k in ["maleta", "maletas", "equipaje", "bolso", "libra", "libras"])
     tiene_paneles = any(k in item for k in ["panel", "paneles", "solar", "fotovoltaico"])
     tiene_medicina = any(k in item for k in ["medicina", "medicamento", "insulina", "vacuna", "alimento", "carne", "perecedero", "suplemento"])
     tiene_soda = any(k in item for k in ["soda", "soda caustica", "cáustica", "hidroxido", "quimico", "corrosivo"])
     
-    # CASO COMPUESTO / INTEGRAL
     if (tiene_soda and tiene_maletas) or (tiene_paneles and tiene_maletas) or (tiene_soda and tiene_paneles) or (tiene_bateria and tiene_maletas):
         return {
             "status_category": "ANÁLISIS DE ORIENTACIÓN Y SOLUCIÓN INTEGRAL DE CARGA",
@@ -406,7 +403,6 @@ def consultar_articulo(payload: ItemCheckRequest):
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    # 1. SODA CÁUSTICA / PRODUCTOS QUÍMICOS (Individual)
     if tiene_soda:
         return {
             "status_category": "ORIENTACIÓN SOBRE PRODUCTOS QUÍMICOS",
@@ -423,7 +419,6 @@ def consultar_articulo(payload: ItemCheckRequest):
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    # 2. BATERÍAS Y EQUIPOS DE ALTA POTENCIA (Individual)
     if tiene_bateria:
         return {
             "status_category": "ORIENTACIÓN TÉCNICA DE ACUMULADORES",
@@ -439,7 +434,6 @@ def consultar_articulo(payload: ItemCheckRequest):
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    # 3. PANELES SOLARES (Individual)
     if tiene_paneles:
         return {
             "status_category": "ORIENTACIÓN SOBRE EQUIPAMIENTO FOTOVOLTAICO",
@@ -455,7 +449,6 @@ def consultar_articulo(payload: ItemCheckRequest):
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    # 4. MEDICAMENTOS E INSUMOS MÉDICOS
     if tiene_medicina:
         return {
             "status_category": "ORIENTACIÓN PARA PRODUCTOS MÉDICOS",
@@ -471,7 +464,6 @@ def consultar_articulo(payload: ItemCheckRequest):
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    # 5. MALETAS Y CONTROL DE PESO / MEDIDAS
     if tiene_maletas:
         return {
             "status_category": "ORIENTACIÓN DE PESO Y MEDIDAS DE EQUIPAJE",
@@ -487,7 +479,6 @@ def consultar_articulo(payload: ItemCheckRequest):
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    # 6. RESPUESTA GENERAL PROFUNDA
     rule = rule_repo.find_rule(payload.airline or "General", item)
     if rule and rule.status == RuleStatus.ACTIVA:
         return {
