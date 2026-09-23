@@ -12,8 +12,8 @@ from legal_disclaimer import LegalNoticeManager
 
 app = FastAPI(
     title="¿Qué Quieres Llevar?",
-    description="Aplicación completa de búsqueda de vuelo, control de pago único de 15 minutos, reglas verificadas y acceso administrativo.",
-    version="4.0.0"
+    description="Aplicación completa de búsqueda de vuelo, control de pago único de 15 minutos, reglas verificadas y acceso administrativo secreto.",
+    version="4.1.0"
 )
 
 app.add_middleware(
@@ -51,7 +51,7 @@ class AdminLoginRequest(BaseModel):
     username: str
     password: str
 
-# 1. INTERFAZ GRÁFICA (Página Web HTML visible al entrar a la URL)
+# 1. INTERFAZ GRÁFICA CON DETECTOR DE TRES TOQUES
 @app.get("/", response_class=HTMLResponse)
 def read_root():
     html_content = """
@@ -62,7 +62,7 @@ def read_root():
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>¿Qué Quieres Llevar? - May Roga LLC</title>
         <style>
-            body { font-family: Arial, sans-serif; background-color: #f4f6f9; color: #333; margin: 0; padding: 20px; }
+            body { font-family: Arial, sans-serif; background-color: #f4f6f9; color: #333; margin: 0; padding: 20px; user-select: none; }
             .container { max-width: 700px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
             h1 { color: #004b87; text-align: center; font-size: 26px; }
             p.sub { text-align: center; color: #666; font-size: 15px; margin-bottom: 25px; }
@@ -72,6 +72,14 @@ def read_root():
             button { width: 100%; background-color: #004b87; color: white; border: none; padding: 14px; font-size: 16px; border-radius: 6px; margin-top: 20px; cursor: pointer; font-weight: bold; }
             button:hover { background-color: #003366; }
             .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #888; }
+            
+            /* Modal Oculto de Desarrollador */
+            #devModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
+            .dev-card { background: white; padding: 25px; border-radius: 10px; width: 320px; box-shadow: 0 5px 20px rgba(0,0,0,0.3); }
+            .dev-card h3 { margin-top: 0; color: #004b87; text-align: center; }
+            .dev-close { background: #ccc; color: #333; margin-top: 10px; }
+            .dev-close:hover { background: #b3b3b3; }
+            #devStatus { margin-top: 10px; font-size: 13px; text-align: center; font-weight: bold; }
         </style>
     </head>
     <body>
@@ -91,7 +99,7 @@ def read_root():
                 <input type="text" id="item_description" placeholder="Ej: Batería de litio, licuadora, medicamento..." required>
 
                 <label>Paso 3: Token de Acceso o Sesión</label>
-                <input type="text" id="session_token" placeholder="Ingresa tu token de pago o admin_tkn_..." required>
+                <input type="text" id="session_token" placeholder="Realiza el pago o usa acceso interno" required>
 
                 <button type="button" onclick="consultarApp()">Consultar Artículo</button>
             </form>
@@ -103,11 +111,82 @@ def read_root():
             </div>
         </div>
 
+        <!-- Ventana Oculta de Desarrollador -->
+        <div id="devModal">
+            <div class="dev-card">
+                <h3>Acceso Desarrollador</h3>
+                <label>Usuario:</label>
+                <input type="text" id="devUser" placeholder="Usuario admin">
+                <label>Contraseña:</label>
+                <input type="password" id="devPass" placeholder="Contraseña admin">
+                <button type="button" onclick="loginDev()">Entrar Gratis</button>
+                <button type="button" class="dev-close" onclick="cerrarModal()">Cancelar</button>
+                <div id="devStatus"></div>
+            </div>
+        </div>
+
         <script>
+            // Lógica de 3 toques rápidos en la pantalla
+            let clickCount = 0;
+            let clickTimer = null;
+
+            document.addEventListener('click', function() {
+                clickCount++;
+                if (clickCount === 1) {
+                    clickTimer = setTimeout(() => {
+                        clickCount = 0;
+                    }, 600); // 600 milisegundos para completar los 3 toques
+                } else if (clickCount === 3) {
+                    clearTimeout(clickTimer);
+                    clickCount = 0;
+                    document.getElementById('devModal').style.display = 'flex';
+                }
+            });
+
+            function cerrarModal() {
+                document.getElementById('devModal').style.display = 'none';
+                document.getElementById('devStatus').innerText = '';
+            }
+
+            async function loginDev() {
+                const u = document.getElementById('devUser').value;
+                const p = document.getElementById('devPass').value;
+                const statusDiv = document.getElementById('devStatus');
+
+                statusDiv.style.color = "#004b87";
+                statusDiv.innerText = "Verificando credenciales...";
+
+                try {
+                    const res = await fetch('/api/v1/admin/login', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username: u, password: p })
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        statusDiv.style.color = "green";
+                        statusDiv.innerText = "¡Acceso concedido! Token aplicado.";
+                        document.getElementById('session_token').value = data.session_token;
+                        setTimeout(cerrarModal, 1500);
+                    } else {
+                        statusDiv.style.color = "red";
+                        statusDiv.innerText = data.detail || "Credenciales incorrectas.";
+                    }
+                } catch(e) {
+                    statusDiv.style.color = "red";
+                    statusDiv.innerText = "Error de conexión.";
+                }
+            }
+
             async function consultarApp() {
                 const token = document.getElementById('session_token').value;
                 const item = document.getElementById('item_description').value;
                 const resDiv = document.getElementById('resultado');
+
+                if (!token) {
+                    alert("Por favor ingrese un token válido de sesión o de desarrollador.");
+                    return;
+                }
 
                 resDiv.innerHTML = "<p style='text-align:center;'>Consultando reglas verificadas...</p>";
 
@@ -179,31 +258,6 @@ async def stripe_webhook(request: Request):
         ACTIVE_PAID_SESSIONS[issued_token] = expires_at
         
     return {"status": "success", "issued_token": issued_token}
-
-@app.post("/api/v1/flight/search-external")
-def search_flight_via_gemini(payload: FlightSearchRequest):
-    if payload.session_token not in ACTIVE_PAID_SESSIONS:
-        raise HTTPException(status_code=403, detail="Sesión no válida o no encontrada.")
-    
-    if datetime.datetime.utcnow() > ACTIVE_PAID_SESSIONS[payload.session_token]:
-        del ACTIVE_PAID_SESSIONS[payload.session_token]
-        raise HTTPException(status_code=401, detail="Su sesión ha expirado.")
-
-    query_text = payload.natural_query or f"Vuelo de {payload.origin} a {payload.destination}"
-    
-    return {
-        "status": "success",
-        "message": f"Resultados procesados para: '{query_text}'.",
-        "flights": [
-            {
-                "flight_id": "FL-990",
-                "airline": payload.airline_hint or "Aerolínea Operativa Verificada",
-                "route": f"{payload.origin or 'Origen'} a {payload.destination or 'Destino'}",
-                "schedule": payload.travel_date or "Fechas consultadas",
-                "passengers": payload.passengers_count
-            }
-        ]
-    }
 
 @app.post("/api/v1/consultar-articulo")
 def consultar_articulo(payload: ItemCheckRequest):
