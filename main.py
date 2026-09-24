@@ -1,19 +1,4 @@
-with open("main.py", "w", encoding="utf-8") as f:
-    f.write('''# main.py - ¿Qué Quieres Llevar? | May Roga LLC
-# Producción: FastAPI + Stripe + Gemini API
-# Producto actual: $15.99 = 1 servicio / 15 minutos
-# Gemini: búsqueda/interpretación de vuelos únicamente.
-# Motor de reglas: autoridad interna para las respuestas de equipaje.
-#
-# Variables requeridas en Render:
-# GEMINI_API_KEY
-# GEMINI_MODEL
-# STRIPE_SECRET_KEY
-# STRIPE_WEBHOOK_SECRET
-# ADMIN_USERNAME
-# ADMIN_PASSWORD
-# URL de la App:https://qu-quieres-llevar.onrender.com (o la configurada en Render)
-
+# main.py - ¿Qué Quieres Llevar? (May Roga LLC)
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
@@ -22,11 +7,13 @@ from typing import Optional
 import os
 import datetime
 import stripe
+from rules_engine import RuleRepository, RuleStatus
+from legal_disclaimer import LegalNoticeManager
 
 app = FastAPI(
     title="¿Qué Quieres Llevar?",
-    description="Asesoría especializada de equipaje, carga y vuelos - May Roga LLC",
-    version="6.0.0"
+    description="Asesoría especializada de equipaje y vuelos - May Roga LLC",
+    version="5.1.0"
 )
 
 app.add_middleware(
@@ -37,10 +24,15 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# CARGA DE VARIABLES Y CREDENCIALES REALES
+# DATOS REALES DE STRIPE Y ENTORNO
 stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_live_real_key_placeholder")
+rule_repo = RuleRepository()
+
+# DATOS REALES DE ACCESO DE ADMINISTRADOR / DESARROLLADOR (Tomados de Render o valores por defecto reales)
 ADMIN_USER = os.getenv("ADMIN_USERNAME", "admin")
 ADMIN_PASS = os.getenv("ADMIN_PASSWORD", "mayroga2026")
+
+ACTIVE_PAID_SESSIONS = {}
 
 class FlightSearchRequest(BaseModel):
     natural_query: str = Field(..., description="Búsqueda en lenguaje natural del vuelo")
@@ -55,7 +47,7 @@ class AdminLoginRequest(BaseModel):
     username: str
     password: str
 
-# INTERFAZ GRÁFICA PROFESIONAL CON MURO DE STRIPE Y ACCESO DE TRES CLICS
+# INTERFAZ GRÁFICA PROFESIONAL Y LIMPIA
 @app.get("/", response_class=HTMLResponse)
 def read_root():
     html_content = """
@@ -90,11 +82,10 @@ def read_root():
 
             .legal-footer { text-align: center; margin-top: 30px; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 15px; line-height: 1.4; }
 
-            /* MURO DE STRIPE Y PANEL DE ACCESO (Activado por tres clics en la pantalla) */
+            /* Modal oculto para desarrollador / acceso (activado con 3 toques) */
             #devModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center; }
-            .dev-box { background: white; padding: 25px; border-radius: 12px; width: 310px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+            .dev-box { background: white; padding: 25px; border-radius: 12px; width: 290px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
             .dev-box h3 { margin-top: 0; font-size: 16px; color: #0f3d59; text-align: center; }
-            .stripe-banner { background: #635bff; color: white; padding: 10px; border-radius: 6px; text-align: center; margin-bottom: 15px; font-size: 12px; font-weight: bold; }
         </style>
     </head>
     <body>
@@ -132,19 +123,17 @@ def read_root():
             </div>
         </div>
 
-        <!-- Muro de Stripe y Acceso Desarrollador (Activado por 3 clics en la pantalla) -->
+        <!-- Ventana Oculta de Desarrollador / Acceso Directo -->
         <div id="devModal">
             <div class="dev-box">
-                <div class="stripe-banner">Pasarela Stripe Segura</div>
-                <h3>Acceso Gratuito / Administrador</h3>
-                <p style="font-size: 11px; color: #555; text-align: center; margin-bottom: 12px;">Ingrese credenciales reales para bypass y acceso directo.</p>
-                <label style="font-size:12px;">Usuario (Username):</label>
+                <h3>Acceso Especial</h3>
+                <label style="font-size:12px;">Usuario:</label>
                 <input type="text" id="devUser" style="padding:8px;" value="admin">
-                <label style="font-size:12px;">Contraseña (Password):</label>
+                <label style="font-size:12px;">Contraseña:</label>
                 <input type="password" id="devPass" style="padding:8px;" value="mayroga2026">
                 <div style="display: flex; gap: 8px; margin-top: 15px;">
-                    <button type="button" onclick="loginDev()" style="padding: 9px; font-size: 13px;">Entrar Gratis</button>
-                    <button type="button" class="btn-clear" onclick="cerrarModalDev()" style="padding: 9px; font-size: 13px;">Cerrar</button>
+                    <button type="button" onclick="loginDev()" style="padding: 8px; font-size: 13px;">Entrar</button>
+                    <button type="button" class="btn-clear" onclick="cerrarModalDev()" style="padding: 8px; font-size: 13px;">Cerrar</button>
                 </div>
                 <div id="devStatus" style="font-size: 11px; margin-top: 8px; text-align: center; font-weight: bold;"></div>
             </div>
@@ -153,17 +142,17 @@ def read_root():
         <script>
             let internalSessionToken = "";
 
-            // Detector exacto de 3 clics en cualquier parte de la pantalla para activar el muro de Stripe / Acceso
-            let clickCount = 0;
-            let clickTimer = null;
+            // Detector de 3 toques en cualquier parte de la pantalla para acceso rápido
+            let tapCount = 0;
+            let tapTimer = null;
             document.addEventListener('click', function(e) {
                 if(document.getElementById('devModal').style.display === 'flex') return;
-                clickCount++;
-                if (clickCount === 1) {
-                    clickTimer = setTimeout(() => { clickCount = 0; }, 600);
-                } else if (clickCount === 3) {
-                    clearTimeout(clickTimer);
-                    clickCount = 0;
+                tapCount++;
+                if (tapCount === 1) {
+                    tapTimer = setTimeout(() => { tapCount = 0; }, 500);
+                } else if (tapCount === 3) {
+                    clearTimeout(tapTimer);
+                    tapCount = 0;
                     document.getElementById('devModal').style.display = 'flex';
                 }
             });
@@ -178,7 +167,7 @@ def read_root():
                 const p = document.getElementById('devPass').value;
                 const statusDiv = document.getElementById('devStatus');
                 statusDiv.style.color = "#0f3d59";
-                statusDiv.innerText = "Verificando acceso...";
+                statusDiv.innerText = "Verificando...";
 
                 try {
                     const res = await fetch('/api/v1/admin/login', {
@@ -190,7 +179,7 @@ def read_root():
                     if (res.ok) {
                         internalSessionToken = data.session_token;
                         statusDiv.style.color = "green";
-                        statusDiv.innerText = "¡Acceso concedido correctamente!";
+                        statusDiv.innerText = "¡Acceso concedido!";
                         setTimeout(cerrarModalDev, 1200);
                     } else {
                         statusDiv.style.color = "red";
@@ -198,7 +187,7 @@ def read_root():
                     }
                 } catch(err) {
                     statusDiv.style.color = "red";
-                    statusDiv.innerText = "Error de conexión con el servidor";
+                    statusDiv.innerText = "Error de conexión";
                 }
             }
 
@@ -310,8 +299,9 @@ def read_root():
 def admin_login(payload: AdminLoginRequest):
     if payload.username == ADMIN_USER and payload.password == ADMIN_PASS:
         admin_token = f"admin_tkn_{datetime.datetime.utcnow().timestamp()}"
+        ACTIVE_PAID_SESSIONS[admin_token] = datetime.datetime.utcnow() + datetime.timedelta(hours=24)
         return {"status": "success", "session_token": admin_token}
-    raise HTTPException(status_code=401, detail="Credenciales incorrectas.")
+    raise HTTPException(status_code=401, detail="Credenciales inválidas.")
 
 @app.post("/api/v1/stripe/webhook")
 async def stripe_webhook(request: Request):
@@ -326,10 +316,12 @@ async def stripe_webhook(request: Request):
     issued_token = None
     if event["type"] == "checkout.session.completed":
         issued_token = f"tkn_{datetime.datetime.utcnow().timestamp()}"
+        ACTIVE_PAID_SESSIONS[issued_token] = datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
     return {"status": "success", "issued_token": issued_token}
 
 @app.post("/api/v1/flight/search-external")
 def search_flight_via_gemini(payload: FlightSearchRequest):
+    query = payload.natural_query.lower()
     return {
         "status": "success",
         "flights": [
@@ -391,81 +383,128 @@ def consultar_articulo(payload: ItemCheckRequest):
     if (tiene_soda and tiene_maletas) or (tiene_paneles and tiene_maletas) or (tiene_soda and tiene_paneles) or (tiene_bateria and tiene_maletas):
         return {
             "status_category": "ANÁLISIS DE ORIENTACIÓN Y SOLUCIÓN INTEGRAL DE CARGA",
-            "short_answer": "Tu carga combina elementos químicos, equipos especiales y maletas de viaje. Nuestra sugerencia es separarlos para evitar contratiempos.",
-            "details": "GUÍA DE RUTA Y SEPARACIÓN RECOMENDADA:\\n\\n"
-                       "🔹 1. PRODUCTOS QUÍMICOS / SODA CÁUSTICA:\\n"
-                       "• Sugerencia de Manejo: Generalmente no se aceptan en cabina ni en equipaje facturado de pasajeros debido a sus propiedades corrosivas.\\n"
-                       "• Solución Propuesta: Canalizar el envío mediante una agencia de carga comercial especializada.\\n\\n"
-                       "🔹 2. PANELES SOLARES / EQUIPOS FRÁGILES:\\n"
-                       "• Naturaleza: Superficies delicadas ante torsiones e impactos.\\n"
-                       "• Solución Propuesta: Envío por carga con soporte o pallet.\\n\\n"
-                       "🔹 3. MALETAS PERSONALES:\\n"
-                       "• Parámetro Habitual: El límite más común en aerolíneas hacia Latinoamérica es de 50 lbs (23 kg) por maleta en bodega.",
+            "short_answer": "Tu carga combina elementos químicos, equipos especiales y maletas de viaje. Nuestra sugerencia es separarlos para evitar contratiempos o recargos en los puntos de control.",
+            "details": "GUÍA DE RUTA Y SEPARACIÓN RECOMENDADA:\n\n"
+                       "🔹 1. PRODUCTOS QUÍMICOS / SODA CÁUSTICA:\n"
+                       "• Sugerencia de Manejo: Generalmente no se aceptan en cabina ni en equipaje facturado de pasajeros debido a sus propiedades corrosivas.\n"
+                       "• Solución Propuesta: Canalizar el envío mediante una agencia de carga comercial especializada.\n"
+                       "• Empaque: Se sugiere utilizar envases sellados herméticamente y aptos para sustancias delicadas.\n\n"
+                       "🔹 2. PANELES SOLARES / EQUIPOS FRÁGILES:\n"
+                       "• Naturaleza: Superficies delicadas ante torsiones e impactos.\n"
+                       "• Solución Propuesta: Envío por carga especializada con estructura rígida de soporte o pallet.\n"
+                       "• Medidas Estándar: Un panel típico mide aprox. 170x100 cm (67 x 39 pulgadas) y excede las medidas de equipaje común.\n\n"
+                       "🔹 3. MALETAS PERSONALES (Ej. 59 lbs / exceso):\n"
+                       "• Parámetro Habitual: El límite más común en aerolíneas hacia Latinoamérica es de 50 lbs (23 kg) por maleta en bodega. Superar este peso suele activar cobros adicionales.\n"
+                       "• Solución Propuesta: Sugerimos redistribuir el peso en dos maletas antes de llegar al mostrador.\n"
+                       "• Dimensiones de Bodega: La suma lineal sugerida (Largo + Ancho + Alto) es de hasta 158 cm (62 pulgadas).",
             "source_reference": "Orientación basada en estándares internacionales de la industria (Verificado 2026)",
             "official_links": [
                 {"title": "Guía de Referencia IATA DGR", "url": "https://www.iata.org/en/programs/cargo/dgr/"},
-                {"title": "Directrices de Artículos TSA", "url": "https://www.tsa.gov/travel/security-screening/whatcanibring/"}
+                {"title": "Directrices de Artículos TSA", "url": "https://www.tsa.gov/travel/security-screening/whatcanibring/"},
+                {"title": "Departamento de Transporte (DOT)", "url": "https://www.transportation.gov/"}
             ],
-            "disclaimer": "Asesoría preventiva de conformidad con las normativas vigentes. El usuario es responsable del cumplimiento final en el punto de embarque."
+            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
     if tiene_soda:
         return {
             "status_category": "ORIENTACIÓN SOBRE PRODUCTOS QUÍMICOS",
-            "short_answer": "Este tipo de producto requiere manejo especial como carga comercial y habitualmente no se permite en el equipaje de pasajeros.",
-            "details": "SUGERENCIAS Y PAUTAS TÉCNICAS:\\n• Condición Habitual: Sustancias corrosivas restringidas en cabina y bodega.\\n• Ruta Sugerida: Consultar con un consolidador de carga autorizado.",
+            "short_answer": "Este tipo de producto suele requerir manejo especial como carga comercial y habitualmente no se permite en el equipaje de pasajeros.",
+            "details": "SUGERENCIAS Y PAUTAS TÉCNICAS:\n\n"
+                       "• Condición Habitual: Las políticas de aerolíneas de pasajeros suelen restringir sustancias corrosivas en cabina y bodega.\n"
+                       "• Ruta Sugerida: Consultar con un consolidador o agente de carga autorizado para un despacho comercial adecuado.\n"
+                       "• Recomendación: Disponer de la hoja técnica o factura comercial al cotizar el envío.",
             "source_reference": "Pautas de la Industria Logística y Transporte (Verificado 2026)",
-            "official_links": [{"title": "IATA Dangerous Goods Regulations", "url": "https://www.iata.org/en/programs/cargo/dgr/"}],
-            "disclaimer": "Asesoría preventiva de conformidad con las normativas vigentes."
+            "official_links": [
+                {"title": "IATA Dangerous Goods Regulations", "url": "https://www.iata.org/en/programs/cargo/dgr/"},
+                {"title": "PHMSA Hazardous Materials Safety", "url": "https://www.phmsa.dot.gov/"}
+            ],
+            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
     if tiene_bateria:
         return {
             "status_category": "ORIENTACIÓN TÉCNICA DE ACUMULADORES",
             "short_answer": "Los equipos de alta potencia superan los umbrales habituales para pasajeros y se recomienda canalizarlos por la vía de carga.",
-            "details": "SUGERENCIAS Y ESPECIFICACIONES:\\n• Parámetro de Referencia: Límite portátil común de 100Wh–160Wh en aeronaves de pasajeros.",
+            "details": "SUGERENCIAS Y ESPECIFICACIONES:\n\n"
+                       "• Parámetro de Referencia: Las normativas generales suelen limitar los equipos portátiles a rangos de 100Wh–160Wh en aeronaves de pasajeros.\n"
+                       "• Medidas y Peso Aproximados: Equipos grandes suelen pesar entre 20 y 30 lbs (9 a 13.5 kg).\n"
+                       "• Recomendación: Acudir a una agencia de carga para asegurar un embalaje correcto y proteger los terminales.",
             "source_reference": "Estándares de Transporte de Acumuladores (Verificado 2026)",
-            "official_links": [{"title": "IATA Lithium Batteries Guidance", "url": "https://www.iata.org/en/programs/cargo/dgr/lithium-batteries/"}],
-            "disclaimer": "Asesoría preventiva de conformidad con las normativas vigentes."
+            "official_links": [
+                {"title": "IATA Lithium Batteries Guidance", "url": "https://www.iata.org/en/programs/cargo/dgr/lithium-batteries/"}
+            ],
+            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
     if tiene_paneles:
         return {
             "status_category": "ORIENTACIÓN SOBRE EQUIPAMIENTO FOTOVOLTAICO",
             "short_answer": "Debido a su tamaño y fragilidad, sugerimos planificar su transporte mediante carga especializada.",
-            "details": "PAUTAS DE DIMENSIONES Y MANEJO:\\n• Dimensiones Frecuentes: Alrededor de 170 x 100 cm (67 x 39 pulgadas).",
+            "details": "PAUTAS DE DIMENSIONES Y MANEJO:\n\n"
+                       "• Dimensiones Frecuentes: Alrededor de 170 x 100 cm (67 x 39 pulgadas).\n"
+                       "• Ruta Sugerida: Carga aérea de consolidación o transporte marítimo.\n"
+                       "• Recomendación: Solicitar un embalaje rígido con protección perimetral para cuidar las celdas.",
             "source_reference": "Estándares Logísticos para Carga Frágil (Verificado 2026)",
-            "official_links": [{"title": "U.S. Customs and Border Protection", "url": "https://www.cbp.gov/"}],
-            "disclaimer": "Asesoría preventiva de conformidad con las normativas vigentes."
+            "official_links": [
+                {"title": "U.S. Customs and Border Protection (CBP)", "url": "https://www.cbp.gov/"}
+            ],
+            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
     if tiene_medicina:
         return {
             "status_category": "ORIENTACIÓN PARA PRODUCTOS MÉDICOS",
             "short_answer": "Los artículos de uso personal suelen llevarse en la maleta de mano; los volúmenes mayores o comerciales requieren contenedores térmicos.",
-            "details": "PAUTAS SANITARIAS SUGERIDAS:\\n• En Cabina: Llevar recetas médicas a la mano y visibles.",
+            "details": "PAUTAS SANITARIAS SUGERIDAS:\n\n"
+                       "• En Cabina: Se aconseja llevar recetas médicas a la mano y visibles.\n"
+                       "• Envíos Comerciales: Utilizar cadenas de frío validadas.\n"
+                       "• Recomendación: Mantener la documentación accesible para agilizar cualquier revisión en los puntos de control.",
             "source_reference": "Directrices de Seguridad y Salud Aeroportuaria (Verificado 2026)",
-            "official_links": [{"title": "TSA Medical Conditions Guidance", "url": "https://www.tsa.gov/travel/special-procedures"}],
-            "disclaimer": "Asesoría preventiva de conformidad con las normativas vigentes."
+            "official_links": [
+                {"title": "TSA Medical Conditions Guidance", "url": "https://www.tsa.gov/travel/special-procedures"}
+            ],
+            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
     if tiene_maletas:
         return {
             "status_category": "ORIENTACIÓN DE PESO Y MEDIDAS DE EQUIPAJE",
             "short_answer": "Sugerimos verificar las medidas y el peso antes de salir para evitar recargos en el mostrador.",
-            "details": "PARÁMETROS HABITUALES EN AEROLÍNEAS:\\n• Peso Sugerido en Bodega: Límite común de 50 lbs (23 kg) por pieza.\\n• Dimensiones Máximas: Suma lineal hasta 158 cm (62 pulgadas).",
+            "details": "PARÁMETROS HABITUALES EN AEROLÍNEAS:\n\n"
+                       "• Peso Sugerido en Bodega: Mantenerse dentro del límite común de 50 lbs (23 kg) por pieza para evitar tarifas adicionales.\n"
+                       "• Dimensiones Máximas (Suma Lineal): Se recomienda que Largo + Ancho + Alto no rebase los 158 cm (62 pulgadas).\n"
+                       "• Recomendación: Pesar el equipaje en casa utilizando una báscula portátil.",
             "source_reference": "Políticas Internacionales de Equipaje de Referencia (Verificado 2026)",
-            "official_links": [{"title": "DOT Baggage Guidance", "url": "https://www.transportation.gov/airconsumer/baggage"}],
-            "disclaimer": "Asesoría preventiva de conformidad con las normativas vigentes."
+            "official_links": [
+                {"title": "DOT Aviation Consumer Protection - Baggage", "url": "https://www.transportation.gov/airconsumer/baggage"}
+            ],
+            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    return {
-        "status_category": "ORIENTACIÓN LOGÍSTICA INTEGRAL",
-        "short_answer": f"Evaluación orientativa para el traslado de '{payload.item_description}'.",
-        "details": "PAUTAS Y RECOMENDACIONES:\\n• Criterio de Carga: Si el objeto supera las 50 lbs (23 kg) o 158 cm, sugerimos canalizarlo por carga comercial.",
-        "source_reference": "Asesoría Logística Multimodal (Verificado 2026)",
-        "official_links": [{"title": "IATA Official Website", "url": "https://www.iata.org/"}],
-        "disclaimer": "Asesoría preventiva de conformidad con las normativas vigentes."
-    }
-''')
-print("main.py actualizado y guardado correctamente con las variables y estructura completa solicitada.")
+    rule = rule_repo.find_rule(payload.airline or "General", item)
+    if rule and rule.status == RuleStatus.ACTIVA:
+        return {
+            "status_category": rule.category_visual,
+            "short_answer": rule.short_answer,
+            "details": rule.details,
+            "source_reference": f"{rule.source_name} (Verificado el {rule.verification_date})",
+            "official_links": [
+                {"title": "Sitio Oficial de Referencia Regulatoria", "url": "https://www.iata.org"}
+            ],
+            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
+        }
+    else:
+        return {
+            "status_category": "ORIENTACIÓN LOGÍSTICA INTEGRAL",
+            "short_answer": f"Evaluación orientativa para el traslado de '{payload.item_description}'.",
+            "details": "PAUTAS Y RECOMENDACIONES:\n\n"
+                       "• Criterio de Carga: Si el objeto supera las 50 lbs (23 kg) o los 158 cm (62 pulgadas) sumando sus lados, nuestra sugerencia es canalizarlo a través de servicios de carga comercial o courier.\n"
+                       "• Recomendación: Preparar factura comercial, medir el bulto y asegurar un empaque firme acorde a la distancia del trayecto.",
+            "source_reference": "Asesoría Logística Multimodal (Verificado 2026)",
+            "official_links": [
+                {"title": "IATA Official Website", "url": "https://www.iata.org/"},
+                {"title": "U.S. Customs and Border Protection", "url": "https://www.cbp.gov/"}
+            ],
+            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
+        }
