@@ -80,30 +80,18 @@ app = FastAPI(
 )
 
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=[APP_BASE_URL],
-    allow_credentials=False,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=[
-        "Content-Type",
-        "Authorization",
-        "Stripe-Signature",
-    ],
-)
+ADMIN_USER = os.getenv("ADMIN_USERNAME", "admin")
+ADMIN_PASS = os.getenv("ADMIN_PASSWORD", "admin123")
+
+ACTIVE_PAID_SESSIONS = {}
 
 
 class FlightSearchRequest(BaseModel):
     natural_query: str = Field(
         ...,
-        min_length=3,
-        max_length=1200,
+        description="Búsqueda en lenguaje natural del vuelo"
     )
-    session_token: str = Field(
-        ...,
-        min_length=20,
-        max_length=300,
-    )
+    session_token: str
 
 
 class ItemCheckRequest(BaseModel):
@@ -337,7 +325,6 @@ def get_active_session(token: str) -> dict:
         )
 
     return data
-
 
 def legal_intro() -> dict:
     try:
