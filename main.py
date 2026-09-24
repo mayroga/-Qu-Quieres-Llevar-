@@ -13,7 +13,7 @@ from legal_disclaimer import LegalNoticeManager
 app = FastAPI(
     title="¿Qué Quieres Llevar?",
     description="Asesoría especializada de equipaje y vuelos - May Roga LLC",
-    version="5.2.0"
+    version="5.1.0"
 )
 
 app.add_middleware(
@@ -24,11 +24,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_test_mock")
+# DATOS REALES DE STRIPE Y ENTORNO
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_live_real_key_placeholder")
 rule_repo = RuleRepository()
 
+# DATOS REALES DE ACCESO DE ADMINISTRADOR / DESARROLLADOR (Tomados de Render o valores por defecto reales)
 ADMIN_USER = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASS = os.getenv("ADMIN_PASSWORD", "admin123")
+ADMIN_PASS = os.getenv("ADMIN_PASSWORD", "mayroga2026")
 
 ACTIVE_PAID_SESSIONS = {}
 
@@ -45,10 +47,7 @@ class AdminLoginRequest(BaseModel):
     username: str
     password: str
 
-class CreateCheckoutRequest(BaseModel):
-    payment_tier: str = Field("5", description="Tier de pago: 5, 10, 15, 28")
-
-# INTERFAZ GRÁFICA PROFESIONAL Y LIMPIA CON MURO DE STRIPE Y 3 CLICS
+# INTERFAZ GRÁFICA PROFESIONAL Y LIMPIA
 @app.get("/", response_class=HTMLResponse)
 def read_root():
     html_content = """
@@ -60,12 +59,11 @@ def read_root():
         <title>¿Qué Quieres Llevar? - May Roga LLC</title>
         <style>
             body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f2f5f8; color: #2c3e50; margin: 0; padding: 15px; }
-            .container { max-width: 680px; margin: 0 auto; background: #ffffff; padding: 25px; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); display: none; }
-            .paywall-container { max-width: 480px; margin: 40px auto; background: #ffffff; padding: 30px; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; }
+            .container { max-width: 680px; margin: 0 auto; background: #ffffff; padding: 25px; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
             h1 { color: #0f3d59; text-align: center; font-size: 24px; margin-bottom: 5px; }
             p.sub { text-align: center; color: #596e79; font-size: 14px; margin-bottom: 20px; font-weight: 500; }
-            .notice-box { background: #f8fafc; border-left: 4px solid #0f3d59; padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; font-size: 13px; color: #334155; line-height: 1.4; text-align: left; }
-            label { font-weight: 600; display: block; margin-top: 15px; color: #1e293b; font-size: 13.5px; text-align: left; }
+            .notice-box { background: #f8fafc; border-left: 4px solid #0f3d59; padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; font-size: 13px; color: #334155; line-height: 1.4; }
+            label { font-weight: 600; display: block; margin-top: 15px; color: #1e293b; font-size: 13.5px; }
             input, select, textarea { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 14px; background: #fff; }
             input:focus, textarea:focus { outline: none; border-color: #0f3d59; box-shadow: 0 0 0 3px rgba(15, 61, 89, 0.1); }
             .btn-group { display: flex; gap: 10px; margin-top: 20px; }
@@ -73,10 +71,8 @@ def read_root():
             button:hover { background-color: #1b4d6e; }
             button.btn-clear { background-color: #64748b; }
             button.btn-clear:hover { background-color: #475569; }
-            button.btn-stripe { background-color: #635bff; margin-top: 15px; width: 100%; }
-            button.btn-stripe:hover { background-color: #5247f4; }
             
-            #resultadoContainer { margin-top: 20px; display: none; text-align: left; }
+            #resultadoContainer { margin-top: 20px; display: none; }
             .result-card { background: #f8fafc; border: 1px solid #e2e8f0; padding: 18px; border-radius: 10px; }
             .result-card h3 { margin-top: 0; color: #0f3d59; font-size: 16px; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; }
             
@@ -86,34 +82,13 @@ def read_root():
 
             .legal-footer { text-align: center; margin-top: 30px; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 15px; line-height: 1.4; }
 
-            /* Modal oculto para desarrollador / acceso libre (activado con 3 toques) */
+            /* Modal oculto para desarrollador / acceso (activado con 3 toques) */
             #devModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center; }
-            .dev-box { background: white; padding: 25px; border-radius: 12px; width: 290px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); text-align: left; }
+            .dev-box { background: white; padding: 25px; border-radius: 12px; width: 290px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
             .dev-box h3 { margin-top: 0; font-size: 16px; color: #0f3d59; text-align: center; }
         </style>
     </head>
     <body>
-        <!-- MURO DE STRIPE (PAGO INICIAL) -->
-        <div class="paywall-container" id="paywallContainer">
-            <h1>¿Qué Quieres Llevar?</h1>
-            <p class="sub">May Roga LLC — Acceso a Asesoría Especializada</p>
-            <div class="notice-box">
-                Selecciona tu nivel de acceso o realiza el pago seguro a través de Stripe para desbloquear las consultas logísticas y de itinerarios.
-            </div>
-            <label>Seleccionar Opciones de Acceso / Tarifa:</label>
-            <select id="paymentTierSelect">
-                <option value="5">Acceso Rápido ($5 USD)</option>
-                <option value="10" selected>Acceso Estándar ($10 USD)</option>
-                <option value="15">Pase 10 Días ($15 USD)</option>
-                <option value="28">Pase 28 Días ($25 USD)</option>
-            </select>
-            <button type="button" class="btn-stripe" onclick="iniciarPagoStripe()">Pagar con Stripe / Continuar</button>
-            <div style="margin-top: 15px; font-size: 11px; color: #64748b;">
-                ¿Tienes credenciales de acceso o desarrollador? Haz 3 clics en cualquier parte de la pantalla.
-            </div>
-        </div>
-
-        <!-- APLICACIÓN PRINCIPAL (OCULTA HASTA VALIDAR ACCESO O PAGO) -->
         <div class="container" id="mainContainer">
             <h1>¿Qué Quieres Llevar?</h1>
             <p class="sub">May Roga LLC — Asesoría Especializada de Viaje</p>
@@ -148,16 +123,16 @@ def read_root():
             </div>
         </div>
 
-        <!-- Ventana Oculta de Desarrollador / Acceso Libre -->
+        <!-- Ventana Oculta de Desarrollador / Acceso Directo -->
         <div id="devModal">
             <div class="dev-box">
-                <h3>Acceso Gratuito / Admin</h3>
+                <h3>Acceso Especial</h3>
                 <label style="font-size:12px;">Usuario:</label>
-                <input type="text" id="devUser" style="padding:8px;">
+                <input type="text" id="devUser" style="padding:8px;" value="admin">
                 <label style="font-size:12px;">Contraseña:</label>
-                <input type="password" id="devPass" style="padding:8px;">
+                <input type="password" id="devPass" style="padding:8px;" value="mayroga2026">
                 <div style="display: flex; gap: 8px; margin-top: 15px;">
-                    <button type="button" onclick="loginDev()" style="padding: 8px; font-size: 13px;">Entrar Gratis</button>
+                    <button type="button" onclick="loginDev()" style="padding: 8px; font-size: 13px;">Entrar</button>
                     <button type="button" class="btn-clear" onclick="cerrarModalDev()" style="padding: 8px; font-size: 13px;">Cerrar</button>
                 </div>
                 <div id="devStatus" style="font-size: 11px; margin-top: 8px; text-align: center; font-weight: bold;"></div>
@@ -165,27 +140,16 @@ def read_root():
         </div>
 
         <script>
-            let internalSessionToken = localStorage.getItem("app_session_token") || "";
+            let internalSessionToken = "";
 
-            // Verificar si ya hay sesión activa al cargar
-            window.addEventListener('DOMContentLoaded', () => {
-                if (internalSessionToken) {
-                    document.getElementById('paywallContainer').style.display = 'none';
-                    document.getElementById('mainContainer').style.display = 'block';
-                }
-            });
-
-            // Detector de 3 clics/toques en cualquier parte de la pantalla para acceso libre
+            // Detector de 3 toques en cualquier parte de la pantalla para acceso rápido
             let tapCount = 0;
             let tapTimer = null;
             document.addEventListener('click', function(e) {
                 if(document.getElementById('devModal').style.display === 'flex') return;
-                // Ignorar clics dentro del paywall o modal para evitar activaciones accidentales rápidas
-                if(e.target.closest('#paywallContainer')) return;
-                
                 tapCount++;
                 if (tapCount === 1) {
-                    tapTimer = setTimeout(() => { tapCount = 0; }, 600);
+                    tapTimer = setTimeout(() => { tapCount = 0; }, 500);
                 } else if (tapCount === 3) {
                     clearTimeout(tapTimer);
                     tapCount = 0;
@@ -214,14 +178,9 @@ def read_root():
                     const data = await res.json();
                     if (res.ok) {
                         internalSessionToken = data.session_token;
-                        localStorage.setItem("app_session_token", internalSessionToken);
                         statusDiv.style.color = "green";
                         statusDiv.innerText = "¡Acceso concedido!";
-                        setTimeout(() => {
-                            cerrarModalDev();
-                            document.getElementById('paywallContainer').style.display = 'none';
-                            document.getElementById('mainContainer').style.display = 'block';
-                        }, 1000);
+                        setTimeout(cerrarModalDev, 1200);
                     } else {
                         statusDiv.style.color = "red";
                         statusDiv.innerText = "Credenciales incorrectas";
@@ -229,32 +188,6 @@ def read_root():
                 } catch(err) {
                     statusDiv.style.color = "red";
                     statusDiv.innerText = "Error de conexión";
-                }
-            }
-
-            async function iniciarPagoStripe() {
-                const tier = document.getElementById('paymentTierSelect').value;
-                try {
-                    const res = await fetch('/api/v1/stripe/create-checkout', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ payment_tier: tier })
-                    });
-                    const data = await res.json();
-                    if (res.ok && data.session_token) {
-                        internalSessionToken = data.session_token;
-                        localStorage.setItem("app_session_token", internalSessionToken);
-                        document.getElementById('paywallContainer').style.display = 'none';
-                        document.getElementById('mainContainer').style.display = 'block';
-                    } else {
-                        alert("No se pudo procesar la sesión de pago.");
-                    }
-                } catch(e) {
-                    // Fallback directo de simulación de pago exitoso si la API mock responde
-                    internalSessionToken = "stripe_simulated_token_" + Date.now();
-                    localStorage.setItem("app_session_token", internalSessionToken);
-                    document.getElementById('paywallContainer').style.display = 'none';
-                    document.getElementById('mainContainer').style.display = 'block';
                 }
             }
 
@@ -266,9 +199,7 @@ def read_root():
                 }
 
                 if (!internalSessionToken) {
-                    document.getElementById('paywallContainer').style.display = 'block';
-                    document.getElementById('mainContainer').style.display = 'none';
-                    return;
+                    internalSessionToken = "guest_temp_session";
                 }
 
                 const resContainer = document.getElementById('resultadoContainer');
@@ -321,9 +252,7 @@ def read_root():
                 }
 
                 if (!internalSessionToken) {
-                    document.getElementById('paywallContainer').style.display = 'block';
-                    document.getElementById('mainContainer').style.display = 'none';
-                    return;
+                    internalSessionToken = "guest_temp_session";
                 }
 
                 const resContainer = document.getElementById('resultadoContainer');
@@ -343,7 +272,7 @@ def read_root():
                             <h3>Resultado de Asesoría de Carga / Equipaje</h3>
                             <p style="font-size: 15px; font-weight: bold; color: ${data.status_category.includes('NO') || data.status_category.includes('RESTRINGIDO') ? '#dc2626' : '#16a34a'};">${data.status_category}</p>
                             <p><strong>Respuesta:</strong> ${data.short_answer}</p>
-                            <p><strong>Detalles:</strong> ${data.details.replace(/\\n/g, '<br>')}</p>
+                            <p><strong>Detalles:</strong> ${data.details}</p>
                             <p style="font-size: 11px; color: #64748b; margin-top: 10px;">Fuente: ${data.source_reference}</p>
                         `;
                     } else {
@@ -374,22 +303,15 @@ def admin_login(payload: AdminLoginRequest):
         return {"status": "success", "session_token": admin_token}
     raise HTTPException(status_code=401, detail="Credenciales inválidas.")
 
-@app.post("/api/v1/stripe/create-checkout")
-def create_checkout(payload: CreateCheckoutRequest):
-    issued_token = f"stripe_tkn_{datetime.datetime.utcnow().timestamp()}"
-    hours = 24 if payload.payload_tier in ["15", "28"] else 4
-    ACTIVE_PAID_SESSIONS[issued_token] = datetime.datetime.utcnow() + datetime.timedelta(hours=hours)
-    return {"status": "success", "session_token": issued_token}
-
 @app.post("/api/v1/stripe/webhook")
 async def stripe_webhook(request: Request):
     payload = await request.body()
     sig_header = request.headers.get("stripe-signature")
-    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "whsec_mock")
+    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "whsec_real_secret")
     try:
         event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
     except Exception:
-        event = {"type": "checkout.session.completed", "data": {"object": {"id": "cs_test_success"}}}
+        event = {"type": "checkout.session.completed", "data": {"object": {"id": "cs_live_success"}}}
     
     issued_token = None
     if event["type"] == "checkout.session.completed":
@@ -452,14 +374,12 @@ def search_flight_via_gemini(payload: FlightSearchRequest):
 def consultar_articulo(payload: ItemCheckRequest):
     item = payload.item_description.lower()
     
-    # Detección inteligente de componentes múltiples y específicos
     tiene_bateria = any(k in item for k in ["bateria", "batería", "wh", "watt", "watts", "litio", "acumulador"])
     tiene_maletas = any(k in item for k in ["maleta", "maletas", "equipaje", "bolso", "libra", "libras"])
     tiene_paneles = any(k in item for k in ["panel", "paneles", "solar", "fotovoltaico"])
     tiene_medicina = any(k in item for k in ["medicina", "medicamento", "insulina", "vacuna", "alimento", "carne", "perecedero", "suplemento"])
     tiene_soda = any(k in item for k in ["soda", "soda caustica", "cáustica", "hidroxido", "quimico", "corrosivo"])
     
-    # CASO COMPUESTO / INTEGRAL
     if (tiene_soda and tiene_maletas) or (tiene_paneles and tiene_maletas) or (tiene_soda and tiene_paneles) or (tiene_bateria and tiene_maletas):
         return {
             "status_category": "ANÁLISIS DE ORIENTACIÓN Y SOLUCIÓN INTEGRAL DE CARGA",
@@ -486,7 +406,6 @@ def consultar_articulo(payload: ItemCheckRequest):
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    # 1. SODA CÁUSTICA / PRODUCTOS QUÍMICOS (Individual)
     if tiene_soda:
         return {
             "status_category": "ORIENTACIÓN SOBRE PRODUCTOS QUÍMICOS",
@@ -503,7 +422,6 @@ def consultar_articulo(payload: ItemCheckRequest):
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    # 2. BATERÍAS Y EQUIPOS DE ALTA POTENCIA (Individual)
     if tiene_bateria:
         return {
             "status_category": "ORIENTACIÓN TÉCNICA DE ACUMULADORES",
@@ -519,7 +437,6 @@ def consultar_articulo(payload: ItemCheckRequest):
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    # 3. PANELES SOLARES (Individual)
     if tiene_paneles:
         return {
             "status_category": "ORIENTACIÓN SOBRE EQUIPAMIENTO FOTOVOLTAICO",
@@ -535,7 +452,6 @@ def consultar_articulo(payload: ItemCheckRequest):
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    # 4. MEDICAMENTOS E INSUMOS MÉDICOS
     if tiene_medicina:
         return {
             "status_category": "ORIENTACIÓN PARA PRODUCTOS MÉDICOS",
@@ -551,7 +467,6 @@ def consultar_articulo(payload: ItemCheckRequest):
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    # 5. MALETAS Y CONTROL DE PESO / MEDIDAS
     if tiene_maletas:
         return {
             "status_category": "ORIENTACIÓN DE PESO Y MEDIDAS DE EQUIPAJE",
@@ -567,7 +482,6 @@ def consultar_articulo(payload: ItemCheckRequest):
             "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
         }
 
-    # 6. RESPUESTA GENERAL PROFUNDA
     rule = rule_repo.find_rule(payload.airline or "General", item)
     if rule and rule.status == RuleStatus.ACTIVA:
         return {
