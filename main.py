@@ -4,14 +4,22 @@
 # Gemini: búsqueda/interpretación de vuelos únicamente.
 # Motor de reglas: autoridad interna para las respuestas de equipaje.
 
-import os, re, json, html, hmac, hashlib, secrets
+import os
+import re
+import json
+import html
+import hmac
+import hashlib
+import secrets
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Any
+
 import stripe
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse, JSONResponse
 from pydantic import BaseModel, Field
+
 from rules_engine import RuleRepository, RuleStatus
 from legal_disclaimer import LegalNoticeManager
 
@@ -22,6 +30,7 @@ except Exception:
     genai = None
     types = None
 
+
 APP_NAME = "¿Qué Quieres Llevar?"
 APP_VERSION = "6.1.0"
 OWNER = "May Roga LLC"
@@ -29,167 +38,345 @@ SESSION_MINUTES = 15
 
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.8-flash").strip()
+
 STRIPE_SECRET_KEY = os.getenv("STRIPE_SECRET_KEY", "").strip()
 STRIPE_WEBHOOK_SECRET = os.getenv("STRIPE_WEBHOOK_SECRET", "").strip()
 STRIPE_PRICE_ID1 = os.getenv("STRIPE_PRICE_ID1", "").strip()
 STRIPE_PUBLISHABLE_KEY = os.getenv("STRIPE_PUBLISHABLE_KEY", "").strip()
-APP_BASE_URL = os.getenv("APP_BASE_URL", "https://que-quieres-llevar.onrender.com").rstrip("/")
+
+APP_BASE_URL = os.getenv(
+    "APP_BASE_URL",
+    "https://que-quieres-llevar.onrender.com"
+).rstrip("/")
+
 ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "").strip()
 ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "").strip()
+
+SESSION_SECRET = os.getenv("SESSION_SIGNING_SECRET", "").strip()
+
 
 if STRIPE_SECRET_KEY:
     stripe.api_key = STRIPE_SECRET_KEY
 
+
 rule_repo = RuleRepository()
+
 gemini_client = None
+
 if GEMINI_API_KEY and genai is not None:
     try:
         gemini_client = genai.Client(api_key=GEMINI_API_KEY)
     except Exception:
         gemini_client = None
 
-app = FastAPI(title=APP_NAME, description="Herramienta independiente de orientación preventiva sobre equipaje, artículos y vuelos. May Roga LLC.", version=APP_VERSION)
+
+app = FastAPI(
+    title=APP_NAME,
+    description=(
+        "Herramienta independiente de orientación preventiva sobre "
+        "equipaje, artículos y vuelos. May Roga LLC."
+    ),
+    version=APP_VERSION,
+)
+
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[APP_BASE_URL],
     allow_credentials=False,
     allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=["Content-Type", "Authorization", "Stripe-Signature"],
+    allow_headers=[
+        "Content-Type",
+        "Authorization",
+        "Stripe-Signature",
+    ],
 )
 
+
 class FlightSearchRequest(BaseModel):
-    natural_query: str = Field(..., min_length=3, max_length=1200)
-    session_token: str = Field(..., min_length=20, max_length=300)
+    natural_query: str = Field(
+        ...,
+        min_length=3,
+        max_length=1200,
+    )
+    session_token: str = Field(
+        ...,
+        min_length=20,
+        max_length=300,
+    )
+
 
 class ItemCheckRequest(BaseModel):
-    session_token: str = Field(..., min_length=20, max_length=300)
-    item_description: str = Field(..., min_length=1, max_length=2000)
-    airline: Optional[str] = Field(default=None, max_length=150)
-    destination: Optional[str] = Field(default=None, max_length=150)
+    session_token: str = Field(
+        ...,
+        min_length=20,
+        max_length=300,
+    )
+    item_description: str = Field(
+        ...,
+        min_length=1,
+        max_length=2000,
+    )
+    airline: Optional[str] = Field(
+        default=None,
+        max_length=150,
+    )
+    destination: Optional[str] = Field(
+        default=None,
+        max_length=150,
+    )
     flight_context: Optional[dict[str, Any]] = None
+
 
 class AdminLoginRequest(BaseModel):
     username: str
     password: str
 
+
 class AdminFreeSessionRequest(BaseModel):
     username: str
     password: str
 
+
 class ActivateSessionRequest(BaseModel):
-    checkout_session_id: str = Field(..., min_length=10, max_length=300)
+    checkout_session_id: str = Field(
+        ...,
+        min_length=10,
+        max_length=300,
+    )
+
 
 class CheckoutRequest(BaseModel):
     pass
 
+
 def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
+
 def iso(dt: datetime) -> str:
     return dt.astimezone(timezone.utc).isoformat()
+
 
 def clean_text(value: Any, max_len: int = 2000) -> str:
     if value is None:
         return ""
     return str(value).strip()[:max_len]
 
+
 def safe_url(url: str) -> bool:
-    return bool(isinstance(url, str) and (url.startswith("https://") or url.startswith("http://")))
+    return bool(
+        isinstance(url, str)
+        and (
+            url.startswith("https://")
+            or url.startswith("http://")
+        )
+    )
+
 
 def escape(value: Any) -> str:
     return html.escape(str(value or ""))
 
-SESSION_SECRET = os.getenv("SESSION_SIGNING_SECRET", "").strip()
 
 def require_session_secret():
     if not SESSION_SECRET:
-        raise HTTPException(status_code=503, detail="El servicio de sesiones no está configurado.")
+        raise HTTPException(
+            status_code=503,
+            detail="El servicio de sesiones no está configurado.",
+        )
+
 
 def sign_session(raw: str) -> str:
     require_session_secret()
-    sig = hmac.new(SESSION_SECRET.encode(), raw.encode(), hashlib.sha256).hexdigest()
+
+    sig = hmac.new(
+        SESSION_SECRET.encode(),
+        raw.encode(),
+        hashlib.sha256,
+    ).hexdigest()
+
     return f"{raw}.{sig}"
 
-def build_session_token(checkout_session_id: str, started_at: datetime, expires_at: datetime) -> str:
+
+def build_session_token(
+    checkout_session_id: str,
+    started_at: datetime,
+    expires_at: datetime,
+) -> str:
     raw = json.dumps(
-        {"v": 1, "cs": checkout_session_id, "st": int(started_at.timestamp()), "ex": int(expires_at.timestamp())},
-        separators=(",", ":"), sort_keys=True
+        {
+            "v": 1,
+            "cs": checkout_session_id,
+            "st": int(started_at.timestamp()),
+            "ex": int(expires_at.timestamp()),
+        },
+        separators=(",", ":"),
+        sort_keys=True,
     )
+
     return sign_session(raw)
+
 
 def verify_session_token(token: str) -> dict:
     require_session_secret()
+
     try:
         raw, signature = token.rsplit(".", 1)
-        expected = hmac.new(SESSION_SECRET.encode(), raw.encode(), hashlib.sha256).hexdigest()
+
+        expected = hmac.new(
+            SESSION_SECRET.encode(),
+            raw.encode(),
+            hashlib.sha256,
+        ).hexdigest()
+
         if not hmac.compare_digest(signature, expected):
             raise ValueError("firma")
+
         data = json.loads(raw)
+
         if data.get("v") != 1:
             raise ValueError("version")
-        
+
         checkout_id = data.get("cs")
         started = int(data.get("st"))
         expires = int(data.get("ex"))
         now = int(utcnow().timestamp())
 
         if now >= expires:
-            raise HTTPException(status_code=403, detail="La sesión de 15 minutos ha terminado.")
+            raise HTTPException(
+                status_code=403,
+                detail="La sesión de 15 minutos ha terminado.",
+            )
+
         if expires <= started:
             raise ValueError("fechas")
+
         if not checkout_id:
             raise ValueError("checkout")
+
         return data
+
     except HTTPException:
         raise
+
     except Exception:
-        raise HTTPException(status_code=403, detail="Sesión inválida o expirada.")
+        raise HTTPException(
+            status_code=403,
+            detail="Sesión inválida o expirada.",
+        )
+
 
 def stripe_payment_is_valid(checkout_session_id: str) -> dict:
     if checkout_session_id.startswith("admin_free_"):
-        return {"payment_status": "paid", "id": checkout_session_id, "metadata": {"service": "que_quieres_llevar"}}
+        return {
+            "payment_status": "paid",
+            "id": checkout_session_id,
+            "metadata": {
+                "service": "que_quieres_llevar",
+            },
+        }
+
     if not STRIPE_SECRET_KEY:
-        raise HTTPException(status_code=503, detail="Stripe no está configurado.")
+        raise HTTPException(
+            status_code=503,
+            detail="Stripe no está configurado.",
+        )
+
     if not checkout_session_id.startswith("cs_"):
-        raise HTTPException(status_code=400, detail="Identificador de pago inválido.")
+        raise HTTPException(
+            status_code=400,
+            detail="Identificador de pago inválido.",
+        )
+
     try:
-        session = stripe.checkout.Session.retrieve(checkout_session_id, expand=["line_items"])
+        session = stripe.checkout.Session.retrieve(
+            checkout_session_id,
+            expand=["line_items"],
+        )
+
     except Exception:
-        raise HTTPException(status_code=400, detail="No fue posible verificar el pago.")
+        raise HTTPException(
+            status_code=400,
+            detail="No fue posible verificar el pago.",
+        )
 
     if session.get("payment_status") != "paid":
-        raise HTTPException(status_code=402, detail="El pago todavía no está confirmado.")
+        raise HTTPException(
+            status_code=402,
+            detail="El pago todavía no está confirmado.",
+        )
 
-    line_items = session.get("line_items", {}).get("data", [])
-    valid_price = any(item.get("price", {}).get("id") == STRIPE_PRICE_ID1 for item in line_items)
+    line_items = session.get(
+        "line_items",
+        {},
+    ).get("data", [])
+
+    valid_price = any(
+        item.get("price", {}).get("id") == STRIPE_PRICE_ID1
+        for item in line_items
+    )
+
     if not valid_price:
-        raise HTTPException(status_code=403, detail="El pago no corresponde al servicio solicitado.")
+        raise HTTPException(
+            status_code=403,
+            detail="El pago no corresponde al servicio solicitado.",
+        )
+
     return session
+
 
 def get_active_session(token: str) -> dict:
     data = verify_session_token(token)
+
     session = stripe_payment_is_valid(data["cs"])
+
     if session.get("payment_status") != "paid":
-        raise HTTPException(status_code=403, detail="El pago ya no está confirmado.")
+        raise HTTPException(
+            status_code=403,
+            detail="El pago ya no está confirmado.",
+        )
+
     return data
+
 
 def legal_intro() -> dict:
     try:
         return LegalNoticeManager.get_intro_explanation()
+
     except Exception:
         return {
-            "what_is_it": "¿QUÉ QUIERES LLEVAR? es una aplicación independiente desarrollada por May Roga LLC.",
-            "what_it_does": "Ayuda al pasajero a revisar información sobre equipaje y artículos antes de viajar.",
-            "problem_solved": "Reduce la incertidumbre y evita decisiones basadas únicamente en suposiciones.",
-            "core_message": "Dime qué quieres llevar y te ayudaremos a revisar si puede viajar contigo según los datos de tu vuelo y las reglas que podamos verificar."
+            "what_is_it": (
+                "¿QUÉ QUIERES LLEVAR? es una aplicación "
+                "independiente desarrollada por May Roga LLC."
+            ),
+            "what_it_does": (
+                "Ayuda al pasajero a revisar información sobre "
+                "equipaje y artículos antes de viajar."
+            ),
+            "problem_solved": (
+                "Reduce la incertidumbre y evita decisiones "
+                "basadas únicamente en suposiciones."
+            ),
+            "core_message": (
+                "Dime qué quieres llevar y te ayudaremos a revisar "
+                "si puede viajar contigo según los datos de tu vuelo "
+                "y las reglas que podamos verificar."
+            ),
         }
+
 
 def legal_disclaimer() -> str:
     try:
         return LegalNoticeManager.get_official_disclaimer()["content"]
+
     except Exception:
-        return "Esta aplicación proporciona información orientativa basada en fuentes verificadas. No sustituye a la aerolínea, TSA, DOT, FAA, CBP ni a ninguna autoridad competente."
+        return (
+            "Esta aplicación proporciona información orientativa "
+            "basada en fuentes verificadas. No sustituye a la "
+            "aerolínea, TSA, DOT, FAA, CBP ni a ninguna autoridad "
+            "competente."
+        )
+
 
 @app.get("/health")
 def health():
@@ -197,18 +384,29 @@ def health():
         "status": "ok",
         "service": APP_NAME,
         "version": APP_VERSION,
-        "stripe_configured": bool(STRIPE_SECRET_KEY and STRIPE_PRICE_ID1),
-        "gemini_configured": bool(gemini_client)
+        "stripe_configured": bool(
+            STRIPE_SECRET_KEY and STRIPE_PRICE_ID1
+        ),
+        "gemini_configured": bool(gemini_client),
     }
+
 
 @app.get("/api/v1/status")
 def service_status():
     return {
         "service": APP_NAME,
         "version": APP_VERSION,
-        "payment": "configured" if STRIPE_SECRET_KEY and STRIPE_PRICE_ID1 else "not_configured",
-        "flight_search": "configured" if gemini_client else "not_configured",
-        "session_minutes": SESSION_MINUTES
+        "payment": (
+            "configured"
+            if STRIPE_SECRET_KEY and STRIPE_PRICE_ID1
+            else "not_configured"
+        ),
+        "flight_search": (
+            "configured"
+            if gemini_client
+            else "not_configured"
+        ),
+        "session_minutes": SESSION_MINUTES,
     }
 
 @app.get("/", response_class=HTMLResponse)
