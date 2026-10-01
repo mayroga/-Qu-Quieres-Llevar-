@@ -1,510 +1,469 @@
-# main.py - ¿Qué Quieres Llevar? (May Roga LLC)
-from fastapi import FastAPI, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import HTMLResponse
-from pydantic import BaseModel, Field
-from typing import Optional
-import os
-import datetime
+# main.py — QU-QUIERES-LLEVAR | May Roga LLC | v6.0.0
+import os,re,secrets,time,datetime as dt
+from typing import Optional,Any
+from urllib.parse import quote_plus
 import stripe
-from rules_engine import RuleRepository, RuleStatus
+from fastapi import FastAPI,HTTPException,Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse,JSONResponse
+from pydantic import BaseModel,Field
 from legal_disclaimer import LegalNoticeManager
 
-app = FastAPI(
-    title="¿Qué Quieres Llevar?",
-    description="Asesoría especializada de equipaje y vuelos - May Roga LLC",
-    version="5.1.0"
+APP=LegalNoticeManager
+VERSION="6.0.0"
+SESSION_MINUTES=APP.SESSION_MINUTES
+ACTIVE_PAID_SESSIONS={}
+ADMIN_SESSIONS={}
+MAX_TEXT=1200
+
+app=FastAPI(
+    title="¿QUÉ QUIERES LLEVAR?",
+    description="Preparación sencilla de vuelos, equipaje y viaje — May Roga LLC",
+    version=VERSION
 )
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_credentials=False,
+    allow_methods=["GET","POST","OPTIONS"],
+    allow_headers=["*"]
 )
 
-# DATOS REALES DE STRIPE Y ENTORNO
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "sk_live_real_key_placeholder")
-rule_repo = RuleRepository()
-
-# DATOS REALES DE ACCESO DE ADMINISTRADOR / DESARROLLADOR (Tomados de Render o valores por defecto reales)
-ADMIN_USER = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASS = os.getenv("ADMIN_PASSWORD", "mayroga2026")
-
-ACTIVE_PAID_SESSIONS = {}
+STRIPE_SECRET_KEY=os.getenv("STRIPE_SECRET_KEY","").strip()
+STRIPE_WEBHOOK_SECRET=os.getenv("STRIPE_WEBHOOK_SECRET","").strip()
+STRIPE_PRICE_ID=os.getenv("STRIPE_PRICE_ID","").strip() or os.getenv("STRIPE_PRICE_ID1","").strip()
+ADMIN_USERNAME=os.getenv("ADMIN_USERNAME","").strip()
+ADMIN_PASSWORD=os.getenv("ADMIN_PASSWORD","").strip()
+GEMINI_API_KEY=os.getenv("GEMINI_API_KEY","").strip()
+if STRIPE_SECRET_KEY:
+    stripe.api_key=STRIPE_SECRET_KEY
 
 class FlightSearchRequest(BaseModel):
-    natural_query: str = Field(..., description="Búsqueda en lenguaje natural del vuelo")
-    session_token: str
+    natural_query:str=Field(...,min_length=2,max_length=MAX_TEXT)
+    session_token:Optional[str]=None
 
 class ItemCheckRequest(BaseModel):
-    session_token: str
-    item_description: str
-    airline: Optional[str] = None
+    session_token:Optional[str]=None
+    item_description:str=Field(...,min_length=2,max_length=MAX_TEXT)
+    airline:Optional[str]=Field(default=None,max_length=120)
+    baggage_place:Optional[str]=Field(default=None,max_length=80)
 
 class AdminLoginRequest(BaseModel):
-    username: str
-    password: str
+    username:str=Field(...,min_length=1,max_length=120)
+    password:str=Field(...,min_length=1,max_length=200)
 
-# INTERFAZ GRÁFICA PROFESIONAL Y LIMPIA
-@app.get("/", response_class=HTMLResponse)
-def read_root():
-    html_content = """
-    <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>¿Qué Quieres Llevar? - May Roga LLC</title>
-        <style>
-            body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; background-color: #f2f5f8; color: #2c3e50; margin: 0; padding: 15px; }
-            .container { max-width: 680px; margin: 0 auto; background: #ffffff; padding: 25px; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
-            h1 { color: #0f3d59; text-align: center; font-size: 24px; margin-bottom: 5px; }
-            p.sub { text-align: center; color: #596e79; font-size: 14px; margin-bottom: 20px; font-weight: 500; }
-            .notice-box { background: #f8fafc; border-left: 4px solid #0f3d59; padding: 12px 15px; border-radius: 6px; margin-bottom: 20px; font-size: 13px; color: #334155; line-height: 1.4; }
-            label { font-weight: 600; display: block; margin-top: 15px; color: #1e293b; font-size: 13.5px; }
-            input, select, textarea { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 14px; background: #fff; }
-            input:focus, textarea:focus { outline: none; border-color: #0f3d59; box-shadow: 0 0 0 3px rgba(15, 61, 89, 0.1); }
-            .btn-group { display: flex; gap: 10px; margin-top: 20px; }
-            button { flex: 1; background-color: #0f3d59; color: white; border: none; padding: 13px; font-size: 15px; border-radius: 8px; cursor: pointer; font-weight: 600; transition: background 0.2s; }
-            button:hover { background-color: #1b4d6e; }
-            button.btn-clear { background-color: #64748b; }
-            button.btn-clear:hover { background-color: #475569; }
-            
-            #resultadoContainer { margin-top: 20px; display: none; }
-            .result-card { background: #f8fafc; border: 1px solid #e2e8f0; padding: 18px; border-radius: 10px; }
-            .result-card h3 { margin-top: 0; color: #0f3d59; font-size: 16px; border-bottom: 2px solid #cbd5e1; padding-bottom: 8px; }
-            
-            table.custom-table { width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 13px; background: #fff; }
-            table.custom-table th, table.custom-table td { border: 1px solid #e2e8f0; padding: 10px; text-align: left; }
-            table.custom-table th { background-color: #0f3d59; color: #fff; }
+class OfficialGuideRequest(BaseModel):
+    topic:str=Field(...,min_length=2,max_length=120)
+    official_url:str=Field(...,min_length=8,max_length=1000)
 
-            .legal-footer { text-align: center; margin-top: 30px; font-size: 11px; color: #64748b; border-top: 1px solid #e2e8f0; padding-top: 15px; line-height: 1.4; }
+class PaymentVerifyRequest(BaseModel):
+    checkout_session_id:str=Field(...,min_length=5,max_length=300)
 
-            /* Modal oculto para desarrollador / acceso (activado con 3 toques) */
-            #devModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 9999; justify-content: center; align-items: center; }
-            .dev-box { background: white; padding: 25px; border-radius: 12px; width: 290px; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
-            .dev-box h3 { margin-top: 0; font-size: 16px; color: #0f3d59; text-align: center; }
-        </style>
-    </head>
-    <body>
-        <div class="container" id="mainContainer">
-            <h1>¿Qué Quieres Llevar?</h1>
-            <p class="sub">May Roga LLC — Asesoría Especializada de Viaje</p>
-            
-            <div class="notice-box">
-                <strong>Orientación Profesional:</strong> Escribe los detalles de tu itinerario de vuelo y el artículo que deseas llevar. Te ayudaremos de forma directa y clara a verificar las normativas aplicables.
-            </div>
+def now():
+    return time.time()
 
-            <form id="travelForm" onsubmit="event.preventDefault();">
-                <label>1. ¿Cómo es tu viaje? (Ej: Miami 30 de diciembre a Habana, regreso el 3 de enero)</label>
-                <textarea id="natural_query" rows="2" placeholder="Escribe tu ruta y fechas de ida y vuelta..."></textarea>
-                <div style="display: flex; gap: 10px; margin-top: 6px;">
-                    <button type="button" onclick="buscarVueloEnPantalla()" style="flex: 1; padding: 10px; font-size: 13px; background: #1e293b;">Buscar Vuelo / Opciones</button>
-                </div>
+def token(prefix="tkn"):
+    return f"{prefix}_{secrets.token_urlsafe(32)}"
 
-                <label>2. ¿Qué artículo u objeto deseas consultar?</label>
-                <input type="text" id="item_description" placeholder="Ej: Batería de litio de 1843 Watt, 66 libras...">
+def clean_text(value:str)->str:
+    return re.sub(r"\s+"," ",str(value or "")).strip()
 
-                <div class="btn-group">
-                    <button type="button" onclick="consultarReglas()">Consultar Asesoría</button>
-                    <button type="button" class="btn-clear" onclick="limpiarTodo()">Borrar</button>
-                </div>
-            </form>
+def active_session(tkn:Optional[str],admin=False)->bool:
+    if not tkn:
+        return False
+    store=ADMIN_SESSIONS if admin else ACTIVE_PAID_SESSIONS
+    exp=store.get(tkn)
+    if not exp:
+        return False
+    if exp<=now():
+        store.pop(tkn,None)
+        return False
+    return True
 
-            <div id="resultadoContainer">
-                <div class="result-card" id="resultadoContent"></div>
-            </div>
+def require_service(tkn:Optional[str]):
+    if active_session(tkn,admin=True):
+        return
+    if not active_session(tkn):
+        raise HTTPException(status_code=403,detail="Sesión de servicio requerida.")
 
-            <div class="legal-footer">
-                <strong>Aviso Legal:</strong> May Roga LLC ofrece esta asesoría preventiva basada en normativas públicas y estándares operativos. No sustituye la validación final en counter de la aerolínea u autoridad competente.<br>
-                &copy; 2026 May Roga LLC. Todos los derechos reservados.
-            </div>
-        </div>
+def official_link(url:str,label:str):
+    return {"label":label,"url":url}
 
-        <!-- Ventana Oculta de Desarrollador / Acceso Directo -->
-        <div id="devModal">
-            <div class="dev-box">
-                <h3>Acceso Especial</h3>
-                <label style="font-size:12px;">Usuario:</label>
-                <input type="text" id="devUser" style="padding:8px;" value="admin">
-                <label style="font-size:12px;">Contraseña:</label>
-                <input type="password" id="devPass" style="padding:8px;" value="mayroga2026">
-                <div style="display: flex; gap: 8px; margin-top: 15px;">
-                    <button type="button" onclick="loginDev()" style="padding: 8px; font-size: 13px;">Entrar</button>
-                    <button type="button" class="btn-clear" onclick="cerrarModalDev()" style="padding: 8px; font-size: 13px;">Cerrar</button>
-                </div>
-                <div id="devStatus" style="font-size: 11px; margin-top: 8px; text-align: center; font-weight: bold;"></div>
-            </div>
-        </div>
+def google_flights_url(query:str):
+    return "https://www.google.com/travel/flights?q="+quote_plus(query)
 
-        <script>
-            let internalSessionToken = "";
+def airline_search_hint(query:str):
+    q=clean_text(query)
+    return {
+        "title":"Encuentra tu vuelo",
+        "message":"Puedes usar Google Flights para localizar opciones y después confirmar los detalles directamente con la aerolínea.",
+        "steps":[
+            "Escribe origen y destino.",
+            "Selecciona la fecha.",
+            "Revisa si dice directo o si tiene una escala.",
+            "Mira el nombre de la aerolínea.",
+            "Abre la información del vuelo.",
+            "Después confirma equipaje, tarifa y condiciones en el sitio oficial de la aerolínea."
+        ],
+        "official_links":[official_link(google_flights_url(q),"Buscar vuelos en Google Flights")]
+    }
 
-            // Detector de 3 toques en cualquier parte de la pantalla para acceso rápido
-            let tapCount = 0;
-            let tapTimer = null;
-            document.addEventListener('click', function(e) {
-                if(document.getElementById('devModal').style.display === 'flex') return;
-                tapCount++;
-                if (tapCount === 1) {
-                    tapTimer = setTimeout(() => { tapCount = 0; }, 500);
-                } else if (tapCount === 3) {
-                    clearTimeout(tapTimer);
-                    tapCount = 0;
-                    document.getElementById('devModal').style.display = 'flex';
-                }
-            });
+def baggage_explanation(item:str,airline:Optional[str]=None):
+    q=clean_text(item).lower()
+    a=clean_text(airline)
+    explanations=[]
 
-            function cerrarModalDev() {
-                document.getElementById('devModal').style.display = 'none';
-                document.getElementById('devStatus').innerText = '';
-            }
+    if any(x in q for x in ["equipaje de mano","carry-on","carry on","cabina","maleta de cabina"]):
+        explanations.append({
+            "term":"EQUIPAJE DE MANO",
+            "simple":"Es la maleta que normalmente llevas contigo dentro del avión.",
+            "next":"Revisa el peso, las medidas y la cantidad permitida por tu aerolínea y tarifa."
+        })
 
-            async function loginDev() {
-                const u = document.getElementById('devUser').value;
-                const p = document.getElementById('devPass').value;
-                const statusDiv = document.getElementById('devStatus');
-                statusDiv.style.color = "#0f3d59";
-                statusDiv.innerText = "Verificando...";
+    if any(x in q for x in ["documentado","facturado","checked baggage","checked bag","maleta registrada"]):
+        explanations.append({
+            "term":"EQUIPAJE DOCUMENTADO",
+            "simple":"Es la maleta que entregas a la aerolínea antes de subir al avión y que viaja en la bodega.",
+            "next":"Revisa cuántas piezas permite tu tarifa, el peso, las medidas y si existe un costo."
+        })
 
-                try {
-                    const res = await fetch('/api/v1/admin/login', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username: u, password: p })
-                    });
-                    const data = await res.json();
-                    if (res.ok) {
-                        internalSessionToken = data.session_token;
-                        statusDiv.style.color = "green";
-                        statusDiv.innerText = "¡Acceso concedido!";
-                        setTimeout(cerrarModalDev, 1200);
-                    } else {
-                        statusDiv.style.color = "red";
-                        statusDiv.innerText = "Credenciales incorrectas";
-                    }
-                } catch(err) {
-                    statusDiv.style.color = "red";
-                    statusDiv.innerText = "Error de conexión";
-                }
-            }
+    if any(x in q for x in ["artículo personal","articulo personal","personal item","mochila pequeña"]):
+        explanations.append({
+            "term":"ARTÍCULO PERSONAL",
+            "simple":"Es el bolso o mochila pequeña que la aerolínea permite llevar contigo y colocar en el espacio indicado.",
+            "next":"Revisa las medidas exactas de tu aerolínea y tarifa."
+        })
 
-            async function buscarVueloEnPantalla() {
-                const query = document.getElementById('natural_query').value;
-                if (!query) {
-                    alert("Por favor escribe los datos de tu viaje primero.");
-                    return;
-                }
+    if any(x in q for x in ["escala","conexión","conexion","stop","estancia"]):
+        explanations.append({
+            "term":"ESCALA O CONEXIÓN",
+            "simple":"Tu viaje tiene una parada antes de llegar al destino final.",
+            "next":"Revisa si debes cambiar de avión, cuánto dura la conexión y qué debes hacer con el equipaje."
+        })
 
-                if (!internalSessionToken) {
-                    internalSessionToken = "guest_temp_session";
-                }
+    if any(x in q for x in ["bateria","batería","power bank","litio","lithium"]):
+        explanations.append({
+            "term":"BATERÍA",
+            "simple":"Las baterías pueden tener reglas especiales según su tipo, capacidad y dónde viajan.",
+            "next":"Busca la regla específica de tu aerolínea y del tipo de batería antes de viajar."
+        })
 
-                const resContainer = document.getElementById('resultadoContainer');
-                const resContent = document.getElementById('resultadoContent');
-                resContainer.style.display = 'block';
-                resContent.innerHTML = "<p style='text-align:center;'>Consultando opciones y disponibilidad de vuelos...</p>";
+    if any(x in q for x in ["liquido","líquido","liquids","aerosol","spray"]):
+        explanations.append({
+            "term":"LÍQUIDOS Y AEROSOLES",
+            "simple":"Los líquidos y aerosoles pueden tener límites y condiciones diferentes según dónde los lleves.",
+            "next":"Revisa la regla oficial del aeropuerto, autoridad y aerolínea que corresponda a tu viaje."
+        })
 
-                try {
-                    const response = await fetch('/api/v1/flight/search-external', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ natural_query: query, session_token: internalSessionToken })
-                    });
-                    const data = await response.json();
-                    if (response.ok) {
-                        let htmlVuelos = `
-                            <h3>Itinerario y Opciones de Vuelo</h3>
-                            <p style="font-size: 13px; margin-bottom: 10px;"><strong>Ruta analizada:</strong> ${query}</p>
-                            <table class="custom-table">
-                                <tr>
-                                    <th>Servicio / Aerolínea</th>
-                                    <th>Detalle del Trayecto</th>
-                                    <th>Acción Opcional</th>
-                                </tr>
-                        `;
-                        data.flights.forEach(f => {
-                            htmlVuelos += `
-                                <tr>
-                                    <td><strong>${f.airline}</strong></td>
-                                    <td>${f.route}<br><span style="color: #16a34a; font-size:11px;">✓ ${f.status}</span></td>
-                                    <td><a href="${f.booking_url}" target="_blank" style="background: #0f3d59; color: #fff; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-size: 12px; display: inline-block;">Ver / Cotizar Vuelo</a></td>
-                                </tr>
-                            `;
-                        });
-                        htmlVuelos += `</table><p style="font-size: 11px; color:#555; margin-top: 10px;">Nota: La compra de pasajes es completamente opcional y se realiza directamente a través de las plataformas asociadas si el cliente así lo desea.</p>`;
-                        resContent.innerHTML = htmlVuelos;
-                    } else {
-                        resContent.innerHTML = `<p style="color: red;">${data.detail || "Requiere validación."}</p>`;
-                    }
-                } catch(e) {
-                    resContent.innerHTML = `<p style="color: red;">Error al procesar la búsqueda de vuelo.</p>`;
-                }
-            }
+    if any(x in q for x in ["medicina","medicamento","medicamentos","medicine"]):
+        explanations.append({
+            "term":"MEDICAMENTOS",
+            "simple":"Los medicamentos pueden necesitar condiciones especiales durante el viaje.",
+            "next":"Revisa las reglas de la aerolínea y las autoridades del origen, tránsito y destino."
+        })
 
-            async function consultarReglas() {
-                const item = document.getElementById('item_description').value;
-                if (!item) {
-                    alert("Por favor escribe el artículo que deseas consultar.");
-                    return;
-                }
+    if not explanations:
+        explanations.append({
+            "term":"REVISEMOS TU ARTÍCULO",
+            "simple":f"Quieres llevar: {clean_text(item)}.",
+            "next":"Primero necesitamos saber qué artículo es, dónde quieres llevarlo y qué aerolínea opera tu vuelo."
+        })
 
-                if (!internalSessionToken) {
-                    internalSessionToken = "guest_temp_session";
-                }
+    return {
+        "airline":a or None,
+        "items":explanations,
+        "rule_authority":"No se inventan reglas. La condición exacta debe confirmarse con la fuente oficial aplicable.",
+        "next_action":{
+            "title":"Confirma la regla oficial",
+            "message":"Te enseñamos qué buscar y después puedes continuar directamente en el sitio oficial."
+        }
+    }
 
-                const resContainer = document.getElementById('resultadoContainer');
-                const resContent = document.getElementById('resultadoContent');
-                resContainer.style.display = 'block';
-                resContent.innerHTML = "<p style='text-align:center;'>Verificando normativas de equipaje...</p>";
+def teaching_path(topic:str,url:str):
+    t=clean_text(topic)
+    return {
+        "title":"Te enseñamos primero",
+        "topic":t,
+        "steps":[
+            f"Busca en el sitio oficial la palabra: {t}.",
+            "Abre la sección que hable específicamente de tu viaje.",
+            "Busca peso, medidas, cantidad y condiciones.",
+            "Comprueba si la regla corresponde a tu aerolínea, tarifa, ruta y tipo de artículo.",
+            "Si encuentras una palabra que no entiendes, tráela aquí y te explicamos qué significa."
+        ],
+        "official_url":url,
+        "notice":"La información final debe confirmarse en la fuente oficial."
+    }
 
-                try {
-                    const response = await fetch('/api/v1/consultar-articulo', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ session_token: internalSessionToken, item_description: item })
-                    });
-                    const data = await response.json();
-                    if (response.ok) {
-                        resContent.innerHTML = `
-                            <h3>Resultado de Asesoría de Carga / Equipaje</h3>
-                            <p style="font-size: 15px; font-weight: bold; color: ${data.status_category.includes('NO') || data.status_category.includes('RESTRINGIDO') ? '#dc2626' : '#16a34a'};">${data.status_category}</p>
-                            <p><strong>Respuesta:</strong> ${data.short_answer}</p>
-                            <p><strong>Detalles:</strong> ${data.details}</p>
-                            <p style="font-size: 11px; color: #64748b; margin-top: 10px;">Fuente: ${data.source_reference}</p>
-                        `;
-                    } else {
-                        resContent.innerHTML = `<p style="color: red;">${data.detail || "Sesión requerida o expirada."}</p>`;
-                    }
-                } catch(e) {
-                    resContent.innerHTML = `<p style="color: red;">Error al consultar el artículo.</p>`;
-                }
-            }
+@app.get("/",response_class=HTMLResponse)
+def root():
+    return HTMLResponse(f"""<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>¿Qué Quieres Llevar? — May Roga LLC</title>
+<style>
+*{{box-sizing:border-box}}
+body{{margin:0;background:#f4f7fa;color:#183044;font-family:Arial,sans-serif}}
+main{{max-width:720px;margin:0 auto;padding:18px}}
+.card{{background:#fff;border-radius:18px;padding:22px;margin:12px 0;box-shadow:0 5px 22px rgba(0,0,0,.07)}}
+h1{{text-align:center;font-size:28px;margin:5px 0;color:#123d59}}
+h2{{font-size:20px;margin:5px 0 12px}}
+p{{line-height:1.5}}
+.small{{font-size:13px;color:#607080}}
+button,a.btn{{display:block;width:100%;border:0;border-radius:12px;padding:14px;margin-top:10px;background:#123d59;color:#fff;font-weight:700;text-align:center;text-decoration:none;cursor:pointer}}
+.secondary{{background:#e9eff4!important;color:#183044!important}}
+textarea,input{{width:100%;padding:14px;border:1px solid #cbd5df;border-radius:12px;font-size:16px;margin-top:8px}}
+.result{{white-space:pre-line;background:#f7fafc;border-radius:12px;padding:15px;margin-top:12px}}
+.term{{font-weight:800;color:#123d59}}
+.warn{{background:#fff8e6;padding:12px;border-radius:10px}}
+</style>
+</head>
+<body>
+<main>
+<div class="card">
+<h1>¿QUÉ QUIERES LLEVAR?</h1>
+<p style="text-align:center">May Roga LLC</p>
+<p>Te ayudamos a entender tu viaje y preparar tu equipaje sin palabras complicadas.</p>
+<p class="small">{APP.short_notice()}</p>
+</div>
+<div class="card">
+<h2>✈️ Primero: entiende tu vuelo</h2>
+<p>Escribe lo que sabes de tu viaje. No necesitas saber palabras técnicas.</p>
+<textarea id="flight" placeholder="Ejemplo: Miami a La Habana, 20 de diciembre, American Airlines"></textarea>
+<button onclick="flightInfo()">ENSEÑARME MI VUELO</button>
+<div id="flightResult"></div>
+</div>
+<div class="card">
+<h2>🧳 Ahora: ¿qué quieres llevar?</h2>
+<p>Escribe una cosa. Nosotros te explicamos qué significa y qué debes revisar.</p>
+<input id="item" placeholder="Ejemplo: mochila, maleta, medicina, batería...">
+<input id="airline" placeholder="Aerolínea, si la sabes">
+<button onclick="checkItem()">REVISAR MI ARTÍCULO</button>
+<div id="itemResult"></div>
+</div>
+<div class="card">
+<h2>🔎 ¿Te falta información?</h2>
+<p>No te dejamos solo. Te enseñamos qué buscar y después te llevamos al sitio oficial.</p>
+<a class="btn secondary" href="https://www.google.com/travel/flights" target="_blank">BUSCAR VUELOS</a>
+</div>
+<div class="card small">
+<strong>May Roga LLC</strong><br>{APP.INDEPENDENCE}<br><br>
+{APP.FINAL_AUTHORITY}
+</div>
+</main>
+<script>
+const out=(id,obj)=>document.getElementById(id).innerHTML='<div class="result">'+JSON.stringify(obj,null,2).replace(/[<>]/g,'')+'</div>';
+async function flightInfo(){{
+ const q=document.getElementById('flight').value.trim();
+ if(!q)return;
+ const r=await fetch('/api/v1/flight/understand',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{natural_query:q}})}});
+ const d=await r.json();
+ out('flightResult',d);
+}}
+async function checkItem(){{
+ const item=document.getElementById('item').value.trim();
+ const airline=document.getElementById('airline').value.trim();
+ if(!item)return;
+ const r=await fetch('/api/v1/item/teach',{{method:'POST',headers:{{'Content-Type':'application/json'}},body:JSON.stringify({{item_description:item,airline:airline||null}})}});
+ const d=await r.json();
+ out('itemResult',d);
+}}
+</script>
+</body>
+</html>""")
 
-            function limpiarTodo() {
-                document.getElementById('travelForm').reset();
-                document.getElementById('resultadoContainer').style.display = 'none';
-                document.getElementById('resultadoContent').innerHTML = '';
-            }
-        </script>
-    </body>
-    </html>
-    """
-    return HTMLResponse(content=html_content)
+@app.get("/health")
+def health():
+    return {
+        "status":"ok",
+        "app":"Qu-Quieres-Llevar",
+        "version":VERSION,
+        "owner":APP.OWNER,
+        "stripe_configured":bool(STRIPE_SECRET_KEY and STRIPE_PRICE_ID),
+        "admin_configured":bool(ADMIN_USERNAME and ADMIN_PASSWORD)
+    }
 
-# ENDPOINTS DE CONTROL Y BACKEND
+@app.get("/api/v1/meta")
+def meta():
+    return APP.metadata()
+
 @app.post("/api/v1/admin/login")
-def admin_login(payload: AdminLoginRequest):
-    if payload.username == ADMIN_USER and payload.password == ADMIN_PASS:
-        admin_token = f"admin_tkn_{datetime.datetime.utcnow().timestamp()}"
-        ACTIVE_PAID_SESSIONS[admin_token] = datetime.datetime.utcnow() + datetime.timedelta(hours=24)
-        return {"status": "success", "session_token": admin_token}
-    raise HTTPException(status_code=401, detail="Credenciales inválidas.")
+def admin_login(payload:AdminLoginRequest):
+    if not ADMIN_USERNAME or not ADMIN_PASSWORD:
+        raise HTTPException(status_code=503,detail="Acceso administrativo no configurado en Render.")
+    if not secrets.compare_digest(payload.username,ADMIN_USERNAME) or not secrets.compare_digest(payload.password,ADMIN_PASSWORD):
+        raise HTTPException(status_code=401,detail="Credenciales inválidas.")
+    t=token("admin")
+    ADMIN_SESSIONS[t]=now()+86400
+    return {"status":"success","session_token":t,"expires_in":86400}
+
+@app.post("/api/v1/create-checkout-session")
+def create_checkout():
+    if not STRIPE_SECRET_KEY or not STRIPE_PRICE_ID:
+        raise HTTPException(status_code=503,detail="El servicio de pago todavía no está configurado.")
+    try:
+        session=stripe.checkout.Session.create(
+            mode="payment",
+            line_items=[{"price":STRIPE_PRICE_ID,"quantity":1}],
+            success_url="{CHECKOUT_SESSION_ID}",
+            cancel_url="/"
+        )
+        return {"status":"success","checkout_url":session.url}
+    except Exception as e:
+        raise HTTPException(status_code=502,detail="No fue posible crear el pago.")
+
+@app.post("/api/v1/payment/verify")
+def verify_payment(payload:PaymentVerifyRequest):
+    if not STRIPE_SECRET_KEY:
+        raise HTTPException(status_code=503,detail="Stripe no está configurado.")
+    try:
+        session=stripe.checkout.Session.retrieve(payload.checkout_session_id)
+        if session.payment_status!="paid":
+            raise HTTPException(status_code=402,detail="El pago todavía no está confirmado.")
+        if STRIPE_PRICE_ID:
+            line_items=stripe.checkout.Session.list_line_items(payload.checkout_session_id,limit=10)
+            valid=any(getattr(getattr(x,"price",None),"id",None)==STRIPE_PRICE_ID for x in line_items.data)
+            if not valid:
+                raise HTTPException(status_code=403,detail="El pago no corresponde a este servicio.")
+        t=token()
+        ACTIVE_PAID_SESSIONS[t]=now()+SESSION_MINUTES*60
+        return {"status":"success","session_token":t,"expires_in":SESSION_MINUTES*60}
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(status_code=400,detail="No fue posible confirmar el pago.")
 
 @app.post("/api/v1/stripe/webhook")
-async def stripe_webhook(request: Request):
-    payload = await request.body()
-    sig_header = request.headers.get("stripe-signature")
-    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "whsec_real_secret")
+async def stripe_webhook(request:Request):
+    if not STRIPE_WEBHOOK_SECRET:
+        raise HTTPException(status_code=503,detail="Webhook de Stripe no configurado.")
+    payload=await request.body()
+    signature=request.headers.get("stripe-signature")
+    if not signature:
+        raise HTTPException(status_code=400,detail="Firma de Stripe ausente.")
     try:
-        event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+        event=stripe.Webhook.construct_event(payload,signature,STRIPE_WEBHOOK_SECRET)
     except Exception:
-        event = {"type": "checkout.session.completed", "data": {"object": {"id": "cs_live_success"}}}
-    
-    issued_token = None
-    if event["type"] == "checkout.session.completed":
-        issued_token = f"tkn_{datetime.datetime.utcnow().timestamp()}"
-        ACTIVE_PAID_SESSIONS[issued_token] = datetime.datetime.utcnow() + datetime.timedelta(minutes=15)
-    return {"status": "success", "issued_token": issued_token}
+        raise HTTPException(status_code=400,detail="Firma de Stripe inválida.")
+    if event["type"]=="checkout.session.completed":
+        obj=event["data"]["object"]
+        if obj.get("payment_status")=="paid":
+            pass
+    return {"status":"received"}
+
+@app.post("/api/v1/flight/understand")
+def understand_flight(payload:FlightSearchRequest):
+    q=clean_text(payload.natural_query)
+    if not q:
+        raise HTTPException(status_code=400,detail="Escribe los datos que conozcas de tu viaje.")
+    return {
+        "status":"success",
+        "message":"Vamos a entender tu viaje antes de tomar decisiones.",
+        "what_we_can_do":[
+            "Identificar lo que sabes del origen y destino.",
+            "Ayudarte a distinguir vuelo directo, escala y conexión.",
+            "Enseñarte qué revisar en la tarifa.",
+            "Enseñarte dónde revisar el equipaje.",
+            "Llevarte a la fuente oficial cuando necesites confirmar un dato."
+        ],
+        "search":airline_search_hint(q),
+        "important":"Los datos concretos del vuelo deben confirmarse en la fuente correspondiente. No mostramos vuelos inventados."
+    }
 
 @app.post("/api/v1/flight/search-external")
-def search_flight_via_gemini(payload: FlightSearchRequest):
-    query = payload.natural_query.lower()
+def flight_search_external(payload:FlightSearchRequest):
+    q=clean_text(payload.natural_query)
+    if not q:
+        raise HTTPException(status_code=400,detail="Escribe una ruta o vuelo.")
     return {
-        "status": "success",
-        "flights": [
-            {
-                "airline": "Buscador General de Vuelos",
-                "route": f"Itinerario solicitado: {payload.natural_query}",
-                "status": "Comparador global de precios y horarios.",
-                "booking_url": "https://www.google.com/travel/flights"
-            },
-            {
-                "airline": "Avianca",
-                "route": f"Ruta optimizada para: {payload.natural_query}",
-                "status": "Conexiones, pasajeros y carga especializada.",
-                "booking_url": "https://www.avianca.com"
-            },
-            {
-                "airline": "American Airlines",
-                "route": f"Ruta optimizada para: {payload.natural_query}",
-                "status": "Amplia red de conexiones norte y sur.",
-                "booking_url": "https://www.aa.com"
-            },
-            {
-                "airline": "JetBlue",
-                "route": f"Ruta optimizada para: {payload.natural_query}",
-                "status": "Conexiones en el Caribe y Estados Unidos.",
-                "booking_url": "https://www.jetblue.com"
-            },
-            {
-                "airline": "Copa Airlines",
-                "route": f"Ruta optimizada para: {payload.natural_query}",
-                "status": "Conexión a través del Hub de las Américas.",
-                "booking_url": "https://www.copaair.com"
-            },
-            {
-                "airline": "Southwest Airlines",
-                "route": f"Ruta optimizada para: {payload.natural_query}",
-                "status": "Vuelos flexibles y política de equipaje.",
-                "booking_url": "https://www.southwest.com"
-            },
-            {
-                "airline": "Aeroméxico",
-                "route": f"Ruta optimizada para: {payload.natural_query}",
-                "status": "Conexiones hacia México y conexiones internacionales.",
-                "booking_url": "https://www.aeromexico.com"
-            }
-        ]
+        "status":"success",
+        "results":[],
+        "message":"Para encontrar vuelos reales, utiliza el buscador y después confirma el vuelo en la aerolínea.",
+        "official_search":google_flights_url(q),
+        "next_step":[
+            "Encuentra el vuelo.",
+            "Anota la aerolínea y número de vuelo.",
+            "Revisa si es directo o tiene escala.",
+            "Abre los detalles del vuelo.",
+            "Después revisa la política oficial de equipaje."
+        ],
+        "no_booking":True
+    }
+
+@app.post("/api/v1/item/teach")
+def teach_item(payload:ItemCheckRequest):
+    item=clean_text(payload.item_description)
+    if not item:
+        raise HTTPException(status_code=400,detail="Escribe qué quieres llevar.")
+    return {
+        "status":"success",
+        "result":baggage_explanation(item,payload.airline),
+        "official_action":{
+            "title":"¿No encontramos una regla confirmada?",
+            "message":"Busca la regla oficial de tu aerolínea. Si necesitas ayuda, la aplicación te enseña qué palabra buscar y qué significa."
+        }
     }
 
 @app.post("/api/v1/consultar-articulo")
-def consultar_articulo(payload: ItemCheckRequest):
-    item = payload.item_description.lower()
-    
-    tiene_bateria = any(k in item for k in ["bateria", "batería", "wh", "watt", "watts", "litio", "acumulador"])
-    tiene_maletas = any(k in item for k in ["maleta", "maletas", "equipaje", "bolso", "libra", "libras"])
-    tiene_paneles = any(k in item for k in ["panel", "paneles", "solar", "fotovoltaico"])
-    tiene_medicina = any(k in item for k in ["medicina", "medicamento", "insulina", "vacuna", "alimento", "carne", "perecedero", "suplemento"])
-    tiene_soda = any(k in item for k in ["soda", "soda caustica", "cáustica", "hidroxido", "quimico", "corrosivo"])
-    
-    if (tiene_soda and tiene_maletas) or (tiene_paneles and tiene_maletas) or (tiene_soda and tiene_paneles) or (tiene_bateria and tiene_maletas):
-        return {
-            "status_category": "ANÁLISIS DE ORIENTACIÓN Y SOLUCIÓN INTEGRAL DE CARGA",
-            "short_answer": "Tu carga combina elementos químicos, equipos especiales y maletas de viaje. Nuestra sugerencia es separarlos para evitar contratiempos o recargos en los puntos de control.",
-            "details": "GUÍA DE RUTA Y SEPARACIÓN RECOMENDADA:\n\n"
-                       "🔹 1. PRODUCTOS QUÍMICOS / SODA CÁUSTICA:\n"
-                       "• Sugerencia de Manejo: Generalmente no se aceptan en cabina ni en equipaje facturado de pasajeros debido a sus propiedades corrosivas.\n"
-                       "• Solución Propuesta: Canalizar el envío mediante una agencia de carga comercial especializada.\n"
-                       "• Empaque: Se sugiere utilizar envases sellados herméticamente y aptos para sustancias delicadas.\n\n"
-                       "🔹 2. PANELES SOLARES / EQUIPOS FRÁGILES:\n"
-                       "• Naturaleza: Superficies delicadas ante torsiones e impactos.\n"
-                       "• Solución Propuesta: Envío por carga especializada con estructura rígida de soporte o pallet.\n"
-                       "• Medidas Estándar: Un panel típico mide aprox. 170x100 cm (67 x 39 pulgadas) y excede las medidas de equipaje común.\n\n"
-                       "🔹 3. MALETAS PERSONALES (Ej. 59 lbs / exceso):\n"
-                       "• Parámetro Habitual: El límite más común en aerolíneas hacia Latinoamérica es de 50 lbs (23 kg) por maleta en bodega. Superar este peso suele activar cobros adicionales.\n"
-                       "• Solución Propuesta: Sugerimos redistribuir el peso en dos maletas antes de llegar al mostrador.\n"
-                       "• Dimensiones de Bodega: La suma lineal sugerida (Largo + Ancho + Alto) es de hasta 158 cm (62 pulgadas).",
-            "source_reference": "Orientación basada en estándares internacionales de la industria (Verificado 2026)",
-            "official_links": [
-                {"title": "Guía de Referencia IATA DGR", "url": "https://www.iata.org/en/programs/cargo/dgr/"},
-                {"title": "Directrices de Artículos TSA", "url": "https://www.tsa.gov/travel/security-screening/whatcanibring/"},
-                {"title": "Departamento de Transporte (DOT)", "url": "https://www.transportation.gov/"}
-            ],
-            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
-        }
+def consultar_articulo(payload:ItemCheckRequest):
+    return teach_item(payload)
 
-    if tiene_soda:
-        return {
-            "status_category": "ORIENTACIÓN SOBRE PRODUCTOS QUÍMICOS",
-            "short_answer": "Este tipo de producto suele requerir manejo especial como carga comercial y habitualmente no se permite en el equipaje de pasajeros.",
-            "details": "SUGERENCIAS Y PAUTAS TÉCNICAS:\n\n"
-                       "• Condición Habitual: Las políticas de aerolíneas de pasajeros suelen restringir sustancias corrosivas en cabina y bodega.\n"
-                       "• Ruta Sugerida: Consultar con un consolidador o agente de carga autorizado para un despacho comercial adecuado.\n"
-                       "• Recomendación: Disponer de la hoja técnica o factura comercial al cotizar el envío.",
-            "source_reference": "Pautas de la Industria Logística y Transporte (Verificado 2026)",
-            "official_links": [
-                {"title": "IATA Dangerous Goods Regulations", "url": "https://www.iata.org/en/programs/cargo/dgr/"},
-                {"title": "PHMSA Hazardous Materials Safety", "url": "https://www.phmsa.dot.gov/"}
-            ],
-            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
-        }
+@app.post("/api/v1/guide")
+def official_guide(payload:OfficialGuideRequest):
+    return {
+        "status":"success",
+        "guide":teaching_path(payload.topic,payload.official_url)
+    }
 
-    if tiene_bateria:
-        return {
-            "status_category": "ORIENTACIÓN TÉCNICA DE ACUMULADORES",
-            "short_answer": "Los equipos de alta potencia superan los umbrales habituales para pasajeros y se recomienda canalizarlos por la vía de carga.",
-            "details": "SUGERENCIAS Y ESPECIFICACIONES:\n\n"
-                       "• Parámetro de Referencia: Las normativas generales suelen limitar los equipos portátiles a rangos de 100Wh–160Wh en aeronaves de pasajeros.\n"
-                       "• Medidas y Peso Aproximados: Equipos grandes suelen pesar entre 20 y 30 lbs (9 a 13.5 kg).\n"
-                       "• Recomendación: Acudir a una agencia de carga para asegurar un embalaje correcto y proteger los terminales.",
-            "source_reference": "Estándares de Transporte de Acumuladores (Verificado 2026)",
-            "official_links": [
-                {"title": "IATA Lithium Batteries Guidance", "url": "https://www.iata.org/en/programs/cargo/dgr/lithium-batteries/"}
-            ],
-            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
-        }
+@app.get("/api/v1/session/{session_token}")
+def session_status(session_token:str):
+    if active_session(session_token,admin=True):
+        return {"active":True,"type":"admin","expires_in":max(0,int(ADMIN_SESSIONS[session_token]-now()))}
+    if active_session(session_token):
+        return {"active":True,"type":"paid","expires_in":max(0,int(ACTIVE_PAID_SESSIONS[session_token]-now()))}
+    return {"active":False}
 
-    if tiene_paneles:
-        return {
-            "status_category": "ORIENTACIÓN SOBRE EQUIPAMIENTO FOTOVOLTAICO",
-            "short_answer": "Debido a su tamaño y fragilidad, sugerimos planificar su transporte mediante carga especializada.",
-            "details": "PAUTAS DE DIMENSIONES Y MANEJO:\n\n"
-                       "• Dimensiones Frecuentes: Alrededor de 170 x 100 cm (67 x 39 pulgadas).\n"
-                       "• Ruta Sugerida: Carga aérea de consolidación o transporte marítimo.\n"
-                       "• Recomendación: Solicitar un embalaje rígido con protección perimetral para cuidar las celdas.",
-            "source_reference": "Estándares Logísticos para Carga Frágil (Verificado 2026)",
-            "official_links": [
-                {"title": "U.S. Customs and Border Protection (CBP)", "url": "https://www.cbp.gov/"}
-            ],
-            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
-        }
+@app.delete("/api/v1/session/{session_token}")
+def delete_session(session_token:str):
+    ACTIVE_PAID_SESSIONS.pop(session_token,None)
+    ADMIN_SESSIONS.pop(session_token,None)
+    return {"status":"deleted"}
 
-    if tiene_medicina:
-        return {
-            "status_category": "ORIENTACIÓN PARA PRODUCTOS MÉDICOS",
-            "short_answer": "Los artículos de uso personal suelen llevarse en la maleta de mano; los volúmenes mayores o comerciales requieren contenedores térmicos.",
-            "details": "PAUTAS SANITARIAS SUGERIDAS:\n\n"
-                       "• En Cabina: Se aconseja llevar recetas médicas a la mano y visibles.\n"
-                       "• Envíos Comerciales: Utilizar cadenas de frío validadas.\n"
-                       "• Recomendación: Mantener la documentación accesible para agilizar cualquier revisión en los puntos de control.",
-            "source_reference": "Directrices de Seguridad y Salud Aeroportuaria (Verificado 2026)",
-            "official_links": [
-                {"title": "TSA Medical Conditions Guidance", "url": "https://www.tsa.gov/travel/special-procedures"}
-            ],
-            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
-        }
+@app.get("/api/v1/legal")
+def legal():
+    return {
+        "version":APP.VERSION,
+        "notice":APP.full_notice(),
+        "intro":APP.intro(),
+        "independence":APP.INDEPENDENCE,
+        "purpose":APP.PURPOSE,
+        "payment":APP.PAYMENT
+    }
 
-    if tiene_maletas:
-        return {
-            "status_category": "ORIENTACIÓN DE PESO Y MEDIDAS DE EQUIPAJE",
-            "short_answer": "Sugerimos verificar las medidas y el peso antes de salir para evitar recargos en el mostrador.",
-            "details": "PARÁMETROS HABITUALES EN AEROLÍNEAS:\n\n"
-                       "• Peso Sugerido en Bodega: Mantenerse dentro del límite común de 50 lbs (23 kg) por pieza para evitar tarifas adicionales.\n"
-                       "• Dimensiones Máximas (Suma Lineal): Se recomienda que Largo + Ancho + Alto no rebase los 158 cm (62 pulgadas).\n"
-                       "• Recomendación: Pesar el equipaje en casa utilizando una báscula portátil.",
-            "source_reference": "Políticas Internacionales de Equipaje de Referencia (Verificado 2026)",
-            "official_links": [
-                {"title": "DOT Aviation Consumer Protection - Baggage", "url": "https://www.transportation.gov/airconsumer/baggage"}
-            ],
-            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
-        }
+@app.get("/api/v1/official")
+def official_sources():
+    return {
+        "google_flights":official_link("https://www.google.com/travel/flights","Google Flights"),
+        "note":"La aplicación puede enseñar al usuario cómo encontrar información; la confirmación final debe hacerse en la fuente oficial correspondiente."
+    }
 
-    rule = rule_repo.find_rule(payload.airline or "General", item)
-    if rule and rule.status == RuleStatus.ACTIVA:
-        return {
-            "status_category": rule.category_visual,
-            "short_answer": rule.short_answer,
-            "details": rule.details,
-            "source_reference": f"{rule.source_name} (Verificado el {rule.verification_date})",
-            "official_links": [
-                {"title": "Sitio Oficial de Referencia Regulatoria", "url": "https://www.iata.org"}
-            ],
-            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
-        }
-    else:
-        return {
-            "status_category": "ORIENTACIÓN LOGÍSTICA INTEGRAL",
-            "short_answer": f"Evaluación orientativa para el traslado de '{payload.item_description}'.",
-            "details": "PAUTAS Y RECOMENDACIONES:\n\n"
-                       "• Criterio de Carga: Si el objeto supera las 50 lbs (23 kg) o los 158 cm (62 pulgadas) sumando sus lados, nuestra sugerencia es canalizarlo a través de servicios de carga comercial o courier.\n"
-                       "• Recomendación: Preparar factura comercial, medir el bulto y asegurar un empaque firme acorde a la distancia del trayecto.",
-            "source_reference": "Asesoría Logística Multimodal (Verificado 2026)",
-            "official_links": [
-                {"title": "IATA Official Website", "url": "https://www.iata.org/"},
-                {"title": "U.S. Customs and Border Protection", "url": "https://www.cbp.gov/"}
-            ],
-            "disclaimer": LegalNoticeManager.get_official_disclaimer()["content"]
-        }
+@app.on_event("startup")
+async def startup():
+    async def cleanup():
+        while True:
+            current=now()
+            for store in (ACTIVE_PAID_SESSIONS,ADMIN_SESSIONS):
+                for k,v in list(store.items()):
+                    if v<=current:
+                        store.pop(k,None)
+            import asyncio
+            await asyncio.sleep(300)
+    import asyncio
+    asyncio.create_task(cleanup())
+
+if __name__=="__main__":
+    import uvicorn
+    uvicorn.run("main:app",host="0.0.0.0",port=int(os.getenv("PORT","8000")))
