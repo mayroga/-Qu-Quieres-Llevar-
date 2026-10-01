@@ -1,451 +1,233 @@
-# schemas.py - Modelos Pydantic | ¿QUÉ QUIERES LLEVAR?
-# May Roga LLC
-# Sin datos personales innecesarios.
-# Gemini interpreta/busca vuelos; el motor de reglas decide equipaje.
-
+# schemas.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v6.0.0
+from typing import Any,Dict,List,Literal,Optional
+from pydantic import BaseModel,ConfigDict,Field,field_validator
 from enum import Enum
-from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, ConfigDict, Field
-
-
-# ============================================================
-# CATEGORÍAS VISUALES
-# ============================================================
-
-class CategoryVisualEnum(str, Enum):
-    PUEDES_LLEVARLO = "PUEDES LLEVARLO"
-    PUEDES_LLEVARLO_PERO = "PUEDES LLEVARLO, PERO..."
-    NO_PUEDES_LLEVARLO = "NO PUEDES LLEVARLO"
-    NECESITO_MAS_INFORMACION = "NECESITO MÁS INFORMACIÓN"
-
-
-# ============================================================
-# BASE
-# ============================================================
+Language=Literal["es","en"]
 
 class StrictModel(BaseModel):
-    model_config = ConfigDict(
-        extra="forbid",
-        str_strip_whitespace=True
-    )
+    model_config=ConfigDict(extra="ignore",str_strip_whitespace=True,validate_assignment=True)
 
+class CategoryVisualEnum(str,Enum):
+    ALLOW="PUEDES LLEVARLO"
+    ALLOW_WITH_CONDITION="PUEDES LLEVARLO, PERO..."
+    NOT_ALLOWED="NO PUEDES LLEVARLO"
+    REVIEW="REVISA ESTO ANTES DE VIAJAR"
 
-# ============================================================
-# STRIPE
-# ============================================================
+class BaggageTypeEnum(str,Enum):
+    PERSONAL_ITEM="personal_item"
+    CARRY_ON="carry_on"
+    CHECKED="checked"
+    UNKNOWN="unknown"
 
-class CheckoutRequest(StrictModel):
-    """
-    El pago no necesita datos personales.
-    Stripe administra la información de pago.
-    """
-    pass
-
-
-class ActivateSessionRequest(StrictModel):
-    checkout_session_id: str = Field(
-        ...,
-        min_length=10,
-        max_length=300
-    )
-
-
-# ============================================================
-# BÚSQUEDA DE VUELOS
-# ============================================================
+class RuleStatusEnum(str,Enum):
+    ACTIVE="active"
+    PENDING="pending"
+    EXPIRED="expired"
 
 class FlightSearchRequest(StrictModel):
-    """
-    Consulta en lenguaje natural.
-
-    Ejemplo:
-    Miami a La Habana el 15 de diciembre con American Airlines.
-    """
-    natural_query: str = Field(
-        ...,
-        min_length=3,
-        max_length=1200
-    )
-
-    session_token: str = Field(
-        ...,
-        min_length=20,
-        max_length=300
-    )
-
+    origin:Optional[str]=Field(default=None,min_length=2,max_length=120)
+    destination:Optional[str]=Field(default=None,min_length=2,max_length=120)
+    departure_date:Optional[str]=Field(default=None,max_length=30)
+    return_date:Optional[str]=Field(default=None,max_length=30)
+    passengers:int=Field(default=1,ge=1,le=20)
+    cabin:Optional[str]=Field(default=None,max_length=50)
+    language:Language="es"
 
 class FlightResult(StrictModel):
-    """
-    Resultado estructurado de una búsqueda.
-    Los campos pueden quedar vacíos si no pudieron verificarse.
-    """
+    id:str=Field(min_length=1,max_length=150)
+    airline:Optional[str]=Field(default=None,max_length=150)
+    flight_number:Optional[str]=Field(default=None,max_length=50)
+    origin:Optional[str]=Field(default=None,max_length=120)
+    destination:Optional[str]=Field(default=None,max_length=120)
+    departure:Optional[str]=Field(default=None,max_length=80)
+    arrival:Optional[str]=Field(default=None,max_length=80)
+    date:Optional[str]=Field(default=None,max_length=30)
+    direct:Optional[bool]=None
+    stops:Optional[int]=Field(default=None,ge=0,le=20)
+    connection:Optional[bool]=None
+    connection_airport:Optional[str]=Field(default=None,max_length=150)
+    connection_duration:Optional[str]=Field(default=None,max_length=80)
+    passengers:Optional[int]=Field(default=None,ge=1,le=20)
+    cabin:Optional[str]=Field(default=None,max_length=80)
+    fare:Optional[str]=Field(default=None,max_length=120)
+    currency:Optional[str]=Field(default=None,max_length=3)
+    baggage_summary:Optional[str]=Field(default=None,max_length=1000)
+    source:Optional[str]=Field(default=None,max_length=1000)
+    verified:bool=False
+    verified_at:Optional[str]=None
+    official_source:bool=False
+    conditions:List[str]=Field(default_factory=list)
 
-    airline: str = Field(default="", max_length=150)
-    flight_number: str = Field(default="", max_length=50)
-
-    origin: str = Field(default="", max_length=100)
-    destination: str = Field(default="", max_length=100)
-
-    date: str = Field(default="", max_length=50)
-
-    departure_time: str = Field(default="", max_length=50)
-    arrival_time: str = Field(default="", max_length=50)
-
-    stops: str = Field(default="", max_length=50)
-    route: str = Field(default="", max_length=250)
-
-    source: str = Field(default="", max_length=200)
-    url: str = Field(default="", max_length=500)
-
+    @field_validator("currency")
+    @classmethod
+    def currency_upper(cls,v):
+        return v.upper() if v else v
 
 class FlightSearchResponse(StrictModel):
-    status: str
-    flights: List[FlightResult] = Field(default_factory=list)
-    notice: str = Field(default="", max_length=500)
-
-
-# ============================================================
-# INFORMACIÓN ESTRUCTURADA DEL VUELO
-# ============================================================
+    success:bool=True
+    results:List[FlightResult]=Field(default_factory=list)
+    message:Optional[str]=None
+    source:Optional[str]=None
+    verified:bool=False
+    official_source:bool=False
+    next_action:Optional[str]=None
 
 class FlightContext(StrictModel):
-    """
-    Información que puede utilizar posteriormente el motor
-    determinista de reglas.
-
-    No significa que todos los campos estén disponibles.
-    """
-
-    airline: Optional[str] = Field(
-        default=None,
-        max_length=150
-    )
-
-    flight_number: Optional[str] = Field(
-        default=None,
-        max_length=50
-    )
-
-    origin: Optional[str] = Field(
-        default=None,
-        max_length=100
-    )
-
-    destination: Optional[str] = Field(
-        default=None,
-        max_length=100
-    )
-
-    departure_date: Optional[str] = Field(
-        default=None,
-        max_length=50
-    )
-
-    departure_time: Optional[str] = Field(
-        default=None,
-        max_length=50
-    )
-
-    arrival_time: Optional[str] = Field(
-        default=None,
-        max_length=50
-    )
-
-    cabin: Optional[str] = Field(
-        default=None,
-        max_length=50
-    )
-
-    fare: Optional[str] = Field(
-        default=None,
-        max_length=100
-    )
-
-    trip_type: Optional[str] = Field(
-        default=None,
-        max_length=50
-    )
-
-    charter: Optional[bool] = None
-
-    source: Optional[str] = Field(
-        default=None,
-        max_length=200
-    )
-
-    source_url: Optional[str] = Field(
-        default=None,
-        max_length=500
-    )
-
-
-# ============================================================
-# ARTÍCULO / EQUIPAJE
-# ============================================================
-
-class BaggageTypeEnum(str, Enum):
-    CARRY_ON = "carry_on"
-    PERSONAL_ITEM = "personal_item"
-    CHECKED = "checked"
-    SPECIAL = "special"
-    UNKNOWN = "unknown"
-
+    airline:Optional[str]=Field(default=None,max_length=150)
+    flight_number:Optional[str]=Field(default=None,max_length=50)
+    origin:Optional[str]=Field(default=None,max_length=120)
+    destination:Optional[str]=Field(default=None,max_length=120)
+    departure_date:Optional[str]=Field(default=None,max_length=30)
+    departure_time:Optional[str]=Field(default=None,max_length=50)
+    arrival_time:Optional[str]=Field(default=None,max_length=50)
+    direct:Optional[bool]=None
+    stops:Optional[int]=Field(default=None,ge=0,le=20)
+    connection:Optional[bool]=None
+    connection_airport:Optional[str]=Field(default=None,max_length=150)
+    connection_duration:Optional[str]=Field(default=None,max_length=80)
+    passengers:Optional[int]=Field(default=None,ge=1,le=20)
+    cabin:Optional[str]=Field(default=None,max_length=80)
+    fare:Optional[str]=Field(default=None,max_length=120)
+    baggage:Optional[Dict[str,Any]]=None
+    source:Optional[str]=None
+    verified:bool=False
+    verified_at:Optional[str]=None
 
 class ItemCheckInput(StrictModel):
-    """
-    Consulta completa de un artículo.
-
-    No exige información que el pasajero todavía no conozca.
-    Cuando falta un dato necesario, el motor puede responder
-    NECESITO MÁS INFORMACIÓN.
-    """
-
-    session_token: str = Field(
-        ...,
-        min_length=20,
-        max_length=300
-    )
-
-    item_description: str = Field(
-        ...,
-        min_length=1,
-        max_length=2000
-    )
-
-    airline: Optional[str] = Field(
-        default=None,
-        max_length=150
-    )
-
-    destination: Optional[str] = Field(
-        default=None,
-        max_length=150
-    )
-
-    flight_context: Optional[FlightContext] = None
-
-    baggage_type: BaggageTypeEnum = (
-        BaggageTypeEnum.UNKNOWN
-    )
-
-    quantity: Optional[int] = Field(
-        default=None,
-        ge=1,
-        le=10000
-    )
-
-    weight: Optional[float] = Field(
-        default=None,
-        ge=0,
-        le=10000
-    )
-
-    weight_unit: Optional[str] = Field(
-        default=None,
-        max_length=10
-    )
-
-    length: Optional[float] = Field(
-        default=None,
-        ge=0,
-        le=10000
-    )
-
-    width: Optional[float] = Field(
-        default=None,
-        ge=0,
-        le=10000
-    )
-
-    height: Optional[float] = Field(
-        default=None,
-        ge=0,
-        le=10000
-    )
-
-    dimension_unit: Optional[str] = Field(
-        default=None,
-        max_length=10
-    )
-
-    has_battery: Optional[bool] = None
-
-    battery_type: Optional[str] = Field(
-        default=None,
-        max_length=100
-    )
-
-    battery_wh: Optional[float] = Field(
-        default=None,
-        ge=0,
-        le=100000
-    )
-
-    lithium_ion: Optional[bool] = None
-
-    liquid: Optional[bool] = None
-
-    liquid_quantity: Optional[float] = Field(
-        default=None,
-        ge=0,
-        le=100000
-    )
-
-    liquid_unit: Optional[str] = Field(
-        default=None,
-        max_length=20
-    )
-
-    aerosol: Optional[bool] = None
-
-    food: Optional[bool] = None
-
-    medicine: Optional[bool] = None
-
-    electronic: Optional[bool] = None
-
-    animal: Optional[bool] = None
-
-    medical_equipment: Optional[bool] = None
-
-    dangerous_goods_possible: Optional[bool] = None
-
-    charter: Optional[bool] = None
-
-
-# ============================================================
-# COMPATIBILIDAD CON EL MAIN.PY ACTUAL
-# ============================================================
+    item:str=Field(min_length=1,max_length=300)
+    category:Optional[str]=Field(default=None,max_length=100)
+    quantity:Optional[int]=Field(default=None,ge=1,le=100)
+    weight:Optional[float]=Field(default=None,ge=0,le=1000)
+    weight_unit:Optional[str]=Field(default=None,max_length=10)
+    dimensions:Optional[str]=Field(default=None,max_length=100)
+    description:Optional[str]=Field(default=None,max_length=1000)
 
 class ItemCheckRequest(StrictModel):
-    """
-    Modelo utilizado directamente por:
-    POST /api/v1/consultar-articulo
-
-    Mantiene compatibilidad con el main.py actual.
-    """
-
-    session_token: str = Field(
-        ...,
-        min_length=20,
-        max_length=300
-    )
-
-    item_description: str = Field(
-        ...,
-        min_length=1,
-        max_length=2000
-    )
-
-    airline: Optional[str] = Field(
-        default=None,
-        max_length=150
-    )
-
-    destination: Optional[str] = Field(
-        default=None,
-        max_length=150
-    )
-
-    flight_context: Optional[Dict[str, Any]] = None
-
-
-# ============================================================
-# RESPUESTA DE REGLAS
-# ============================================================
+    item:str=Field(min_length=1,max_length=300)
+    language:Language="es"
+    flight:Optional[FlightContext]=None
+    baggage_type:Optional[BaggageTypeEnum]=None
+    quantity:Optional[int]=Field(default=None,ge=1,le=100)
+    weight:Optional[float]=Field(default=None,ge=0,le=1000)
+    weight_unit:Optional[str]=Field(default=None,max_length=10)
+    dimensions:Optional[str]=Field(default=None,max_length=100)
+    category:Optional[str]=Field(default=None,max_length=100)
+    description:Optional[str]=Field(default=None,max_length=1000)
 
 class OfficialLink(StrictModel):
-    title: str = Field(
-        ...,
-        min_length=1,
-        max_length=200
-    )
-
-    url: str = Field(
-        ...,
-        min_length=1,
-        max_length=1000
-    )
-
+    name:str=Field(min_length=1,max_length=150)
+    url:str=Field(min_length=1,max_length=2000)
+    description:Optional[str]=Field(default=None,max_length=1000)
+    authority:Optional[str]=Field(default=None,max_length=150)
+    country:Optional[str]=Field(default=None,max_length=100)
+    verified:bool=False
+    verified_at:Optional[str]=None
 
 class ItemCheckResponse(StrictModel):
-    status_category: CategoryVisualEnum
+    success:bool=True
+    item:str
+    category:CategoryVisualEnum
+    explanation:str
+    baggage_place:Optional[str]=None
+    conditions:List[str]=Field(default_factory=list)
+    missing_information:List[str]=Field(default_factory=list)
+    source:Optional[str]=None
+    source_name:Optional[str]=None
+    verified:bool=False
+    verification_date:Optional[str]=None
+    official_link:Optional[OfficialLink]=None
+    next_action:Optional[str]=None
+    legal_notice:Optional[str]=None
 
-    short_answer: str = Field(
-        ...,
-        min_length=1,
-        max_length=1000
-    )
+class TeachTermRequest(StrictModel):
+    term:str=Field(min_length=1,max_length=150)
+    language:Language="es"
 
-    details: str = Field(
-        default="",
-        max_length=5000
-    )
+class TeachTermResponse(StrictModel):
+    success:bool=True
+    term:str
+    explanation:str
+    example:Optional[str]=None
+    next_action:Optional[str]=None
 
-    source_reference: str = Field(
-        default="",
-        max_length=1000
-    )
+class GuideRequest(StrictModel):
+    language:Language="es"
+    topic:Optional[str]=Field(default=None,max_length=150)
+    flight:Optional[FlightContext]=None
 
-    official_links: List[OfficialLink] = Field(
-        default_factory=list
-    )
-
-    disclaimer: str = Field(
-        default="",
-        max_length=3000
-    )
-
-
-# ============================================================
-# SESIÓN
-# ============================================================
+class GuideResponse(StrictModel):
+    success:bool=True
+    title:str
+    steps:List[str]=Field(default_factory=list)
+    next_action:Optional[str]=None
+    official_links:List[OfficialLink]=Field(default_factory=list)
 
 class SessionStatusResponse(StrictModel):
-    active: bool
-
-    expires_at: str
-
-    remaining_seconds: int = Field(
-        ge=0
-    )
-
-
-# ============================================================
-# ADMINISTRACIÓN
-# ============================================================
+    active:bool
+    token:Optional[str]=None
+    remaining_seconds:int=Field(default=0,ge=0)
+    expires_at:Optional[str]=None
+    message:Optional[str]=None
 
 class AdminLoginRequest(StrictModel):
-    username: str = Field(
-        ...,
-        min_length=1,
-        max_length=200
-    )
-
-    password: str = Field(
-        ...,
-        min_length=1,
-        max_length=500
-    )
-
+    username:str=Field(min_length=1,max_length=150)
+    password:str=Field(min_length=1,max_length=300)
 
 class AdminLoginResponse(StrictModel):
-    status: str
-    session_token: str
-    expires_at: str
+    success:bool
+    token:Optional[str]=None
+    message:Optional[str]=None
 
+class CreateCheckoutRequest(StrictModel):
+    language:Language="es"
+    return_path:Optional[str]=Field(default=None,max_length=500)
 
-# ============================================================
-# METADATOS DE LA APLICACIÓN
-# ============================================================
+class CreateCheckoutResponse(StrictModel):
+    success:bool
+    checkout_url:Optional[str]=None
+    session_id:Optional[str]=None
+    message:Optional[str]=None
+
+class PaymentVerifyRequest(StrictModel):
+    session_id:str=Field(min_length=1,max_length=300)
+
+class PaymentVerifyResponse(StrictModel):
+    success:bool
+    paid:bool=False
+    service_token:Optional[str]=None
+    expires_at:Optional[str]=None
+    message:Optional[str]=None
+
+class LegalResponse(StrictModel):
+    success:bool=True
+    version:str
+    owner:str
+    app_name:str
+    notice:str
+    short_notice:Optional[str]=None
+    source_notice:Optional[str]=None
 
 class AppMetaResponse(StrictModel):
-    app_name: str
-    version: str
-    owner: str
-    session_minutes: int
-    payment_type: str
-    ai_rule_authority: bool
-    rules_are_verified: bool
-    legal_version: str
+    app_name:str
+    version:str
+    owner:str
+    session_minutes:int=Field(ge=1)
+    payment_type:str
+    price_usd:Optional[float]=Field(default=None,ge=0)
+    ai_rule_authority:str
+    rules_are_verified:bool=False
+    legal_version:str
+    independent_service:bool=True
+    booking_enabled:bool=False
+    ticket_sales_enabled:bool=False
+
+class OfficialSourcesResponse(StrictModel):
+    success:bool=True
+    sources:List[OfficialLink]=Field(default_factory=list)
+
+class ErrorResponse(StrictModel):
+    success:bool=False
+    message:str
+    code:Optional[str]=None
+    next_action:Optional[str]=None
