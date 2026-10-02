@@ -1,34 +1,10 @@
-# rules_engine.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v7.0.0
-from dataclasses import dataclass,field
+# rules_engine.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v8.0.0
+from dataclasses import dataclass,asdict
 from enum import Enum
 from typing import Any,Dict,List,Optional
-import re,unicodedata
+import unicodedata
 
-class RuleStatus(str,Enum):
-    ACTIVE="ACTIVE"
-    PENDING="PENDING"
-    EXPIRED="EXPIRED"
-
-class RuleCategory(str,Enum):
-    BAGGAGE="baggage"
-    PERSONAL_ITEM="personal_item"
-    CARRY_ON="carry_on"
-    CHECKED="checked"
-    BATTERY="battery"
-    LIQUID="liquid"
-    AEROSOL="aerosol"
-    MEDICINE="medicine"
-    FOOD="food"
-    ELECTRONICS="electronics"
-    MEDICAL="medical"
-    ANIMAL="animal"
-    SPORTS="sports"
-    SPECIAL="special"
-    DOCUMENT="document"
-    FLIGHT="flight"
-    CONNECTION="connection"
-    DESTINATION="destination"
-    OTHER="other"
+VERSION="8.0.0"
 
 class VisualStatus(str,Enum):
     ALLOW="PUEDES LLEVARLO"
@@ -36,668 +12,472 @@ class VisualStatus(str,Enum):
     NOT_ALLOWED="NO PUEDES LLEVARLO"
     REVIEW="REVISA ESTO ANTES DE VIAJAR"
 
-@dataclass
-class SourceRecord:
-    name:str
-    url:str
-    verified_date:Optional[str]=None
-    scope:str=""
-    notes:str=""
+class RuleStatus(str,Enum):
+    ACTIVE="active"
+    PENDING="pending"
+    EXPIRED="expired"
 
 @dataclass
-class CargoRule:
+class Rule:
     id:str
-    airline:str
-    keyword:str
-    category:str
-    status:RuleStatus
-    answer:str
-    details:str=""
-    source:Optional[SourceRecord]=None
+    term:str
+    keywords:List[str]
+    status:str=RuleStatus.PENDING.value
+    visual_status:str=VisualStatus.REVIEW.value
+    explanation_es:str=""
+    explanation_en:str=""
+    place_es:str=""
+    place_en:str=""
+    conditions_es:List[str]=None
+    conditions_en:List[str]=None
+    missing_information_es:List[str]=None
+    missing_information_en:List[str]=None
+    source:str=""
+    source_name:str=""
+    verified:bool=False
     verification_date:Optional[str]=None
-    baggage_place:Optional[str]=None
-    route_origin:Optional[str]=None
-    route_destination:Optional[str]=None
-    cabin:Optional[str]=None
-    fare:Optional[str]=None
-    conditions:List[str]=field(default_factory=list)
-
-    def matches(
-        self,
-        text:str,
-        airline:Optional[str]=None,
-        origin:Optional[str]=None,
-        destination:Optional[str]=None,
-        cabin:Optional[str]=None,
-        fare:Optional[str]=None
-    )->bool:
-        if self.status!=RuleStatus.ACTIVE:
-            return False
-        q=_norm(text)
-        key=_norm(self.keyword)
-        if not key or not _contains(q,key):
-            return False
-        if self.airline and _norm(self.airline)!="general":
-            if not airline or not _contains(_norm(airline),_norm(self.airline)):
-                return False
-        if self.route_origin:
-            if not origin or not _contains(_norm(origin),_norm(self.route_origin)):
-                return False
-        if self.route_destination:
-            if not destination or not _contains(_norm(destination),_norm(self.route_destination)):
-                return False
-        if self.cabin:
-            if not cabin or _norm(cabin)!=_norm(self.cabin):
-                return False
-        if self.fare:
-            if not fare or _norm(fare)!=_norm(self.fare):
-                return False
-        return True
-
-def _norm(value:Any)->str:
-    value=str(value or "").strip().lower()
-    value=unicodedata.normalize("NFD",value)
-    value="".join(c for c in value if unicodedata.category(c)!="Mn")
-    value=re.sub(r"[-_/]+"," ",value)
-    value=re.sub(r"\s+"," ",value)
-    return value.strip()
-
-def _contains(text:str,term:str)->bool:
-    text=_norm(text)
-    term=_norm(term)
-    if not term:
-        return False
-    return term in text
-
-def _first(*values):
-    for value in values:
-        if value not in (None,"",[],{}):
-            return value
-    return None
+    airline:Optional[str]=None
+    destination:Optional[str]=None
+    baggage_types:List[str]=None
+    notes_es:str=""
+    notes_en:str=""
+    def __post_init__(self):
+        self.conditions_es=self.conditions_es or []
+        self.conditions_en=self.conditions_en or []
+        self.missing_information_es=self.missing_information_es or []
+        self.missing_information_en=self.missing_information_en or []
+        self.baggage_types=self.baggage_types or []
+    def to_dict(self)->Dict[str,Any]:
+        return asdict(self)
 
 class RuleRepository:
-    def __init__(self,rules:Optional[List[CargoRule]]=None):
-        self.rules=rules if rules is not None else self._default_rules()
+    VERSION=VERSION
+    def __init__(self,rules:Optional[List[Rule]]=None):
+        self._rules={}
+        for rule in rules or self._default_rules():self.add(rule)
 
-    def _default_rules(self)->List[CargoRule]:
+    def add(self,rule:Rule)->Rule:
+        self._rules[rule.id]=rule
+        return rule
+
+    def get(self,rule_id:str)->Optional[Rule]:
+        return self._rules.get(rule_id)
+
+    def all(self)->List[Rule]:
+        return list(self._rules.values())
+
+    def to_dicts(self,status:Optional[str]=None)->List[Dict[str,Any]]:
+        if status:
+            status=str(status).lower()
+            return [r.to_dict() for r in self.all() if str(r.status).lower()==status]
+        return [r.to_dict() for r in self.all()]
+
+    def count(self,status:Optional[str]=None):
+        if status is None:return len(self._rules)
+        return sum(1 for r in self.all() if str(r.status).lower()==str(status).lower())
+
+    def search(self,text:str)->List[Rule]:
+        q=_norm(text)
+        if not q:return []
+        out=[]
+        for r in self.all():
+            hay=" ".join([r.id,r.term,r.explanation_es,r.explanation_en,*r.keywords])
+            if q in _norm(hay) or any(q in _norm(k) for k in r.keywords):out.append(r)
+        return out
+
+    def _default_rules(self)->List[Rule]:
         return [
-            CargoRule(
-                id="battery_general_pending",
-                airline="general",
-                keyword="bateria de litio",
-                category=RuleCategory.BATTERY.value,
-                status=RuleStatus.PENDING,
-                answer=VisualStatus.REVIEW.value,
-                details="Las baterías de litio pueden tener condiciones especiales según su tipo, capacidad, cantidad y lugar de transporte. La condición exacta debe verificarse con la fuente aplicable.",
-                conditions=["Tipo de batería","Capacidad","Cantidad","Lugar donde se transporta"]
+            Rule(
+                "power_bank","POWER BANK",["power bank","bateria externa","batería externa","cargador portatil","cargador portátil","portable charger"],
+                RuleStatus.PENDING.value,VisualStatus.REVIEW.value,
+                "Un power bank es una batería de repuesto. Su forma de transporte depende de las reglas vigentes, la capacidad de la batería, la aerolínea y el itinerario.",
+                "A power bank is a spare battery. How it must travel depends on current rules, battery capacity, the airline and the itinerary.",
+                "Normalmente requiere una revisión específica antes de viajar.","It normally requires a specific review before travel.",
+                ["Confirma la capacidad de la batería.","Confirma dónde debe transportarse.","Confirma la regla de tu aerolínea para este viaje."],
+                ["Confirm the battery capacity.","Confirm where it must be carried.","Confirm your airline's rule for this trip."],
+                ["la capacidad de la batería","la aerolínea","el itinerario"],
+                ["battery capacity","airline","itinerary"],
+                "https://www.faa.gov/hazmat/packsafe/airline-passengers-and-batteries",
+                "FAA — Airline Passengers and Batteries",True,"2026-10-01",
+                notes_es="La regla general no debe sustituir una condición más restrictiva de la aerolínea.",
+                notes_en="The general rule must not replace a more restrictive airline condition."
             ),
-            CargoRule(
-                id="power_bank_general_pending",
-                airline="general",
-                keyword="power bank",
-                category=RuleCategory.BATTERY.value,
-                status=RuleStatus.PENDING,
-                answer=VisualStatus.REVIEW.value,
-                details="Un power bank puede estar sujeto a reglas específicas. Deben revisarse su capacidad, cantidad y ubicación permitida según la aerolínea y la autoridad aplicable.",
-                conditions=["Capacidad","Cantidad","Equipaje permitido"]
+            Rule(
+                "spare_lithium_battery","BATERÍA DE REPUESTO",["bateria de repuesto","batería de repuesto","spare battery","lithium battery","bateria litio","batería litio"],
+                RuleStatus.PENDING.value,VisualStatus.REVIEW.value,
+                "Una batería de repuesto puede estar sujeta a reglas especiales. Hay que conocer el tipo y la capacidad antes de decidir cómo transportarla.",
+                "A spare battery may have special transportation rules. The type and capacity must be known before deciding how to carry it.",
+                "Requiere revisión según tipo y capacidad.","Requires review based on type and capacity.",
+                ["Identifica el tipo de batería.","Busca la capacidad indicada en la batería o documentación.","Confirma la regla de la aerolínea."],
+                ["Identify the battery type.","Find the capacity shown on the battery or documentation.","Confirm the airline rule."],
+                ["tipo de batería","capacidad","aerolínea"],
+                ["battery type","capacity","airline"],
+                "https://www.faa.gov/hazmat/packsafe/airline-passengers-and-batteries",
+                "FAA — Airline Passengers and Batteries",True,"2026-10-01"
             ),
-            CargoRule(
-                id="medicine_general_pending",
-                airline="general",
-                keyword="medicamentos",
-                category=RuleCategory.MEDICINE.value,
-                status=RuleStatus.PENDING,
-                answer=VisualStatus.REVIEW.value,
-                details="Los medicamentos pueden tener reglas diferentes según el medicamento, el país, la aerolínea y el tipo de viaje.",
-                conditions=["Tipo de medicamento","País de destino","Documentación si corresponde"]
+            Rule(
+                "medications","MEDICAMENTOS",["medicamento","medicamentos","medicine","medication","pills","pastillas","prescription","receta"],
+                RuleStatus.PENDING.value,VisualStatus.REVIEW.value,
+                "Los medicamentos pueden tener condiciones distintas según el país, el tipo de medicamento, la cantidad y la documentación.",
+                "Medication may have different conditions depending on the country, medicine type, quantity and documentation.",
+                "Lleva los medicamentos de forma que puedas identificarlos y revisa los requisitos del viaje.","Carry medication so it can be identified and review the trip requirements.",
+                ["Confirma las reglas del país de destino.","Revisa si el medicamento necesita documentación especial.","Confirma las condiciones de seguridad y de la aerolínea."],
+                ["Confirm destination-country rules.","Check whether the medicine requires special documentation.","Confirm security and airline conditions."],
+                ["país de destino","tipo de medicamento","cantidad"],
+                ["destination country","medicine type","quantity"],
+                "https://www.tsa.gov/travel/security-screening/whatcanibring/all-list",
+                "TSA — What Can I Bring",True,"2026-10-01"
             ),
-            CargoRule(
-                id="liquid_general_pending",
-                airline="general",
-                keyword="liquidos",
-                category=RuleCategory.LIQUID.value,
-                status=RuleStatus.PENDING,
-                answer=VisualStatus.REVIEW.value,
-                details="Los líquidos pueden estar sujetos a condiciones diferentes según el aeropuerto, la autoridad, el tipo de equipaje y el producto.",
-                conditions=["Tipo de líquido","Cantidad","Tipo de equipaje","Control de seguridad"]
+            Rule(
+                "liquids","LÍQUIDOS",["liquido","líquidos","liquids","gel","geles","crema","creams","shampoo","champu","champú"],
+                RuleStatus.PENDING.value,VisualStatus.REVIEW.value,
+                "Los líquidos, geles y productos similares pueden tener condiciones específicas según el tipo de artículo, el control de seguridad y el viaje.",
+                "Liquids, gels and similar products may have specific conditions depending on the item, security screening and trip.",
+                "Revisa la regla aplicable antes de preparar la bolsa.","Review the applicable rule before packing.",
+                ["Identifica exactamente qué líquido es.","Confirma el tamaño del recipiente permitido para tu situación.","Revisa si existe una excepción aplicable."],
+                ["Identify exactly what the liquid is.","Confirm the permitted container size for your situation.","Check whether an applicable exception exists."],
+                ["tipo de líquido","cantidad","envase"],
+                ["liquid type","quantity","container"],
+                "https://www.tsa.gov/travel/security-screening/whatcanibring/all-list",
+                "TSA — What Can I Bring",True,"2026-10-01"
             ),
-            CargoRule(
-                id="aerosol_general_pending",
-                airline="general",
-                keyword="aerosol",
-                category=RuleCategory.AEROSOL.value,
-                status=RuleStatus.PENDING,
-                answer=VisualStatus.REVIEW.value,
-                details="Los aerosoles pueden tener restricciones específicas según el producto y el lugar donde se transporten.",
-                conditions=["Tipo de aerosol","Cantidad","Tipo de equipaje"]
+            Rule(
+                "aerosols","AEROSOLES",["aerosol","aerosoles","spray","sprays","desodorante spray","hairspray"],
+                RuleStatus.PENDING.value,VisualStatus.REVIEW.value,
+                "Los aerosoles pueden tener restricciones que dependen del producto y de dónde se transporte.",
+                "Aerosols may have restrictions depending on the product and where it is transported.",
+                "Revisa el producto concreto antes de empacarlo.","Review the exact product before packing it.",
+                ["Identifica el producto.","Comprueba si es inflamable u otro material regulado.","Revisa la regla de seguridad y de la aerolínea."],
+                ["Identify the product.","Check whether it is flammable or another regulated material.","Review security and airline rules."],
+                ["tipo de producto","contenido","ubicación en el equipaje"],
+                ["product type","contents","baggage location"],
+                "https://www.faa.gov/hazmat/packsafe",
+                "FAA — PackSafe",True,"2026-10-01"
             ),
-            CargoRule(
-                id="food_general_pending",
-                airline="general",
-                keyword="comida",
-                category=RuleCategory.FOOD.value,
-                status=RuleStatus.PENDING,
-                answer=VisualStatus.REVIEW.value,
-                details="La posibilidad de llevar alimentos puede depender tanto de las reglas de transporte como de las reglas de entrada del país de destino.",
-                conditions=["Tipo de alimento","País de destino","Forma de transporte"]
+            Rule(
+                "food","ALIMENTOS",["comida","alimento","alimentos","food","foods","carne","meat","queso","cheese","fruta","fruit"],
+                RuleStatus.PENDING.value,VisualStatus.REVIEW.value,
+                "Que un alimento pueda pasar el control de seguridad no significa necesariamente que pueda entrar al país de destino.",
+                "An item passing security does not necessarily mean it may be imported into the destination country.",
+                "Hay que revisar seguridad y también las reglas de entrada del destino.","Security and destination-entry rules must both be reviewed.",
+                ["Identifica el alimento.","Revisa la regla de seguridad.","Revisa las reglas de entrada del país de destino."],
+                ["Identify the food.","Review the security rule.","Review destination-country entry rules."],
+                ["tipo de alimento","país de destino","cantidad"],
+                ["food type","destination country","quantity"],
+                "https://www.tsa.gov/travel/security-screening/whatcanibring/all-list",
+                "TSA — What Can I Bring",True,"2026-10-01"
             ),
-            CargoRule(
-                id="animal_general_pending",
-                airline="general",
-                keyword="mascota",
-                category=RuleCategory.ANIMAL.value,
-                status=RuleStatus.PENDING,
-                answer=VisualStatus.REVIEW.value,
-                details="Los animales y mascotas requieren revisar las condiciones de la aerolínea y las autoridades del origen y destino.",
-                conditions=["Tipo de animal","Aerolínea","País de destino","Documentación"]
+            Rule(
+                "pets","ANIMALES",["animal","animales","mascota","mascotas","pet","pets","perro","dog","gato","cat"],
+                RuleStatus.PENDING.value,VisualStatus.REVIEW.value,
+                "Viajar con un animal puede requerir reglas de aerolínea, aeropuerto y país de destino.",
+                "Traveling with an animal may require airline, airport and destination-country rules.",
+                "No debe asumirse que una mascota puede viajar simplemente porque existe una opción de transporte.","Do not assume a pet can travel simply because a transport option exists.",
+                ["Identifica el animal.","Confirma la política de la aerolínea.","Confirma los requisitos del país de destino."],
+                ["Identify the animal.","Confirm the airline policy.","Confirm destination-country requirements."],
+                ["animal","aerolínea","destino"],
+                ["animal","airline","destination"],
+                "https://www.tsa.gov/travel/security-screening/whatcanibring/all-list",
+                "TSA — What Can I Bring",True,"2026-10-01"
             ),
-            CargoRule(
-                id="medical_equipment_general_pending",
-                airline="general",
-                keyword="equipo medico",
-                category=RuleCategory.MEDICAL.value,
-                status=RuleStatus.PENDING,
-                answer=VisualStatus.REVIEW.value,
-                details="Los equipos médicos pueden tener condiciones especiales según el dispositivo, sus baterías, la aerolínea y el destino.",
-                conditions=["Tipo de equipo","Batería","Aerolínea","Destino"]
+            Rule(
+                "medical_equipment","EQUIPO MÉDICO",["equipo medico","equipo médico","medical equipment","medical device","cpap","wheelchair","silla de ruedas"],
+                RuleStatus.PENDING.value,VisualStatus.REVIEW.value,
+                "Los equipos médicos pueden tener reglas especiales y algunas condiciones dependen de la aerolínea y del dispositivo.",
+                "Medical equipment may have special rules, with some conditions depending on the airline and device.",
+                "Requiere identificar el equipo y confirmar las condiciones del viaje.","The equipment must be identified and the trip conditions confirmed.",
+                ["Identifica el equipo.","Revisa si usa baterías.","Confirma las condiciones de la aerolínea."],
+                ["Identify the equipment.","Check whether it uses batteries.","Confirm airline conditions."],
+                ["tipo de equipo","batería","aerolínea"],
+                ["equipment type","battery","airline"],
+                "https://www.faa.gov/hazmat/packsafe",
+                "FAA — PackSafe",True,"2026-10-01"
+            ),
+            Rule(
+                "documents","DOCUMENTOS",["documento","documentos","passport","pasaporte","visa","identificacion","identificación","id"],
+                RuleStatus.PENDING.value,VisualStatus.REVIEW.value,
+                "Los documentos de viaje dependen de la persona, destino, nacionalidad, ruta y propósito del viaje.",
+                "Travel documents depend on the traveler, destination, nationality, route and purpose of travel.",
+                "Los documentos deben revisarse con la autoridad correspondiente.","Documents must be reviewed with the applicable authority.",
+                ["Identifica el destino.","Determina qué documento tienes.","Confirma los requisitos oficiales de entrada."],
+                ["Identify the destination.","Determine which document you have.","Confirm official entry requirements."],
+                ["destino","nacionalidad o situación de viaje","documento"],
+                ["destination","nationality or travel situation","document"],
+                "",
+                "Fuente oficial correspondiente",False,None
+            ),
+            Rule(
+                "cash","DINERO EN EFECTIVO",["dinero","efectivo","cash","money","currency","moneda"],
+                RuleStatus.PENDING.value,VisualStatus.REVIEW.value,
+                "El transporte y la declaración de dinero pueden depender del país de salida, tránsito y destino y de la cantidad transportada.",
+                "Transport and declaration requirements for cash may depend on the departure, transit and destination countries and amount carried.",
+                "Debe revisarse la regla del itinerario completo.","The rule for the complete itinerary must be reviewed.",
+                ["Identifica la cantidad aproximada.","Revisa los países del itinerario.","Confirma si existe una obligación de declaración."],
+                ["Identify the approximate amount.","Review the countries on the itinerary.","Confirm whether a declaration is required."],
+                ["cantidad","países del itinerario"],
+                ["amount","itinerary countries"],
+                "",
+                "Autoridad oficial correspondiente",False,None
+            ),
+            Rule(
+                "electronics","EQUIPOS ELECTRÓNICOS",["electronico","electrónico","electronics","computer","computadora","laptop","telefono","teléfono","phone","tablet"],
+                RuleStatus.PENDING.value,VisualStatus.REVIEW.value,
+                "Los dispositivos electrónicos pueden viajar con el pasajero, pero las condiciones pueden cambiar según el dispositivo, sus baterías, el equipaje y la aerolínea.",
+                "Electronic devices may travel with the passenger, but conditions can vary by device, batteries, baggage and airline.",
+                "Revisa el dispositivo y especialmente si contiene baterías.","Review the device, especially whether it contains batteries.",
+                ["Identifica el dispositivo.","Comprueba si contiene batería de litio.","Confirma la regla de la aerolínea si corresponde."],
+                ["Identify the device.","Check whether it contains a lithium battery.","Confirm the airline rule when applicable."],
+                ["dispositivo","batería","aerolínea"],
+                ["device","battery","airline"],
+                "https://www.faa.gov/hazmat/packsafe/airline-passengers-and-batteries",
+                "FAA — Airline Passengers and Batteries",True,"2026-10-01"
             )
         ]
 
-    def add_rule(self,rule:CargoRule)->None:
-        if not isinstance(rule,CargoRule):
-            raise TypeError("rule debe ser CargoRule")
-        self.rules.append(rule)
+rule_repo=RuleRepository()
 
-    def add_rules(self,rules:List[CargoRule])->None:
-        for rule in rules:
-            self.add_rule(rule)
+def _norm(value:Any)->str:
+    s=unicodedata.normalize("NFKD",str(value or "")).encode("ascii","ignore").decode("ascii").lower()
+    return " ".join(s.split())
 
-    def find_rule(
-        self,
-        text:str,
-        airline:Optional[str]=None,
-        origin:Optional[str]=None,
-        destination:Optional[str]=None,
-        cabin:Optional[str]=None,
-        fare:Optional[str]=None
-    )->Optional[CargoRule]:
-        matches=[
-            r for r in self.rules
-            if r.matches(text,airline,origin,destination,cabin,fare)
-        ]
-        if not matches:
-            return None
-        matches.sort(
-            key=lambda r:self._specificity(
-                r,airline,origin,destination,cabin,fare
-            ),
-            reverse=True
-        )
-        return matches[0]
-
-    def find_pending(
-        self,
-        text:str,
-        airline:Optional[str]=None,
-        category:Optional[str]=None
-    )->Optional[CargoRule]:
-        q=_norm(text)
-        a=_norm(airline)
-        c=_norm(category)
-        candidates=[]
-        for rule in self.rules:
-            if rule.status!=RuleStatus.PENDING:
-                continue
-            if rule.keyword and not _contains(q,rule.keyword):
-                continue
-            if a and _norm(rule.airline)!="general" and not _contains(a,rule.airline):
-                continue
-            if c and _norm(rule.category)!=c:
-                continue
-            candidates.append(rule)
-        if not candidates:
-            return None
-        candidates.sort(key=lambda r:len(_norm(r.keyword)),reverse=True)
-        return candidates[0]
-
-    def _specificity(
-        self,
-        rule:CargoRule,
-        airline:Optional[str],
-        origin:Optional[str],
-        destination:Optional[str],
-        cabin:Optional[str],
-        fare:Optional[str]
-    )->int:
-        score=0
-        if rule.airline and _norm(rule.airline)!="general":
-            score+=100
-        if rule.route_origin and origin:
-            score+=30
-        if rule.route_destination and destination:
-            score+=30
-        if rule.cabin and cabin:
-            score+=15
-        if rule.fare and fare:
-            score+=15
-        score+=min(len(_norm(rule.keyword)),30)
-        return score
-
-    def search(
-        self,
-        text:str,
-        airline:Optional[str]=None,
-        category:Optional[str]=None
-    )->List[CargoRule]:
-        q=_norm(text)
-        a=_norm(airline)
-        c=_norm(category)
-        result=[]
-        for rule in self.rules:
-            if rule.status!=RuleStatus.ACTIVE:
-                continue
-            if rule.keyword and not _contains(q,rule.keyword):
-                continue
-            if a and _norm(rule.airline)!="general" and not _contains(a,rule.airline):
-                continue
-            if c and _norm(rule.category)!=c:
-                continue
-            result.append(rule)
-        return result
-
-    def find_rule_data(self,*args,**kwargs)->Optional[Dict[str,Any]]:
-        rule=self.find_rule(*args,**kwargs)
-        return self.to_dict(rule) if rule else None
-
-    def to_dict(self,rule:Optional[CargoRule])->Optional[Dict[str,Any]]:
-        if not rule:
-            return None
-        source=None
-        if rule.source:
-            source={
-                "name":rule.source.name,
-                "url":rule.source.url,
-                "verified_date":rule.source.verified_date,
-                "scope":rule.source.scope,
-                "notes":rule.source.notes
-            }
-        return {
-            "id":rule.id,
-            "airline":rule.airline,
-            "keyword":rule.keyword,
-            "category":rule.category,
-            "status":rule.status.value,
-            "answer":rule.answer,
-            "details":rule.details,
-            "source":source,
-            "verification_date":rule.verification_date or (rule.source.verified_date if rule.source else None),
-            "baggage_place":rule.baggage_place,
-            "route_origin":rule.route_origin,
-            "route_destination":rule.route_destination,
-            "cabin":rule.cabin,
-            "fare":rule.fare,
-            "conditions":list(rule.conditions)
-        }
-
-    def active_rules(self)->List[CargoRule]:
-        return [r for r in self.rules if r.status==RuleStatus.ACTIVE]
-
-    def pending_rules(self)->List[CargoRule]:
-        return [r for r in self.rules if r.status==RuleStatus.PENDING]
-
-    def expired_rules(self)->List[CargoRule]:
-        return [r for r in self.rules if r.status==RuleStatus.EXPIRED]
-
-    def count(self,status:Optional[str]=None)->Any:
-        counts={
-            "total":len(self.rules),
-            "active":len(self.active_rules()),
-            "pending":len(self.pending_rules()),
-            "expired":len(self.expired_rules())
-        }
-        if status:
-            key=str(status).lower()
-            return counts.get(key,0)
-        return counts
-
-    def clear(self)->None:
-        self.rules.clear()
+def _contains(text:str,*terms:str)->bool:
+    n=_norm(text)
+    return any(_norm(x) in n for x in terms)
 
 class BaggageAdvisor:
-    PERSONAL_TERMS=(
-        "articulo personal","personal item","mochila pequeña",
-        "mochila pequena","bolso personal","bolso"
-    )
-    CARRY_TERMS=(
-        "equipaje de mano","equipaje de cabina","carry on",
-        "carry-on","carryon","maleta de cabina","cabina"
-    )
-    CHECKED_TERMS=(
-        "equipaje documentado","equipaje facturado",
-        "maleta documentada","maleta facturada",
-        "checked baggage","checked bag","maleta registrada"
-    )
-    CONNECTION_TERMS=(
-        "escala","conexion","stop","estancia","connection"
-    )
+    VERSION=VERSION
 
-    @classmethod
-    def explain_term(cls,text:str,language:str="es")->Optional[Dict[str,str]]:
-        q=_norm(text)
-        en=_norm(language)=="en"
-        if any(_contains(q,x) for x in cls.PERSONAL_TERMS):
-            return {
-                "term":"PERSONAL ITEM" if en else "ARTÍCULO PERSONAL",
-                "simple":"It is the small bag or personal item allowed by the airline." if en else "Es el bolso o artículo pequeño que la aerolínea permite llevar contigo.",
-                "next":"Check the exact dimensions and conditions for your airline and fare." if en else "Revisa las medidas exactas y las condiciones de tu aerolínea y tarifa."
-            }
-        if any(_contains(q,x) for x in cls.CARRY_TERMS):
-            return {
-                "term":"CARRY-ON BAG" if en else "EQUIPAJE DE MANO",
-                "simple":"It is the bag you carry with you into the aircraft." if en else "Es la maleta que llevas contigo dentro del avión.",
-                "next":"Check the exact weight, dimensions and quantity allowed by your airline and fare." if en else "Revisa peso, medidas y cantidad permitida por tu aerolínea y tarifa."
-            }
-        if any(_contains(q,x) for x in cls.CHECKED_TERMS):
-            return {
-                "term":"CHECKED BAG" if en else "EQUIPAJE DOCUMENTADO",
-                "simple":"It is the bag you give to the airline before boarding." if en else "Es la maleta que entregas a la aerolínea antes de subir al avión.",
-                "next":"Check quantity, weight, dimensions and possible charges for your fare." if en else "Revisa cantidad, peso, medidas y posible costo según tu tarifa."
-            }
-        if any(_contains(q,x) for x in cls.CONNECTION_TERMS):
-            return {
-                "term":"CONNECTION" if en else "ESCALA O CONEXIÓN",
-                "simple":"It is a stop before reaching your final destination." if en else "Es una parada antes de llegar a tu destino final.",
-                "next":"Check whether you change aircraft, connection time and baggage handling." if en else "Revisa si cambias de avión, cuánto dura la conexión y qué ocurre con tu equipaje."
-            }
-        return None
+    TERM_EXPLANATIONS_ES={
+        "equipaje de mano":"Es la maleta o bolsa que llevas contigo dentro del avión, siempre que tu tarifa y aerolínea permitan llevarla.",
+        "equipaje de cabina":"Es el equipaje que viaja contigo en la cabina del avión. Las medidas, peso y cantidad dependen de la aerolínea y tarifa.",
+        "articulo personal":"Es una pieza pequeña que puede viajar contigo cuando la tarifa y aerolínea la permiten. El tamaño exacto depende de la regla aplicable.",
+        "equipaje documentado":"Es la maleta que entregas antes de subir al avión para que viaje en la bodega.",
+        "equipaje facturado":"Es otra forma de referirse al equipaje que entregas a la aerolínea para viajar en la bodega.",
+        "carry on":"Es el equipaje que llevas contigo en la cabina. La cantidad y medidas dependen de la aerolínea y tarifa.",
+        "checked baggage":"Es el equipaje que entregas a la aerolínea para que viaje en la bodega.",
+        "escala":"Es una parada durante el viaje antes de llegar al destino final.",
+        "conexion":"Es cuando tu viaje continúa hacia otro vuelo. Puede implicar cambiar de avión y debes revisar qué ocurre con tu equipaje.",
+        "stop":"Es una parada o escala indicada en el itinerario. El significado exacto depende de cómo aparezca en el viaje.",
+        "estancia":"Es un tiempo en el que permaneces en un lugar antes de continuar el viaje, según las condiciones del itinerario.",
+        "tarifa":"Es el tipo de precio o producto del boleto que determina, entre otras cosas, qué condiciones y servicios están incluidos.",
+        "cabina":"Es la clase de servicio del vuelo, por ejemplo económica o ejecutiva. Las condiciones dependen de la aerolínea y tarifa."
+    }
 
-    @classmethod
-    def item_category(cls,text:str)->str:
-        q=_norm(text)
-        groups={
-            RuleCategory.BATTERY.value:(
-                "bateria","baterias","power bank","litio","lithium",
-                "bateria externa","bateria portatil","pila","pilas"
-            ),
-            RuleCategory.LIQUID.value:(
-                "liquido","liquidos","liquid","shampoo","perfume",
-                "crema","gel","gel de cabello"
-            ),
-            RuleCategory.AEROSOL.value:(
-                "aerosol","spray","desodorante aerosol"
-            ),
-            RuleCategory.MEDICINE.value:(
-                "medicina","medicamento","medicamentos","medicine",
-                "medication","pastillas"
-            ),
-            RuleCategory.FOOD.value:(
-                "comida","alimento","alimentos","food","carne",
-                "queso","fruta","frutas"
-            ),
-            RuleCategory.ELECTRONICS.value:(
-                "telefono","telefono celular","celular","computadora",
-                "laptop","tablet","electronico","electronica",
-                "camera","camara","reloj inteligente"
-            ),
-            RuleCategory.MEDICAL.value:(
-                "equipo medico","medical equipment","concentrador",
-                "oxigeno","oxygen","dispositivo medico"
-            ),
-            RuleCategory.ANIMAL.value:(
-                "animal","mascota","pet","perro","gato"
-            ),
-            RuleCategory.SPORTS.value:(
-                "bicicleta","bicicletas","deporte","sports",
-                "equipo deportivo"
-            ),
-            RuleCategory.DOCUMENT.value:(
-                "pasaporte","documento","documentos","visa",
-                "identificacion","identificacion personal"
-            )
+    TERM_EXPLANATIONS_EN={
+        "carry on":"It is baggage you take with you into the aircraft cabin. The airline and fare determine whether it is included and its limits.",
+        "personal item":"It is a small item that may travel with you when the airline and fare allow it. Exact size depends on the applicable rule.",
+        "checked baggage":"It is baggage you hand to the airline before boarding so it travels in the aircraft hold.",
+        "connection":"It means your journey continues on another flight. You may change aircraft and must check what happens to your baggage.",
+        "stop":"It is a stop during the itinerary. Its exact meaning depends on how it is shown in the itinerary.",
+        "fare":"It is the ticket product or price type that determines included services and conditions.",
+        "cabin":"It is the service class of the flight. Conditions depend on the airline and fare.",
+        "liquids":"Liquids and gels may have specific security conditions depending on the item and travel situation.",
+        "power bank":"A power bank is a spare battery and may have special rules based on capacity, airline and itinerary."
+    }
+
+    def explain_term(self,text:str,language="es")->Dict[str,Any]:
+        n=_norm(text)
+        if language=="en":
+            for key,value in self.TERM_EXPLANATIONS_EN.items():
+                if n==_norm(key) or _contains(n,key):
+                    return {"term":text,"explanation":value,"example":None,"next_action":"Check the exact baggage rule for your airline and fare."}
+            return {"term":text,"explanation":"This term describes a travel or baggage condition that may depend on the airline, fare, route or item.","example":None,"next_action":"Find the term in your flight details and confirm the applicable official rule."}
+        for key,value in self.TERM_EXPLANATIONS_ES.items():
+            if n==_norm(key) or _contains(n,key):
+                return {"term":text,"explanation":value,"example":None,"next_action":"Ahora revisemos la regla exacta de tu aerolínea y tarifa."}
+        return {"term":text,"explanation":"Este término describe una condición de viaje o equipaje que puede depender de la aerolínea, tarifa, ruta o artículo.","example":None,"next_action":"Busca este término en los detalles de tu vuelo y confirma la regla oficial que corresponde."}
+
+    def item_category(self,item:str)->str:
+        n=_norm(item)
+        if _contains(n,"power bank","bateria externa","bateria de repuesto","spare battery","lithium battery","bateria litio"):return "battery"
+        if _contains(n,"medicamento","medicamentos","medicine","medication","pastilla","prescription","receta"):return "medication"
+        if _contains(n,"liquido","liquidos","liquid","gel","crema","shampoo","champu","champú"):return "liquid"
+        if _contains(n,"aerosol","spray","desodorante spray","hairspray"):return "aerosol"
+        if _contains(n,"comida","alimento","alimentos","food","carne","meat","queso","cheese","fruta","fruit"):return "food"
+        if _contains(n,"mascota","mascotas","animal","perro","gato","pet","pets"):return "pet"
+        if _contains(n,"equipo medico","equipo médico","medical equipment","medical device","cpap","silla de ruedas","wheelchair"):return "medical"
+        if _contains(n,"pasaporte","passport","visa","documento","documentos","identificacion","identificación","id"):return "document"
+        if _contains(n,"dinero","efectivo","cash","money","currency","moneda"):return "cash"
+        if _contains(n,"computadora","computer","laptop","telefono","teléfono","phone","tablet","electronico","electrónico"):return "electronics"
+        if _contains(n,"mochila","backpack","maleta","suitcase","equipaje","baggage","carry on","carry-on","checked baggage"):return "baggage"
+        return "general"
+
+    def _flight_values(self,flight:Any)->Dict[str,Any]:
+        if hasattr(flight,"model_dump"):return flight.model_dump()
+        if hasattr(flight,"dict"):return flight.dict()
+        if isinstance(flight,dict):return dict(flight)
+        return {}
+
+    def _find_rule(self,item:str)->Optional[Rule]:
+        n=_norm(item)
+        category=self.item_category(item)
+        mapping={
+            "battery":["power_bank","spare_lithium_battery"],
+            "medication":["medications"],
+            "liquid":["liquids"],
+            "aerosol":["aerosols"],
+            "food":["food"],
+            "pet":["pets"],
+            "medical":["medical_equipment"],
+            "document":["documents"],
+            "cash":["cash"],
+            "electronics":["electronics"]
         }
-        for category,terms in groups.items():
-            if any(_contains(q,term) for term in terms):
-                return category
-        return RuleCategory.OTHER.value
+        for rid in mapping.get(category,[]):
+            r=rule_repo.get(rid)
+            if r:return r
+        matches=rule_repo.search(n)
+        return matches[0] if matches else None
 
-    @classmethod
-    def _flight_values(cls,flight:Optional[Dict[str,Any]])->Dict[str,Any]:
-        flight=flight or {}
+    def advise(self,item:Any,flight:Any=None,baggage_type:Any=None,language="es",**kwargs)->Dict[str,Any]:
+        if isinstance(item,dict):
+            data=dict(item)
+            text=data.get("item") or data.get("name") or ""
+            flight=data.get("flight",flight)
+            baggage_type=data.get("baggage_type",baggage_type)
+            language=data.get("language",language)
+        else:
+            text=str(item or "")
+        if not text.strip():
+            return self._review_empty(language)
+
+        f=self._flight_values(flight)
+        rule=self._find_rule(text)
+        if not rule:
+            return self._review_unknown(text,f,baggage_type,language)
+
+        airline=f.get("airline")
+        destination=f.get("destination")
+        cabin=f.get("cabin")
+        fare=f.get("fare")
+        verified_rule=bool(rule.verified and rule.status==RuleStatus.ACTIVE.value)
+
+        category=rule.visual_status
+        missing=list(rule.missing_information_en if language=="en" else rule.missing_information_es)
+        conditions=list(rule.conditions_en if language=="en" else rule.conditions_es)
+        source=rule.source or None
+        source_name=rule.source_name or None
+        verification_date=rule.verification_date if rule.verified else None
+
+        if airline and rule.airline and _norm(airline)!=_norm(rule.airline):
+            missing.append("airline-specific rule")
+            category=VisualStatus.REVIEW.value
+        if destination and rule.destination and _norm(destination)!=_norm(rule.destination):
+            missing.append("destination-specific rule")
+            category=VisualStatus.REVIEW.value
+
+        if not airline and category!=VisualStatus.NOT_ALLOWED.value:
+            missing.append("la aerolínea" if language=="es" else "the airline")
+            category=VisualStatus.REVIEW.value
+
+        if not fare and category!=VisualStatus.NOT_ALLOWED.value:
+            missing.append("la tarifa" if language=="es" else "the fare")
+            category=VisualStatus.REVIEW.value
+
+        if rule.status!=RuleStatus.ACTIVE.value:
+            category=VisualStatus.REVIEW.value
+
+        if not verified_rule:
+            category=VisualStatus.REVIEW.value
+
+        place=self._place(text,baggage_type,language)
+        explanation=self._explanation(rule,text,language,category)
+        next_action=self._next_action(text,rule,language,missing)
+
         return {
-            "airline":_first(
-                flight.get("airline"),
-                flight.get("airline_name")
-            ),
-            "origin":_first(
-                flight.get("origin"),
-                flight.get("departure_airport"),
-                flight.get("route_origin")
-            ),
-            "destination":_first(
-                flight.get("destination"),
-                flight.get("arrival_airport"),
-                flight.get("route_destination")
-            ),
-            "cabin":flight.get("cabin"),
-            "fare":flight.get("fare")
-        }
-
-    @classmethod
-    def advise(
-        cls,
-        repository_or_item,
-        item:Optional[str]=None,
-        airline:Optional[str]=None,
-        origin:Optional[str]=None,
-        destination:Optional[str]=None,
-        cabin:Optional[str]=None,
-        fare:Optional[str]=None,
-        flight:Optional[Dict[str,Any]]=None,
-        baggage_type:Optional[str]=None,
-        language:str="es",
-        **kwargs
-    )->Dict[str,Any]:
-        repository=repository_or_item if isinstance(repository_or_item,RuleRepository) else DEFAULT_RULE_REPOSITORY
-        if isinstance(repository_or_item,RuleRepository):
-            text=item or ""
-        else:
-            text=str(repository_or_item or "")
-
-        values=cls._flight_values(flight)
-        airline=_first(airline,values["airline"])
-        origin=_first(origin,values["origin"])
-        destination=_first(destination,values["destination"])
-        cabin=_first(cabin,values["cabin"])
-        fare=_first(fare,values["fare"])
-
-        q=_norm(text)
-        category=cls.item_category(q)
-        explanation=cls.explain_term(q,language)
-
-        rule=repository.find_rule(
-            q,airline,origin,destination,cabin,fare
-        )
-
-        pending=repository.find_pending(
-            q,airline,category
-        )
-
-        lang_en=_norm(language)=="en"
-
-        response={
+            "success":True,
+            "item":text,
             "category":category,
-            "visual_status":VisualStatus.REVIEW.value,
-            "title":"REVIEW YOUR ITEM" if lang_en else "REVISEMOS TU ARTÍCULO",
-            "simple_explanation":explanation,
-            "rule":None,
-            "source":None,
-            "source_name":None,
-            "verified":False,
-            "verification_date":None,
-            "baggage_place":baggage_type,
-            "conditions":[],
-            "missing_information":[],
-            "next_action":{
-                "title":"CONFIRM OFFICIAL INFORMATION" if lang_en else "CONFIRMA LA INFORMACIÓN OFICIAL",
-                "message":(
-                    "Confirm the rule for this item, airline, route and fare on the applicable official source."
-                    if lang_en else
-                    "Confirma la regla de este artículo, aerolínea, ruta y tarifa en la fuente oficial aplicable."
-                )
-            }
+            "explanation":explanation,
+            "baggage_place":place,
+            "conditions":_unique_strings(conditions),
+            "missing_information":_unique_strings(missing),
+            "source":source,
+            "source_name":source_name,
+            "verified":verified_rule,
+            "verification_date":verification_date,
+            "official_link":self._official_link(rule),
+            "next_action":next_action,
+            "legal_notice":self._legal(language)
         }
 
-        if airline:
-            response["conditions"].append(
-                "Airline: "+str(airline)
-            )
+    def advise_item(self,item:str,**kwargs)->Dict[str,Any]:
+        return self.advise(item,**kwargs)
+
+    def _place(self,item,baggage_type,language):
+        b=_norm(str(baggage_type or ""))
+        if language=="en":
+            if b in ("checked","checked baggage"):return "Checked baggage / aircraft hold, if the airline allows the item there."
+            if b in ("carry_on","carry-on","carry on"):return "Cabin baggage, if the airline allows the item there."
+            if b in ("personal_item","personal item"):return "Personal item, only if the airline and fare allow it."
+            if self.item_category(item)=="battery":return "Usually needs a specific baggage-location check before travel."
+            return "The correct location depends on the item and the applicable airline/security rule."
+        if b in ("checked","checked baggage"):return "Equipaje documentado, si la aerolínea permite llevar allí el artículo."
+        if b in ("carry_on","carry-on","carry on"):return "Equipaje de cabina, si la aerolínea permite llevar allí el artículo."
+        if b in ("personal_item","personal item"):return "Artículo personal, solamente si la aerolínea y tarifa lo permiten."
+        if self.item_category(item)=="battery":return "Necesita revisar específicamente dónde debe viajar antes de preparar el equipaje."
+        return "El lugar correcto depende del artículo y de la regla de seguridad o aerolínea aplicable."
+
+    def _explanation(self,rule,item,language,category):
+        if language=="en":
+            base=rule.explanation_en
+            if category==VisualStatus.REVIEW.value:return base+" We do not want to guess: the missing condition must be confirmed before you travel."
+            if category==VisualStatus.ALLOW_WITH_CONDITION.value:return base+" Follow every listed condition."
+            return base
+        base=rule.explanation_es
+        if category==VisualStatus.REVIEW.value:return base+" No queremos adivinar: falta confirmar la condición que puede cambiar la respuesta antes de viajar."
+        if category==VisualStatus.ALLOW_WITH_CONDITION.value:return base+" Debes cumplir todas las condiciones indicadas."
+        return base
+
+    def _next_action(self,item,rule,language,missing):
+        if language=="en":
+            if missing:return "Open the official source and look for the item name or the baggage section. Confirm: "+", ".join(missing)+"."
+            return "Confirm the current official rule for this exact flight before packing."
+        if missing:return "Abre la fuente oficial y busca el nombre del artículo o la sección de equipaje. Confirma: "+", ".join(missing)+"."
+        return "Confirma la regla oficial vigente para este vuelo concreto antes de preparar el equipaje."
+
+    def _official_link(self,rule):
+        if not rule.source:return None
+        return {
+            "name":rule.source_name or "Fuente oficial",
+            "url":rule.source,
+            "description":"Fuente utilizada para orientar esta revisión. Confirma la condición vigente antes de viajar.",
+            "authority":rule.source_name or None,
+            "country":"United States" if "faa.gov" in rule.source or "tsa.gov" in rule.source else None,
+            "verified":rule.verified,
+            "verified_at":rule.verification_date
+        }
+
+    def _review_empty(self,language):
+        if language=="en":
+            text="Tell me the item you want to carry. For example: power bank, medicine, shampoo, food or laptop."
+            action="Write the item you want to review."
         else:
-            response["missing_information"].append(
-                "airline" if lang_en else "aerolínea"
-            )
+            text="Dime qué artículo quieres llevar. Por ejemplo: power bank, medicamento, champú, comida o computadora."
+            action="Escribe el artículo que quieres revisar."
+        return {"success":True,"item":"","category":VisualStatus.REVIEW.value,"explanation":text,"baggage_place":None,"conditions":[],"missing_information":["artículo" if language=="es" else "item"],"source":None,"source_name":None,"verified":False,"verification_date":None,"official_link":None,"next_action":action,"legal_notice":self._legal(language)}
 
-        if origin:
-            response["conditions"].append(
-                "Origin: "+str(origin) if lang_en else "Origen: "+str(origin)
-            )
+    def _review_unknown(self,item,flight,baggage_type,language):
+        airline=flight.get("airline")
+        destination=flight.get("destination")
+        if language=="en":
+            explanation=f"We recognize that you want to carry “{item}”, but we do not have a confirmed rule for this exact item yet. Instead of guessing, we will help you identify the rule that applies."
+            missing=["exact item description"]
+            if not airline:missing.append("airline")
+            if not destination:missing.append("destination")
+            action="Check the airline baggage or restricted-items section and search for the exact item name. If you tell us the airline and destination, we can narrow the guidance."
         else:
-            response["missing_information"].append(
-                "origin" if lang_en else "origen"
-            )
+            explanation=f"Entendemos que quieres llevar “{item}”, pero todavía no tenemos una regla confirmada para ese artículo exacto. En lugar de adivinar, te ayudamos a identificar la regla que corresponde."
+            missing=["descripción exacta del artículo"]
+            if not airline:missing.append("la aerolínea")
+            if not destination:missing.append("el destino")
+            action="Busca en la sección de equipaje o artículos restringidos de la aerolínea el nombre exacto del artículo. Si nos dices la aerolínea y el destino, podemos hacer la orientación más precisa."
+        return {"success":True,"item":item,"category":VisualStatus.REVIEW.value,"explanation":explanation,"baggage_place":self._place(item,baggage_type,language),"conditions":[],"missing_information":missing,"source":None,"source_name":None,"verified":False,"verification_date":None,"official_link":None,"next_action":action,"legal_notice":self._legal(language)}
 
-        if destination:
-            response["conditions"].append(
-                "Destination: "+str(destination) if lang_en else "Destino: "+str(destination)
-            )
-        else:
-            response["missing_information"].append(
-                "destination" if lang_en else "destino"
-            )
+    def _legal(self,language):
+        if language=="en":return "This is independent educational guidance from May Roga LLC. Confirm current requirements with the applicable official airline, government, airport or authority."
+        return "Esta es una orientación educativa e independiente de May Roga LLC. Confirma los requisitos vigentes con la aerolínea, gobierno, aeropuerto o autoridad oficial correspondiente."
 
-        if baggage_type:
-            response["conditions"].append(
-                "Baggage type: "+str(baggage_type) if lang_en else "Tipo de equipaje: "+str(baggage_type)
-            )
-
-        if rule:
-            data=repository.to_dict(rule) or {}
-            response["rule"]=data
-            response["visual_status"]=data.get("answer") or VisualStatus.REVIEW.value
-            response["verified"]=data.get("status")=="ACTIVE"
-            response["verification_date"]=data.get("verification_date")
-            response["baggage_place"]=data.get("baggage_place") or baggage_type
-            response["conditions"].extend(data.get("conditions") or [])
-            if data.get("source"):
-                response["source"]=data["source"].get("url")
-                response["source_name"]=data["source"].get("name")
-            if data.get("details"):
-                response["details"]=data["details"]
-            response["next_action"]={
-                "title":"CONTINÚA CON TU PREPARACIÓN" if not lang_en else "CONTINUE PREPARING",
-                "message":(
-                    "Esta respuesta procede de una regla registrada y verificada. Revisa siempre la fuente antes de viajar."
-                    if not lang_en else
-                    "This response comes from a registered and verified rule. Always review the source before traveling."
-                )
-            }
-            return response
-
-        if pending:
-            data=repository.to_dict(pending) or {}
-            response["rule"]=data
-            response["visual_status"]=VisualStatus.REVIEW.value
-            response["conditions"].extend(data.get("conditions") or [])
-            response["details"]=data.get("details","")
-            response["missing_information"].append(
-                "official verified rule" if lang_en else "regla oficial verificada"
-            )
-            return response
-
-        response["details"]=(
-            "No hay una regla específica verificada en el registro actual para esta consulta. La aplicación no inventa una respuesta. Primero identifica la aerolínea, ruta, tipo de equipaje y condiciones aplicables y después confirma la fuente oficial."
-            if not lang_en else
-            "There is no specific verified rule currently registered for this request. The application does not invent an answer. First identify the airline, route, baggage type and applicable conditions, then confirm the official source."
-        )
-        return response
-
-    @classmethod
-    def advise_item(
-        cls,
-        item:str,
-        airline:Optional[str]=None,
-        origin:Optional[str]=None,
-        destination:Optional[str]=None,
-        cabin:Optional[str]=None,
-        fare:Optional[str]=None,
-        flight:Optional[Dict[str,Any]]=None,
-        baggage_type:Optional[str]=None,
-        language:str="es"
-    )->Dict[str,Any]:
-        return cls.advise(
-            DEFAULT_RULE_REPOSITORY,
-            item=item,
-            airline=airline,
-            origin=origin,
-            destination=destination,
-            cabin=cabin,
-            fare=fare,
-            flight=flight,
-            baggage_type=baggage_type,
-            language=language
-        )
-
-DEFAULT_RULE_REPOSITORY=RuleRepository()
-rule_repo=DEFAULT_RULE_REPOSITORY
-rules_engine=DEFAULT_RULE_REPOSITORY
 advisor=BaggageAdvisor()
 
-def find_rule(
-    text:str,
-    airline:Optional[str]=None,
-    origin:Optional[str]=None,
-    destination:Optional[str]=None,
-    cabin:Optional[str]=None,
-    fare:Optional[str]=None
-)->Optional[CargoRule]:
-    return DEFAULT_RULE_REPOSITORY.find_rule(
-        text,airline,origin,destination,cabin,fare
-    )
-
-def advise_item(
-    item:str,
-    airline:Optional[str]=None,
-    origin:Optional[str]=None,
-    destination:Optional[str]=None,
-    cabin:Optional[str]=None,
-    fare:Optional[str]=None,
-    flight:Optional[Dict[str,Any]]=None,
-    baggage_type:Optional[str]=None,
-    language:str="es"
-)->Dict[str,Any]:
-    return BaggageAdvisor.advise_item(
-        item=item,
-        airline=airline,
-        origin=origin,
-        destination=destination,
-        cabin=cabin,
-        fare=fare,
-        flight=flight,
-        baggage_type=baggage_type,
-        language=language
-    )
-
-__all__=[
-    "RuleStatus",
-    "RuleCategory",
-    "VisualStatus",
-    "SourceRecord",
-    "CargoRule",
-    "RuleRepository",
-    "BaggageAdvisor",
-    "DEFAULT_RULE_REPOSITORY",
-    "rule_repo",
-    "rules_engine",
-    "advisor",
-    "find_rule",
-    "advise_item"
-]
+__all__=["VERSION","VisualStatus","RuleStatus","Rule","RuleRepository","rule_repo","BaggageAdvisor","advisor"]
