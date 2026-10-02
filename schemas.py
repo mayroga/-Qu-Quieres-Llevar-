@@ -1,180 +1,119 @@
-# schemas.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v8.0.1
+# schemas.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v8.0.2
 from datetime import date
-from typing import Any,Dict,List,Literal,Optional
+from typing import Any,Dict,List,Optional,Literal
 from pydantic import BaseModel,ConfigDict,Field,field_validator
+
+VERSION="8.0.2"
 
 Language=Literal["es","en"]
 
 class StrictModel(BaseModel):
-    model_config=ConfigDict(extra="ignore",str_strip_whitespace=True,validate_assignment=True)
-
-class CategoryVisualEnum:
-    ALLOW="ALLOW"
-    ALLOW_WITH_CONDITION="ALLOW_WITH_CONDITION"
-    NOT_ALLOWED="NOT_ALLOWED"
-    REVIEW="REVIEW"
-
-class BaggageTypeEnum:
-    CARRY_ON="carry_on"
-    CHECKED="checked"
-    PERSONAL_ITEM="personal_item"
-
-class RuleStatusEnum:
-    ACTIVE="ACTIVE"
-    PENDING="PENDING"
-    EXPIRED="EXPIRED"
-
-class SourceTypeEnum:
-    OFFICIAL="official"
-    AIRLINE="airline"
-    SECURITY="security"
-    BAGGAGE="baggage"
-    GOVERNMENT="government"
-    SEARCH="search"
+    model_config=ConfigDict(extra="ignore",validate_assignment=True,str_strip_whitespace=True)
 
 class FlightSearchRequest(StrictModel):
-    origin:Optional[str]=Field("",min_length=0,max_length=120)
-    destination:Optional[str]=Field("",min_length=0,max_length=120)
-    departure_date:Optional[date]=None
-    return_date:Optional[date]=None
-    passengers:int=Field(1,ge=1,le=20)
-    cabin:Optional[str]=Field("",max_length=80)
-    airline:Optional[str]=Field("",max_length=120)
-    nonstop:Optional[bool]=None
-    language:Language="es"
-
-class FlightResult(StrictModel):
-    id:str=""
-    airline:str=""
-    flight_number:str=""
     origin:str=""
     destination:str=""
-    departure:str=""
-    arrival:str=""
-    date:str=""
-    direct:bool=False
-    stops:int=0
-    connection:bool=False
-    connection_airport:str=""
-    connection_duration:str=""
-    passengers:int=1
+    departure_date:Optional[date]=None
+    return_date:Optional[date]=None
+    airline:str=""
     cabin:str=""
     fare:str=""
-    currency:str="USD"
-    baggage_summary:str=""
-    source:str=""
-    source_name:str=""
-    verified:bool=False
-    verified_at:str=""
-    official_source:bool=False
-    conditions:List[str]=Field(default_factory=list)
+    language:Language="es"
 
-    @field_validator("currency")
+    @field_validator("origin","destination","airline","cabin","fare",mode="before")
     @classmethod
-    def currency_upper(cls,v):
-        return str(v or "USD").upper()[:10]
+    def clean_text(cls,v):
+        return "" if v is None else str(v).strip()
 
-class FlightSourceCard(StrictModel):
-    id:str=""
-    name:str=""
-    url:str=""
-    source_type:str=""
-    country:str=""
-    airline:str=""
-    destination:str=""
-    scope:str=""
-    official:bool=False
-    verified:bool=False
-    verification_date:str=""
-    notes:str=""
-
-class FlightSearchResponse(StrictModel):
-    success:bool=True
-    results:List[FlightResult]=Field(default_factory=list)
-    sources:List[FlightSourceCard]=Field(default_factory=list)
-    message:str=""
-    source:str=""
-    verified:bool=False
-    official_source:bool=False
-    next_action:str=""
-    route:Dict[str,Any]=Field(default_factory=dict)
-    google_flights_url:str=""
-    airline_sources:List[FlightSourceCard]=Field(default_factory=list)
-    is_cuba_route:bool=False
-    important:List[str]=Field(default_factory=list)
-    errors:List[str]=Field(default_factory=list)
+    @field_validator("departure_date","return_date",mode="before")
+    @classmethod
+    def clean_date(cls,v):
+        if v in (None,"","null","None"):
+            return None
+        return v
 
 class FlightContext(StrictModel):
+    origin:str=""
+    destination:str=""
+    airline:str=""
+    cabin:str=""
+    fare:str=""
+    baggage:Dict[str,Any]=Field(default_factory=dict)
+    baggage_summary:str=""
+    language:Language="es"
+
+class FlightSearchResponse(StrictModel):
+    success:bool=False
+    version:str=VERSION
     origin:str=""
     destination:str=""
     departure_date:str=""
     return_date:str=""
     airline:str=""
-    flight_number:str=""
-    baggage:Dict[str,Any]=Field(default_factory=dict)
-    baggage_summary:str=""
-    source:str=""
-    source_name:str=""
-    verified:bool=False
-    verified_at:str=""
-    official_source:bool=False
     cabin:str=""
     fare:str=""
-    currency:str="USD"
-    language:Language="es"
+    results:List[Dict[str,Any]]=Field(default_factory=list)
+    sources:List[Dict[str,Any]]=Field(default_factory=list)
+    google_flights_url:str=""
+    messages:List[str]=Field(default_factory=list)
+    errors:List[str]=Field(default_factory=list)
+    legal_notice:str=""
+    next_action:str=""
 
-    @field_validator("currency")
-    @classmethod
-    def currency_upper(cls,v):
-        return str(v or "USD").upper()[:10]
+class FlightUnderstandResponse(StrictModel):
+    success:bool=False
+    version:str=VERSION
+    origin:str=""
+    destination:str=""
+    airline:str=""
+    cabin:str=""
+    fare:str=""
+    baggage:Dict[str,Any]=Field(default_factory=dict)
+    baggage_summary:str=""
+    message:str=""
+    important:List[str]=Field(default_factory=list)
+    sources:List[Dict[str,Any]]=Field(default_factory=list)
+    legal_notice:str=""
+    next_action:str=""
 
-class SelectedFlightRequest(StrictModel):
-    flight:Dict[str,Any]=Field(default_factory=dict)
-    language:Language="es"
+class FlightSourcesResponse(StrictModel):
+    success:bool=False
+    version:str=VERSION
+    sources:List[Dict[str,Any]]=Field(default_factory=list)
+    official_sources:List[Dict[str,Any]]=Field(default_factory=list)
+    legal_notice:str=""
 
-class ItemCheckInput(StrictModel):
+class ItemCheckRequest(StrictModel):
     item:str=""
-    baggage_type:Optional[str]=""
-    airline:Optional[str]=""
-    destination:Optional[str]=""
-    origin:Optional[str]=""
-    cabin:Optional[str]=""
-    fare:Optional[str]=""
-    language:Language="es"
-
-class ItemCheckRequest(ItemCheckInput):
-    pass
-
-class OfficialLink(StrictModel):
-    id:str=""
-    name:str=""
-    url:str=""
-    source_type:str=""
-    official:bool=False
-    verified:bool=False
-    verification_date:str=""
-    notes:str=""
-
-class SourceRecord(StrictModel):
-    id:str=""
-    name:str=""
-    url:str=""
-    source_type:str=""
-    country:str=""
+    baggage_type:str=""
     airline:str=""
     destination:str=""
-    scope:str=""
-    official:bool=False
-    verified:bool=False
-    verification_date:str=""
-    notes:str=""
+    origin:str=""
+    cabin:str=""
+    fare:str=""
+    language:Language="es"
+
+    @field_validator(
+        "item",
+        "baggage_type",
+        "airline",
+        "destination",
+        "origin",
+        "cabin",
+        "fare",
+        mode="before"
+    )
+    @classmethod
+    def clean_item_fields(cls,v):
+        return "" if v is None else str(v).strip()
 
 class ItemCheckResponse(StrictModel):
-    success:bool=True
+    success:bool=False
+    version:str=VERSION
     item:str=""
-    category:str="REVIEW"
-    visual_status:str="REVIEW"
-    rule_status:str="PENDING"
+    category:str=""
+    visual_status:str=""
+    rule_status:str=""
     explanation:str=""
     baggage_place:str=""
     conditions:List[str]=Field(default_factory=list)
@@ -193,49 +132,67 @@ class ItemCheckResponse(StrictModel):
     fare:str=""
 
 class TeachTermRequest(StrictModel):
-    term:str=Field("",max_length=200)
+    term:str=""
     language:Language="es"
 
 class TeachTermResponse(StrictModel):
-    success:bool=True
+    success:bool=False
+    version:str=VERSION
     term:str=""
     explanation:str=""
-    language:Language="es"
+    category:str=""
+    next_action:str=""
+    legal_notice:str=""
 
 class GuideRequest(StrictModel):
     language:Language="es"
-    topic:Optional[str]=""
     flight:Dict[str,Any]=Field(default_factory=dict)
+    item:str=""
+    baggage_type:str=""
+    airline:str=""
+    destination:str=""
+    origin:str=""
+    cabin:str=""
+    fare:str=""
 
-class GuideStep(StrictModel):
-    id:str=""
-    title:str=""
-    text:str=""
+    @field_validator("flight",mode="before")
+    @classmethod
+    def clean_flight(cls,v):
+        return {} if v is None else v
 
 class GuideResponse(StrictModel):
-    success:bool=True
+    success:bool=False
+    version:str=VERSION
     language:Language="es"
-    topic:str=""
     steps:List[Dict[str,Any]]=Field(default_factory=list)
-    cuba_steps:List[str]=Field(default_factory=list)
+    cuba_steps:List[Dict[str,Any]]=Field(default_factory=list)
     official_sources:List[Dict[str,Any]]=Field(default_factory=list)
     legal_notice:str=""
     next_action:str=""
 
-class SessionStatusResponse(StrictModel):
-    success:bool=True
-    active:bool=False
-    expires_at:str=""
-    minutes_remaining:int=0
-
 class AdminLoginRequest(StrictModel):
-    username:str=Field("",min_length=1,max_length=300)
-    password:str=Field("",min_length=1,max_length=300)
+    username:str=Field(min_length=1)
+    password:str=Field(min_length=1)
 
 class AdminLoginResponse(StrictModel):
-    success:bool=True
+    success:bool=False
     token:str=""
-    expires_at:str=""
+    expires_in:int=0
+    expires_at:Optional[str]=None
+    admin:bool=False
+    message:str=""
+
+class AdminStatusResponse(StrictModel):
+    success:bool=False
+    active:bool=False
+    admin:bool=False
+    expires_at:Optional[str]=None
+    message:str=""
+
+class AdminProtectedResponse(StrictModel):
+    success:bool=False
+    active:bool=False
+    admin:bool=False
     message:str=""
 
 class CreateCheckoutRequest(StrictModel):
@@ -243,77 +200,136 @@ class CreateCheckoutRequest(StrictModel):
     language:Language="es"
 
 class CreateCheckoutResponse(StrictModel):
-    success:bool=True
-    session_id:str=""
+    success:bool=False
+    checkout_url:str=""
     url:str=""
-
-class PaymentVerifyRequest(StrictModel):
-    session_id:str=Field("",min_length=1,max_length=500)
-
-class PaymentVerifyResponse(StrictModel):
-    success:bool=True
-    token:str=""
-    expires_at:str=""
-    minutes:int=15
-
-class LegalResponse(StrictModel):
-    version:str=""
-    owner:str=""
-    app_name:str=""
+    session_id:str=""
+    payment_type:str="one_time"
     price_usd:float=15.99
     session_minutes:int=15
-    independent_service:bool=True
-    booking:bool=False
-    ticket_sales:bool=False
-    independence:str=""
-    purpose:str=""
-    flight_scope:str=""
-    no_booking:str=""
-    baggage_scope:str=""
-    ai_limits:str=""
-    official_source_rule:str=""
-    simulation_rule:str=""
-    final_authority:str=""
-    no_guarantee:str=""
-    privacy:str=""
-    payment:str=""
+    message:str=""
+
+class PaymentVerifyRequest(StrictModel):
+    session_id:str=Field(min_length=1)
+
+class PaymentVerifyResponse(StrictModel):
+    success:bool=False
+    paid:bool=False
+    token:str=""
+    expires_in:int=0
+    expires_at:Optional[str]=None
+    session_minutes:int=15
+    message:str=""
+
+class SessionStatusResponse(StrictModel):
+    success:bool=True
+    active:bool=False
+    admin:bool=False
+    expires_at:Optional[str]=None
+    remaining_seconds:int=0
+    message:str=""
+
+class SourceSearchResponse(StrictModel):
+    success:bool=False
+    version:str=VERSION
+    query:str=""
+    sources:List[Dict[str,Any]]=Field(default_factory=list)
+    count:int=0
+
+class OfficialSourcesResponse(StrictModel):
+    success:bool=False
+    version:str=VERSION
+    sources:List[Dict[str,Any]]=Field(default_factory=list)
+    count:int=0
+    legal_notice:str=""
+
+class RulesResponse(StrictModel):
+    success:bool=False
+    version:str=VERSION
+    rules:List[Dict[str,Any]]=Field(default_factory=list)
+    count:int=0
+    legal_notice:str=""
+
+class LegalResponse(StrictModel):
+    success:bool=False
+    version:str=VERSION
+    language:Language="es"
+    owner:str="May Roga LLC"
+    app_name:str="¿QUÉ QUIERES LLEVAR?"
+    price_usd:float=15.99
+    session_minutes:int=15
+    intro:str=""
+    short_notice:str=""
+    user_guidance:str=""
+    source_notice:str=""
+    confirmation_message:str=""
+    session_expired_message:str=""
+    full_notice:str=""
 
 class AppMetaResponse(StrictModel):
-    success:bool=True
-    app_name:str=""
-    owner:str=""
-    version:str=""
+    success:bool=False
+    version:str=VERSION
+    name:str="¿QUÉ QUIERES LLEVAR?"
+    owner:str="May Roga LLC"
+    price_usd:float=15.99
+    session_minutes:int=15
+    payment_type:str="one_time"
+    language_default:Language="es"
+    supported_languages:List[str]=Field(default_factory=lambda:["es","en"])
+    official_sources:List[Dict[str,Any]]=Field(default_factory=list)
+
+class AppConfigResponse(StrictModel):
+    success:bool=False
+    version:str=VERSION
+    app_name:str="¿QUÉ QUIERES LLEVAR?"
+    owner:str="May Roga LLC"
     price_usd:float=15.99
     session_minutes:int=15
     payment_type:str="one_time"
     stripe_enabled:bool=False
-    stripe_publishable_key:str=""
-    rules_are_verified:bool=False
+    language_default:Language="es"
+    supported_languages:List[str]=Field(default_factory=lambda:["es","en"])
+    official_sources:List[Dict[str,Any]]=Field(default_factory=list)
+    legal_notice:str=""
+
+class CubaStep(StrictModel):
+    id:str=""
+    title:str=""
+    description:str=""
+    action:str=""
+    official_url:str=""
+    required:bool=True
+
+class CubaOfficialResponse(StrictModel):
+    success:bool=False
+    version:str=VERSION
     language:Language="es"
-    independent_service:bool=True
+    steps:List[Dict[str,Any]]=Field(default_factory=list)
+    official_sources:List[Dict[str,Any]]=Field(default_factory=list)
+    legal_notice:str=""
+    next_action:str=""
 
-class OfficialSourcesResponse(StrictModel):
-    success:bool=True
-    sources:List[Dict[str,Any]]=Field(default_factory=list)
+class DeleteSession(StrictModel):
+    token:str=""
 
-class RulesResponse(StrictModel):
-    success:bool=True
-    version:str=""
-    rules:List[Dict[str,Any]]=Field(default_factory=list)
-    verified:bool=False
-    language:Language="es"
-
-class SourceSearchResponse(StrictModel):
-    success:bool=True
-    sources:List[SourceRecord]=Field(default_factory=list)
-
-class FlightSourcesResponse(StrictModel):
-    success:bool=True
-    sources:List[FlightSourceCard]=Field(default_factory=list)
-    airline_sources:List[FlightSourceCard]=Field(default_factory=list)
-    is_cuba_route:bool=False
+class DeleteLocal(StrictModel):
+    key:str=""
 
 class ErrorResponse(StrictModel):
     success:bool=False
-    error:str="error"
+    version:str=VERSION
+    error:str=""
+    detail:str=""
+    message:str=""
+    code:str=""
+
+class HealthResponse(StrictModel):
+    status:str="ok"
+    version:str=VERSION
+    app:str="¿QUÉ QUIERES LLEVAR?"
+    owner:str="May Roga LLC"
+
+class WebhookResponse(StrictModel):
+    success:bool=False
+    received:bool=False
     message:str=""
