@@ -1,10 +1,10 @@
-# source_registry.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v8.0.2
+# source_registry.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v8.1.0
 from __future__ import annotations
 from dataclasses import dataclass,asdict
 from typing import Any,Dict,List,Optional
 from urllib.parse import quote_plus
 
-VERSION="8.0.2"
+VERSION="8.1.0"
 VERIFICATION_DATE="2026-10-01"
 
 @dataclass
@@ -16,6 +16,7 @@ class Source:
     description:str=""
     official:bool=True
     alternate_url:Optional[str]=None
+    verified:bool=True
     verified_date:Optional[str]=VERIFICATION_DATE
 
     def to_dict(self)->Dict[str,Any]:
@@ -44,13 +45,13 @@ class SourceRegistry:
             Source("cubazul_air_charter","Cubazul Air Charter","https://cubazulaircharter.com/","charter","Proveedor de vuelos chárter; verificar directamente ruta, fecha, precio y disponibilidad."),
             Source("xael_charters","Xael Charters","https://www.xaelcharter.com/","charter","Proveedor de vuelos chárter a Cuba; verificar directamente ruta, fecha, precio y disponibilidad."),
             Source("cuballama_viajes","Cuballama Viajes","https://www.cuballama.com/viajes/vuelos/charters","charter","Servicio de viajes con vuelos chárter a Cuba.",alternate_url="https://www.cuballama.com/viajes/"),
-            Source("ibc_airways","IBC Airways","https://ibcairways.com/","charter","Aerolínea con servicios en el Caribe; confirmar directamente si existe servicio Cuba para la fecha consultada.",alternate_url="https://flyibc.com/"),
+            Source("ibc_airways","IBC Airways","https://ibcairways.com/","charter","Aerolínea con servicios en el Caribe; confirmar directamente si existe servicio a Cuba para la fecha consultada.",alternate_url="https://flyibc.com/"),
             Source("google_flights","Google Flights","https://www.google.com/travel/flights","search","Buscador de vuelos; no sustituye la confirmación del proveedor."),
             Source("tsa","TSA","https://www.tsa.gov/travel/security-screening/whatcanibring/all","security","Fuente oficial de seguridad para artículos en equipaje."),
             Source("faa_packsafe","FAA PackSafe","https://www.faa.gov/hazmat/packsafe","security","Información oficial sobre materiales peligrosos y equipaje."),
             Source("faa_batteries","FAA Batteries","https://www.faa.gov/hazmat/resources/lithium_batteries","security","Información oficial sobre baterías de litio."),
             Source("faa_lithium","FAA Lithium Batteries","https://www.faa.gov/hazmat/packsafe/lithium-batteries","security","Orientación oficial sobre baterías de litio."),
-            Source("dviajeros","D'Viajeros","https://dviajeros.mitrans.gob.cu/","cuba","Portal oficial cubano para el formulario D'Viajeros."),
+            Source("dviajeros","D’Viajeros","https://dviajeros.mitrans.gob.cu/","cuba","Portal oficial cubano para el formulario D’Viajeros."),
             Source("evisa_cuba","eVisa Cuba","https://evisacuba.cu/","cuba","Portal oficial para información y gestión de visa electrónica de Cuba.")
         ]
         for x in items:self.add(x)
@@ -60,14 +61,24 @@ class SourceRegistry:
         for a,b in (("á","a"),("é","e"),("í","i"),("ó","o"),("ú","u"),("ü","u"),("ñ","n")):s=s.replace(a,b)
         return " ".join(s.split())
 
-    def search(self,query:str="",category:str="",limit:int=50)->List[Source]:
+    def search(self,query:str="",country:str="",airline:str="",destination:str="",source_type:str="",limit:int=50)->List[Source]:
         q=self._norm(query)
-        c=self._norm(category)
+        c=self._norm(country)
+        a=self._norm(airline)
+        d=self._norm(destination)
+        t=self._norm(source_type)
         out=[]
         for s in self.all():
             hay=self._norm(f"{s.id} {s.name} {s.description} {s.category}")
             if q and q not in hay:continue
-            if c and c!=self._norm(s.category):continue
+            if c and c not in hay:continue
+            if a:
+                aid=self.airline_alias(a)
+                if s.id!=aid and a not in hay:continue
+            if d:
+                dh=self._norm(f"{s.name} {s.description} {s.category}")
+                if d not in dh and d!="cuba":continue
+            if t and t not in self._norm(s.category):continue
             out.append(s)
             if len(out)>=limit:break
         return out
@@ -88,15 +99,18 @@ class SourceRegistry:
     def destination_alias(self,destination:str)->str:
         n=self._norm(destination)
         aliases={
-            "cuba":"cuba","cuba":"cuba","havana":"havana","habana":"havana",
-            "varadero":"varadero","camaguey":"camaguey","camagüey":"camaguey",
+            "cuba":"cuba",
+            "havana":"havana","habana":"havana",
+            "varadero":"varadero",
+            "camaguey":"camaguey","camagüey":"camaguey",
             "santiago":"santiago de cuba","santiago de cuba":"santiago de cuba",
-            "holguin":"holguin","holguín":"holguin","santa clara":"santa clara"
+            "holguin":"holguin","holguín":"holguin",
+            "santa clara":"santa clara"
         }
         return aliases.get(n,n)
 
     def get_charter_sources(self)->List[Source]:
-        ids={"cubazul_air_charter","xael_charters","cuballama_viajes","ibc_airways"}
+        ids=["cubazul_air_charter","xael_charters","cuballama_viajes","ibc_airways"]
         return [self.sources[i] for i in ids if i in self.sources]
 
     def charter_sources(self)->List[Source]:
@@ -120,11 +134,24 @@ class SourceRegistry:
     def official_sources(self)->List[Source]:
         return [x for x in self.all() if x.official]
 
+    def baggage_sources(self,origin:str="",destination:str="",airline:str="")->List[Source]:
+        out=[]
+        if airline:
+            out.extend(self.official_for_airline(airline))
+        ids=["tsa","faa_packsafe","faa_batteries","faa_lithium"]
+        for i in ids:
+            s=self.sources.get(i)
+            if s and s not in out:out.append(s)
+        return out
+
     def route_sources(self,origin:str="",destination:str="",airline:str="")->List[Source]:
         out=[]
         if airline:out.extend(self.official_for_airline(airline))
         text=self._norm(f"{origin} {destination}")
-        cuba=any(x in text for x in ["cuba","havana","habana","varadero","camaguey","camaguey","santiago de cuba","holguin","santa clara"])
+        cuba=any(x in text for x in [
+            "cuba","havana","habana","varadero","camaguey",
+            "santiago de cuba","holguin","santa clara"
+        ])
         if cuba:
             for s in self.get_charter_sources()+self.cuba_sources():
                 if s not in out:out.append(s)
