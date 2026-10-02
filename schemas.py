@@ -1,7 +1,7 @@
-# schemas.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v7.0.0
+# schemas.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v8.0.0
 from typing import Any,Dict,List,Literal,Optional
-from pydantic import BaseModel,ConfigDict,Field,field_validator
 from enum import Enum
+from pydantic import BaseModel,ConfigDict,Field,field_validator
 
 Language=Literal["es","en"]
 
@@ -36,37 +36,37 @@ class SourceTypeEnum(str,Enum):
     OTHER="other"
 
 class FlightSearchRequest(StrictModel):
-    origin:Optional[str]=Field(default=None,min_length=2,max_length=120)
-    destination:Optional[str]=Field(default=None,min_length=2,max_length=120)
-    departure_date:Optional[str]=Field(default=None,max_length=30)
-    return_date:Optional[str]=Field(default=None,max_length=30)
-    passengers:int=Field(default=1,ge=1,le=20)
-    cabin:Optional[str]=Field(default=None,max_length=50)
-    airline:Optional[str]=Field(default=None,max_length=150)
+    origin:Optional[str]=Field(None,min_length=2,max_length=120)
+    destination:Optional[str]=Field(None,min_length=2,max_length=120)
+    departure_date:Optional[str]=Field(None,max_length=30)
+    return_date:Optional[str]=Field(None,max_length=30)
+    passengers:int=Field(1,ge=1,le=20)
+    cabin:Optional[str]=Field(None,max_length=80)
+    airline:Optional[str]=Field(None,max_length=150)
     nonstop:Optional[bool]=None
     language:Language="es"
 
 class FlightResult(StrictModel):
     id:str=Field(min_length=1,max_length=150)
-    airline:Optional[str]=Field(default=None,max_length=150)
-    flight_number:Optional[str]=Field(default=None,max_length=50)
-    origin:Optional[str]=Field(default=None,max_length=120)
-    destination:Optional[str]=Field(default=None,max_length=120)
-    departure:Optional[str]=Field(default=None,max_length=80)
-    arrival:Optional[str]=Field(default=None,max_length=80)
-    date:Optional[str]=Field(default=None,max_length=30)
+    airline:Optional[str]=Field(None,max_length=150)
+    flight_number:Optional[str]=Field(None,max_length=50)
+    origin:Optional[str]=Field(None,max_length=120)
+    destination:Optional[str]=Field(None,max_length=120)
+    departure:Optional[str]=Field(None,max_length=80)
+    arrival:Optional[str]=Field(None,max_length=80)
+    date:Optional[str]=Field(None,max_length=30)
     direct:Optional[bool]=None
-    stops:Optional[int]=Field(default=None,ge=0,le=20)
+    stops:Optional[int]=Field(None,ge=0,le=20)
     connection:Optional[bool]=None
-    connection_airport:Optional[str]=Field(default=None,max_length=150)
-    connection_duration:Optional[str]=Field(default=None,max_length=80)
-    passengers:Optional[int]=Field(default=None,ge=1,le=20)
-    cabin:Optional[str]=Field(default=None,max_length=80)
-    fare:Optional[str]=Field(default=None,max_length=120)
-    currency:Optional[str]=Field(default=None,max_length=3)
-    baggage_summary:Optional[str]=Field(default=None,max_length=1000)
-    source:Optional[str]=Field(default=None,max_length=2000)
-    source_name:Optional[str]=Field(default=None,max_length=200)
+    connection_airport:Optional[str]=Field(None,max_length=150)
+    connection_duration:Optional[str]=Field(None,max_length=80)
+    passengers:Optional[int]=Field(None,ge=1,le=20)
+    cabin:Optional[str]=Field(None,max_length=80)
+    fare:Optional[str]=Field(None,max_length=120)
+    currency:Optional[str]=Field(None,max_length=3)
+    baggage_summary:Optional[str]=Field(None,max_length=1500)
+    source:Optional[str]=Field(None,max_length=2000)
+    source_name:Optional[str]=Field(None,max_length=250)
     verified:bool=False
     verified_at:Optional[str]=None
     official_source:bool=False
@@ -77,18 +77,18 @@ class FlightResult(StrictModel):
         return v.upper() if v else v
 
 class FlightSourceCard(StrictModel):
-    id:Optional[str]=Field(default=None,max_length=150)
-    name:str=Field(min_length=1,max_length=200)
+    id:Optional[str]=Field(None,max_length=150)
+    name:str=Field(min_length=1,max_length=250)
     url:str=Field(min_length=1,max_length=2000)
-    source_type:Optional[str]=Field(default=None,max_length=80)
-    country:Optional[str]=Field(default=None,max_length=100)
-    airline:Optional[str]=Field(default=None,max_length=150)
-    destination:Optional[str]=Field(default=None,max_length=150)
-    scope:Optional[str]=Field(default=None,max_length=500)
+    source_type:Optional[str]=Field(None,max_length=80)
+    country:Optional[str]=Field(None,max_length=100)
+    airline:Optional[str]=Field(None,max_length=150)
+    destination:Optional[str]=Field(None,max_length=150)
+    scope:Optional[str]=Field(None,max_length=600)
     official:bool=False
     verified:bool=False
     verification_date:Optional[str]=None
-    notes:Optional[str]=Field(default=None,max_length=1500)
+    notes:Optional[str]=Field(None,max_length=2000)
 
 class FlightSearchResponse(StrictModel):
     success:bool=True
@@ -106,25 +106,26 @@ class FlightSearchResponse(StrictModel):
     important:Optional[str]=None
 
 class FlightContext(StrictModel):
-    airline:Optional[str]=Field(default=None,max_length=150)
-    flight_number:Optional[str]=Field(default=None,max_length=50)
-    origin:Optional[str]=Field(default=None,max_length=120)
-    destination:Optional[str]=Field(default=None,max_length=120)
-    departure_date:Optional[str]=Field(default=None,max_length=30)
-    departure_time:Optional[str]=Field(default=None,max_length=50)
-    arrival_time:Optional[str]=Field(default=None,max_length=50)
+    airline:Optional[str]=Field(None,max_length=150)
+    flight_number:Optional[str]=Field(None,max_length=50)
+    origin:Optional[str]=Field(None,max_length=120)
+    destination:Optional[str]=Field(None,max_length=120)
+    departure_date:Optional[str]=Field(None,max_length=30)
+    departure_time:Optional[str]=Field(None,max_length=50)
+    arrival_time:Optional[str]=Field(None,max_length=50)
     direct:Optional[bool]=None
-    stops:Optional[int]=Field(default=None,ge=0,le=20)
+    stops:Optional[int]=Field(None,ge=0,le=20)
     connection:Optional[bool]=None
-    connection_airport:Optional[str]=Field(default=None,max_length=150)
-    connection_duration:Optional[str]=Field(default=None,max_length=80)
-    passengers:Optional[int]=Field(default=None,ge=1,le=20)
-    cabin:Optional[str]=Field(default=None,max_length=80)
-    fare:Optional[str]=Field(default=None,max_length=120)
-    currency:Optional[str]=Field(default=None,max_length=3)
+    connection_airport:Optional[str]=Field(None,max_length=150)
+    connection_duration:Optional[str]=Field(None,max_length=80)
+    passengers:Optional[int]=Field(None,ge=1,le=20)
+    cabin:Optional[str]=Field(None,max_length=80)
+    fare:Optional[str]=Field(None,max_length=120)
+    currency:Optional[str]=Field(None,max_length=3)
     baggage:Optional[Dict[str,Any]]=None
-    source:Optional[str]=Field(default=None,max_length=2000)
-    source_name:Optional[str]=Field(default=None,max_length=200)
+    baggage_summary:Optional[str]=Field(None,max_length=1500)
+    source:Optional[str]=Field(None,max_length=2000)
+    source_name:Optional[str]=Field(None,max_length=250)
     verified:bool=False
     verified_at:Optional[str]=None
     official_source:bool=False
@@ -162,47 +163,47 @@ class FlightUnderstandResponse(StrictModel):
 
 class ItemCheckInput(StrictModel):
     item:str=Field(min_length=1,max_length=300)
-    category:Optional[str]=Field(default=None,max_length=100)
-    quantity:Optional[int]=Field(default=None,ge=1,le=100)
-    weight:Optional[float]=Field(default=None,ge=0,le=1000)
-    weight_unit:Optional[str]=Field(default=None,max_length=10)
-    dimensions:Optional[str]=Field(default=None,max_length=100)
-    description:Optional[str]=Field(default=None,max_length=1000)
+    category:Optional[str]=Field(None,max_length=100)
+    quantity:Optional[int]=Field(None,ge=1,le=100)
+    weight:Optional[float]=Field(None,ge=0,le=1000)
+    weight_unit:Optional[str]=Field(None,max_length=10)
+    dimensions:Optional[str]=Field(None,max_length=150)
+    description:Optional[str]=Field(None,max_length=1500)
 
 class ItemCheckRequest(StrictModel):
     item:str=Field(min_length=1,max_length=300)
     language:Language="es"
     flight:Optional[FlightContext]=None
     baggage_type:Optional[BaggageTypeEnum]=None
-    quantity:Optional[int]=Field(default=None,ge=1,le=100)
-    weight:Optional[float]=Field(default=None,ge=0,le=1000)
-    weight_unit:Optional[str]=Field(default=None,max_length=10)
-    dimensions:Optional[str]=Field(default=None,max_length=100)
-    category:Optional[str]=Field(default=None,max_length=100)
-    description:Optional[str]=Field(default=None,max_length=1000)
+    quantity:Optional[int]=Field(None,ge=1,le=100)
+    weight:Optional[float]=Field(None,ge=0,le=1000)
+    weight_unit:Optional[str]=Field(None,max_length=10)
+    dimensions:Optional[str]=Field(None,max_length=150)
+    category:Optional[str]=Field(None,max_length=100)
+    description:Optional[str]=Field(None,max_length=1500)
 
 class OfficialLink(StrictModel):
-    name:str=Field(min_length=1,max_length=150)
+    name:str=Field(min_length=1,max_length=200)
     url:str=Field(min_length=1,max_length=2000)
-    description:Optional[str]=Field(default=None,max_length=1000)
-    authority:Optional[str]=Field(default=None,max_length=150)
-    country:Optional[str]=Field(default=None,max_length=100)
+    description:Optional[str]=Field(None,max_length=1500)
+    authority:Optional[str]=Field(None,max_length=200)
+    country:Optional[str]=Field(None,max_length=100)
     verified:bool=False
     verified_at:Optional[str]=None
 
 class SourceRecord(StrictModel):
-    id:Optional[str]=Field(default=None,max_length=150)
-    name:str=Field(min_length=1,max_length=200)
+    id:Optional[str]=Field(None,max_length=150)
+    name:str=Field(min_length=1,max_length=250)
     url:str=Field(min_length=1,max_length=2000)
-    source_type:Optional[str]=Field(default=None,max_length=80)
-    country:Optional[str]=Field(default=None,max_length=100)
-    airline:Optional[str]=Field(default=None,max_length=150)
-    destination:Optional[str]=Field(default=None,max_length=150)
-    scope:Optional[str]=Field(default=None,max_length=500)
+    source_type:Optional[str]=Field(None,max_length=80)
+    country:Optional[str]=Field(None,max_length=100)
+    airline:Optional[str]=Field(None,max_length=150)
+    destination:Optional[str]=Field(None,max_length=150)
+    scope:Optional[str]=Field(None,max_length=600)
     official:bool=False
     verified:bool=False
     verification_date:Optional[str]=None
-    notes:Optional[str]=Field(default=None,max_length=1500)
+    notes:Optional[str]=Field(None,max_length=2000)
 
 class ItemCheckResponse(StrictModel):
     success:bool=True
@@ -233,7 +234,7 @@ class TeachTermResponse(StrictModel):
 
 class GuideRequest(StrictModel):
     language:Language="es"
-    topic:Optional[str]=Field(default=None,max_length=150)
+    topic:Optional[str]=Field(None,max_length=150)
     flight:Optional[FlightContext]=None
 
 class GuideResponse(StrictModel):
@@ -246,7 +247,7 @@ class GuideResponse(StrictModel):
 class SessionStatusResponse(StrictModel):
     active:bool
     token:Optional[str]=None
-    remaining_seconds:int=Field(default=0,ge=0)
+    remaining_seconds:int=Field(0,ge=0)
     expires_at:Optional[str]=None
     message:Optional[str]=None
 
@@ -261,7 +262,7 @@ class AdminLoginResponse(StrictModel):
 
 class CreateCheckoutRequest(StrictModel):
     language:Language="es"
-    return_path:Optional[str]=Field(default=None,max_length=500)
+    return_path:Optional[str]=Field(None,max_length=500)
 
 class CreateCheckoutResponse(StrictModel):
     success:bool
@@ -294,7 +295,7 @@ class AppMetaResponse(StrictModel):
     owner:str
     session_minutes:int=Field(ge=1)
     payment_type:str
-    price_usd:Optional[float]=Field(default=None,ge=0)
+    price_usd:Optional[float]=Field(None,ge=0)
     ai_rule_authority:str
     rules_are_verified:bool=False
     legal_version:str
@@ -310,7 +311,7 @@ class RulesResponse(StrictModel):
     success:bool=True
     version:Optional[str]=None
     rules:List[Dict[str,Any]]=Field(default_factory=list)
-    count:int=Field(default=0,ge=0)
+    count:int=Field(0,ge=0)
 
 class SourceSearchResponse(StrictModel):
     success:bool=True
