@@ -1,9 +1,9 @@
-# flight_engine.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v8.0.1
+# flight_engine.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v8.0.2
 from dataclasses import asdict,dataclass
 from typing import Any,Dict,List,Optional
 from source_registry import REGISTRY,Source,google_flights_url
 
-VERSION="8.0.1"
+VERSION="8.0.2"
 
 @dataclass
 class FlightQuery:
@@ -64,10 +64,19 @@ class FlightEngine:
         "baltimore":"BWI","bwi":"BWI",
         "santiago de cuba":"SCU","scu":"SCU",
         "varadero":"VRA","vra":"VRA",
-        "camaguey":"CMW","camaguey cuba":"CMW","cmw":"CMW",
+        "camaguey":"CMW","camagüey":"CMW","camaguey cuba":"CMW","cmw":"CMW",
     }
     CUBA_AIRPORTS={"HAV","VRA","SCU","CMW"}
-    CUBA_TERMS={"cuba","havana","habana","hav","varadero","vra","santiago de cuba","scu","camaguey","cmw"}
+    CUBA_TERMS={
+        "cuba","havana","habana","hav","varadero","vra",
+        "santiago de cuba","santiago","scu","camaguey","camagüey","cmw"
+    }
+    CHARTER_IDS={
+        "cubazul_air_charter",
+        "xael_charters",
+        "cuballama_viajes",
+        "ibc_airways"
+    }
 
     def normalize(self,value:Any)->str:
         return " ".join(str(value or "").strip().lower().replace("_"," ").split())
@@ -101,12 +110,16 @@ class FlightEngine:
             src.update({k:v for k,v in kwargs.items() if v is not None})
         else:
             src=dict(kwargs)
+        try:
+            passengers=max(1,int(src.get("passengers") or 1))
+        except Exception:
+            passengers=1
         return FlightQuery(
             origin=str(src.get("origin") or ""),
             destination=str(src.get("destination") or ""),
             departure_date=str(src.get("departure_date") or ""),
             return_date=str(src.get("return_date") or ""),
-            passengers=max(1,int(src.get("passengers") or 1)),
+            passengers=passengers,
             cabin=str(src.get("cabin") or ""),
             airline=str(src.get("airline") or ""),
             nonstop=src.get("nonstop"),
@@ -126,14 +139,41 @@ class FlightEngine:
 
     def source_cards(self,origin:str="",destination:str="",airline:str="",language:str="es")->List[Dict[str,Any]]:
         sources=REGISTRY.route_sources(origin,destination,airline,include_search=True)
-        out=[]
-        for s in sources:
-            out.append(self._source_card(s,language))
+        if self.is_cuba_route(origin,destination):
+            sources=self._ensure_charter_sources(sources)
+        out=[self._source_card(s,language) for s in sources]
         if not any(x.get("id")=="google_flights" for x in out):
             s=REGISTRY.get("google_flights")
             if s:
                 out.append(self._source_card(s,language))
         return self._unique_dicts(out)
+
+    def charter_sources(self,language:str="es")->List[Dict[str,Any]]:
+        sources=[]
+        try:
+            sources=REGISTRY.charter_sources()
+        except Exception:
+            sources=[]
+        if not sources:
+            for sid in (
+                "cubazul_air_charter",
+                "xael_charters",
+                "cuballama_viajes",
+                "ibc_airways"
+            ):
+                s=REGISTRY.get(sid)
+                if s:
+                    sources.append(s)
+        return [self._source_card(s,language,charter=True) for s in self._unique(sources)]
+
+    def official_charter_sources(self,language:str="es")->List[Dict[str,Any]]:
+        try:
+            sources=REGISTRY.official_charter_sources()
+        except Exception:
+            sources=[]
+        if not sources:
+            return self.charter_sources(language)
+        return [self._source_card(s,language,charter=True) for s in self._unique(sources)]
 
     def airline_sources(self,airline:str="",language:str="es")->List[Dict[str,Any]]:
         sources=REGISTRY.official_for_airline(airline)
@@ -142,17 +182,71 @@ class FlightEngine:
     def search_sources(self,origin:str="",destination:str="",airline:str="",language:str="es")->List[Dict[str,Any]]:
         return self.source_cards(origin,destination,airline,language)
 
-    def _source_card(self,source:Source,language:str="es")->Dict[str,Any]:
+    def _ensure_charter_sources(self,sources:List[Source])->List[Source]:
+        out=list(sources or [])
+        ids={s.id for s in out}
+        try:
+            charter=REGISTRY.charter_sources()
+        except Exception:
+            charter=[]
+        if not charter:
+            charter=[
+                REGISTRY.get("cubazul_air_charter"),
+                REGISTRY.get("xael_charters"),
+                REGISTRY.get("cuballama_viajes"),
+                REGISTRY.get("ibc_airways")
+            ]
+            charter=[s for s in charter if s]
+        for source in charter:
+            if source.id not in ids:
+                out.append(source)
+                ids.add(source.id)
+        return out
+
+    def _source_card(self,source:Source,language:str="es",charter:bool=False)->Dict[str,Any]:
         en=str(language or "es").lower()=="en"
         note=source.notes or ""
-        if en and source.id=="google_flights":
-            note="Flight search and discovery. Confirm the final itinerary with the airline."
-        elif not en and source.id=="google_flights":
-            note="Búsqueda y descubrimiento de vuelos. Confirma el itinerario final con la aerolínea."
+        if source.id=="google_flights":
+            note=(
+                "Flight search and discovery. Confirm the final itinerary with the airline."
+                if en else
+                "Búsqueda y descubrimiento de vuelos. Confirma el itinerario final con la aerolínea."
+            )
+        elif source.id=="cubazul_air_charter":
+            note=(
+                "Official Cubazul Air Charter source. Check current Cuba routes, dates, availability, baggage and ticket conditions directly."
+                if en else
+                "Fuente oficial de Cubazul Air Charter. Consulta directamente las rutas a Cuba, fechas, disponibilidad, equipaje y condiciones del boleto."
+            )
+        elif source.id=="xael_charters":
+            note=(
+                "Official Xael Charters source. Check current Cuba destinations, dates, availability, baggage and ticket conditions directly."
+                if en else
+                "Fuente oficial de Xael Charters. Consulta directamente los destinos a Cuba, fechas, disponibilidad, equipaje y condiciones del boleto."
+            )
+        elif source.id=="cuballama_viajes":
+            note=(
+                "Official Cuballama Viajes charter section. Confirm the current route, date, availability, baggage and ticket conditions directly."
+                if en else
+                "Sección oficial de vuelos chárter de Cuballama Viajes. Confirma directamente la ruta, fecha, disponibilidad, equipaje y condiciones del boleto."
+            )
+        elif source.id=="ibc_airways":
+            note=(
+                "Official IBC Airways source. Passenger and cargo services are listed by the company; do not assume a Cuba route or availability. Confirm directly."
+                if en else
+                "Fuente oficial de IBC Airways. La compañía informa servicios de pasajeros y carga; no se debe asumir una ruta a Cuba ni disponibilidad. Confirma directamente."
+            )
+        elif charter and not note:
+            note=(
+                "Official charter/travel source. Confirm current availability and conditions directly."
+                if en else
+                "Fuente oficial de vuelos chárter/servicios de viaje. Confirma directamente la disponibilidad y las condiciones actuales."
+            )
         return {
             "id":source.id,
             "name":source.name,
             "url":source.url,
+            "alternate_url":getattr(source,"alternate_url","") or "",
             "source_type":source.source_type,
             "country":source.country,
             "airline":source.airline,
@@ -168,27 +262,46 @@ class FlightEngine:
         q=self.build_query(query,**kwargs)
         errors=self.validate_query(q)
         sources=self.source_cards(q.origin,q.destination,q.airline,q.language)
+        charter=self.charter_sources(q.language) if self.is_cuba_route(q.origin,q.destination) else []
         google_url=google_flights_url(q.origin,q.destination,q.departure_date,q.return_date)
         en=q.language=="en"
         if errors:
-            message=("Please provide a valid origin and destination airport or city."
-                     if en else "Indica un origen y un destino válidos.")
-            next_action=("Review the origin and destination."
-                         if en else "Revisa el origen y el destino.")
+            message=(
+                "Please provide a valid origin and destination airport or city."
+                if en else
+                "Indica un origen y un destino válidos."
+            )
+            next_action=(
+                "Review the origin and destination."
+                if en else
+                "Revisa el origen y el destino."
+            )
         else:
-            message=("The app does not invent or publish flight availability. Use the listed sources to search and confirm the actual itinerary."
-                     if en else "La aplicación no inventa ni publica disponibilidad de vuelos. Usa las fuentes mostradas para buscar y confirmar el itinerario real.")
-            next_action=("Open a source and confirm the actual flight, baggage conditions and itinerary."
-                         if en else "Abre una fuente y confirma el vuelo real, las condiciones de equipaje y el itinerario.")
+            message=(
+                "The app does not invent or publish flight availability. Use the listed official sources to search and confirm the actual itinerary."
+                if en else
+                "La aplicación no inventa ni publica disponibilidad de vuelos. Usa las fuentes oficiales mostradas para buscar y confirmar el itinerario real."
+            )
+            next_action=(
+                "Open a source and confirm the actual flight, baggage conditions and itinerary."
+                if en else
+                "Abre una fuente y confirma el vuelo real, las condiciones de equipaje y el itinerario."
+            )
         return {
             "results":[],
             "sources":sources,
+            "charter_sources":charter,
             "message":message,
             "source":"official_sources" if any(s.get("official") for s in sources) else "source_registry",
             "verified":False,
             "official_source":False,
             "next_action":next_action,
-            "route":{"origin":q.origin,"destination":q.destination,"departure_date":q.departure_date,"return_date":q.return_date},
+            "route":{
+                "origin":q.origin,
+                "destination":q.destination,
+                "departure_date":q.departure_date,
+                "return_date":q.return_date
+            },
             "google_flights_url":google_url,
             "airline_sources":self.airline_sources(q.airline,q.language) if q.airline else [],
             "is_cuba_route":self.is_cuba_route(q.origin,q.destination),
@@ -204,7 +317,7 @@ class FlightEngine:
         destination=str(data.get("destination") or "")
         airline=str(data.get("airline") or "")
         baggage=data.get("baggage") or {}
-        baggage_summary=str(data.get("baggage_summary") or baggage.get("summary") or "")
+        baggage_summary=str(data.get("baggage_summary") or (baggage.get("summary") if isinstance(baggage,dict) else "") or "")
         if not baggage_summary and isinstance(baggage,dict):
             parts=[]
             for k,v in baggage.items():
@@ -231,8 +344,11 @@ class FlightEngine:
             "missing_information":missing,
             "explanation":explanation,
             "steps":self._understanding_steps(lang),
-            "next_action":("Provide the missing information before applying a specific baggage interpretation."
-                           if lang=="en" else "Completa la información que falta antes de aplicar una interpretación específica del equipaje."),
+            "next_action":(
+                "Provide the missing information before applying a specific baggage interpretation."
+                if lang=="en" else
+                "Completa la información que falta antes de aplicar una interpretación específica del equipaje."
+            ),
             "verified":False,
             "official_source":False,
             "legal_notice":self._message("legal",lang)
@@ -244,7 +360,7 @@ class FlightEngine:
                 "Identify the actual airline and route.",
                 "Identify the baggage type and relevant article.",
                 "Check the airline's current conditions.",
-                "Check government/security requirements when applicable.",
+                "Check government or security requirements when applicable.",
                 "Confirm the final condition before traveling."
             ]
         return [
@@ -297,16 +413,31 @@ class FlightEngine:
         return self._source_card(sources[0],language) if sources else None
 
     def cuba_sources(self,origin:str="",destination:str="",airline:str="",language:str="es")->List[Dict[str,Any]]:
-        sources=REGISTRY.route_sources(origin or "United States",destination or "Cuba",airline,include_search=False)
+        sources=REGISTRY.route_sources(
+            origin or "United States",
+            destination or "Cuba",
+            airline,
+            include_search=False
+        )
+        sources=self._ensure_charter_sources(sources)
         existing={s.id for s in sources}
         for sid in ("dviajeros","evisa_cuba"):
             s=REGISTRY.get(sid)
             if s and sid not in existing:
                 sources.append(s)
-        return [self._source_card(s,language) for s in self._unique(sources)]
+                existing.add(sid)
+        return [self._source_card(s,language,charter=s.id in self.CHARTER_IDS) for s in self._unique(sources)]
 
     def build_selected_flight(self,data:Any)->FlightOption:
         d=data if isinstance(data,dict) else {}
+        try:
+            passengers=max(1,int(d.get("passengers") or 1))
+        except Exception:
+            passengers=1
+        try:
+            stops=max(0,int(d.get("stops") or 0))
+        except Exception:
+            stops=0
         return FlightOption(
             id=str(d.get("id") or "selected-flight"),
             airline=str(d.get("airline") or ""),
@@ -317,11 +448,11 @@ class FlightEngine:
             arrival=str(d.get("arrival") or ""),
             date=str(d.get("date") or d.get("departure_date") or ""),
             direct=bool(d.get("direct") or d.get("nonstop")),
-            stops=int(d.get("stops") or 0),
+            stops=stops,
             connection=bool(d.get("connection")),
             connection_airport=str(d.get("connection_airport") or ""),
             connection_duration=str(d.get("connection_duration") or ""),
-            passengers=max(1,int(d.get("passengers") or 1)),
+            passengers=passengers,
             cabin=str(d.get("cabin") or ""),
             fare=str(d.get("fare") or ""),
             currency=str(d.get("currency") or "USD").upper(),
@@ -340,33 +471,48 @@ class FlightEngine:
     def _message(self,key:str,lang:str)->str:
         if lang=="en":
             return {
-                "no_results":"No live flight result is published here. Search the actual itinerary through the airline or a flight-search source and confirm it directly.",
-                "legal":"The app organizes and explains information but does not replace the airline, airport, government or other competent authority."
+                "no_results":"No live flight result is published here. Search the actual itinerary through the airline, charter provider or flight-search source and confirm it directly.",
+                "legal":"The app organizes and explains information but does not replace the airline, charter provider, airport, government or other competent authority."
             }.get(key,"")
         return {
-            "no_results":"Aquí no se publica un resultado de vuelo en vivo. Busca el itinerario real mediante la aerolínea o una fuente de búsqueda y confírmalo directamente.",
-            "legal":"La aplicación organiza y explica información, pero no sustituye a la aerolínea, el aeropuerto, el gobierno ni a otra autoridad competente."
+            "no_results":"Aquí no se publica un resultado de vuelo en vivo. Busca el itinerario real mediante la aerolínea, el proveedor chárter o una fuente de búsqueda y confírmalo directamente.",
+            "legal":"La aplicación organiza y explica información, pero no sustituye a la aerolínea, al proveedor chárter, al aeropuerto, al gobierno ni a otra autoridad competente."
         }.get(key,"")
 
     def _next_action(self,language:str)->str:
-        return ("Confirm the actual itinerary with the airline and the applicable official sources."
-                if language=="en" else
-                "Confirma el itinerario real con la aerolínea y las fuentes oficiales aplicables.")
+        return (
+            "Confirm the actual itinerary with the airline or charter provider and the applicable official sources."
+            if language=="en" else
+            "Confirma el itinerario real con la aerolínea o proveedor chárter y las fuentes oficiales aplicables."
+        )
 
     def _important(self,language:str)->List[str]:
         if language=="en":
             return [
                 "Flight availability is not invented by the app.",
                 "Search results are not a ticket or reservation.",
-                "Airline and official government requirements can change.",
+                "Airline, charter-provider and official government requirements can change.",
                 "Confirm the final conditions before traveling."
             ]
         return [
             "La aplicación no inventa disponibilidad de vuelos.",
             "Un resultado de búsqueda no es un boleto ni una reserva.",
-            "Las condiciones de la aerolínea y los requisitos oficiales pueden cambiar.",
+            "Las condiciones de la aerolínea, del proveedor chárter y los requisitos oficiales pueden cambiar.",
             "Confirma las condiciones finales antes de viajar."
         ]
+
+    def _unique(self,items:List[Source])->List[Source]:
+        seen=set()
+        out=[]
+        for item in items:
+            if not item:
+                continue
+            key=item.id or item.url or item.name
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(item)
+        return out
 
     def _unique_dicts(self,items:List[Dict[str,Any]])->List[Dict[str,Any]]:
         seen=set()
