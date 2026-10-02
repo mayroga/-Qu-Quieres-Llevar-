@@ -1,4 +1,4 @@
-# schemas.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v6.0.0
+# schemas.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v7.0.0
 from typing import Any,Dict,List,Literal,Optional
 from pydantic import BaseModel,ConfigDict,Field,field_validator
 from enum import Enum
@@ -25,6 +25,16 @@ class RuleStatusEnum(str,Enum):
     PENDING="pending"
     EXPIRED="expired"
 
+class SourceTypeEnum(str,Enum):
+    OFFICIAL="official"
+    AIRLINE="airline"
+    GOVERNMENT="government"
+    AIRPORT="airport"
+    SEARCH="search"
+    CHARTER="charter"
+    EDUCATIONAL="educational"
+    OTHER="other"
+
 class FlightSearchRequest(StrictModel):
     origin:Optional[str]=Field(default=None,min_length=2,max_length=120)
     destination:Optional[str]=Field(default=None,min_length=2,max_length=120)
@@ -32,6 +42,8 @@ class FlightSearchRequest(StrictModel):
     return_date:Optional[str]=Field(default=None,max_length=30)
     passengers:int=Field(default=1,ge=1,le=20)
     cabin:Optional[str]=Field(default=None,max_length=50)
+    airline:Optional[str]=Field(default=None,max_length=150)
+    nonstop:Optional[bool]=None
     language:Language="es"
 
 class FlightResult(StrictModel):
@@ -53,25 +65,45 @@ class FlightResult(StrictModel):
     fare:Optional[str]=Field(default=None,max_length=120)
     currency:Optional[str]=Field(default=None,max_length=3)
     baggage_summary:Optional[str]=Field(default=None,max_length=1000)
-    source:Optional[str]=Field(default=None,max_length=1000)
+    source:Optional[str]=Field(default=None,max_length=2000)
+    source_name:Optional[str]=Field(default=None,max_length=200)
     verified:bool=False
     verified_at:Optional[str]=None
     official_source:bool=False
     conditions:List[str]=Field(default_factory=list)
-
     @field_validator("currency")
     @classmethod
     def currency_upper(cls,v):
         return v.upper() if v else v
 
+class FlightSourceCard(StrictModel):
+    id:Optional[str]=Field(default=None,max_length=150)
+    name:str=Field(min_length=1,max_length=200)
+    url:str=Field(min_length=1,max_length=2000)
+    source_type:Optional[str]=Field(default=None,max_length=80)
+    country:Optional[str]=Field(default=None,max_length=100)
+    airline:Optional[str]=Field(default=None,max_length=150)
+    destination:Optional[str]=Field(default=None,max_length=150)
+    scope:Optional[str]=Field(default=None,max_length=500)
+    official:bool=False
+    verified:bool=False
+    verification_date:Optional[str]=None
+    notes:Optional[str]=Field(default=None,max_length=1500)
+
 class FlightSearchResponse(StrictModel):
     success:bool=True
     results:List[FlightResult]=Field(default_factory=list)
+    sources:List[FlightSourceCard]=Field(default_factory=list)
     message:Optional[str]=None
     source:Optional[str]=None
     verified:bool=False
     official_source:bool=False
     next_action:Optional[str]=None
+    route:Optional[Dict[str,Any]]=None
+    google_flights_url:Optional[str]=None
+    airline_sources:List[FlightSourceCard]=Field(default_factory=list)
+    is_cuba_route:bool=False
+    important:Optional[str]=None
 
 class FlightContext(StrictModel):
     airline:Optional[str]=Field(default=None,max_length=150)
@@ -89,10 +121,44 @@ class FlightContext(StrictModel):
     passengers:Optional[int]=Field(default=None,ge=1,le=20)
     cabin:Optional[str]=Field(default=None,max_length=80)
     fare:Optional[str]=Field(default=None,max_length=120)
+    currency:Optional[str]=Field(default=None,max_length=3)
     baggage:Optional[Dict[str,Any]]=None
-    source:Optional[str]=None
+    source:Optional[str]=Field(default=None,max_length=2000)
+    source_name:Optional[str]=Field(default=None,max_length=200)
     verified:bool=False
     verified_at:Optional[str]=None
+    official_source:bool=False
+    conditions:List[str]=Field(default_factory=list)
+    @field_validator("currency")
+    @classmethod
+    def context_currency_upper(cls,v):
+        return v.upper() if v else v
+
+class SelectedFlightRequest(StrictModel):
+    flight:FlightContext
+    language:Language="es"
+
+class FlightUnderstandResponse(StrictModel):
+    success:bool=True
+    airline:Optional[str]=None
+    flight_number:Optional[str]=None
+    origin:Optional[str]=None
+    destination:Optional[str]=None
+    direct:Optional[bool]=None
+    stops:Optional[int]=None
+    connection:Optional[bool]=None
+    connection_airport:Optional[str]=None
+    connection_duration:Optional[str]=None
+    fare:Optional[str]=None
+    cabin:Optional[str]=None
+    baggage_summary:Optional[str]=None
+    explanation:Optional[str]=None
+    steps:List[str]=Field(default_factory=list)
+    missing_information:List[str]=Field(default_factory=list)
+    next_action:Optional[str]=None
+    sources:List[FlightSourceCard]=Field(default_factory=list)
+    verified:bool=False
+    official_source:bool=False
 
 class ItemCheckInput(StrictModel):
     item:str=Field(min_length=1,max_length=300)
@@ -123,6 +189,20 @@ class OfficialLink(StrictModel):
     country:Optional[str]=Field(default=None,max_length=100)
     verified:bool=False
     verified_at:Optional[str]=None
+
+class SourceRecord(StrictModel):
+    id:Optional[str]=Field(default=None,max_length=150)
+    name:str=Field(min_length=1,max_length=200)
+    url:str=Field(min_length=1,max_length=2000)
+    source_type:Optional[str]=Field(default=None,max_length=80)
+    country:Optional[str]=Field(default=None,max_length=100)
+    airline:Optional[str]=Field(default=None,max_length=150)
+    destination:Optional[str]=Field(default=None,max_length=150)
+    scope:Optional[str]=Field(default=None,max_length=500)
+    official:bool=False
+    verified:bool=False
+    verification_date:Optional[str]=None
+    notes:Optional[str]=Field(default=None,max_length=1500)
 
 class ItemCheckResponse(StrictModel):
     success:bool=True
@@ -225,6 +305,21 @@ class AppMetaResponse(StrictModel):
 class OfficialSourcesResponse(StrictModel):
     success:bool=True
     sources:List[OfficialLink]=Field(default_factory=list)
+
+class RulesResponse(StrictModel):
+    success:bool=True
+    version:Optional[str]=None
+    rules:List[Dict[str,Any]]=Field(default_factory=list)
+    count:int=Field(default=0,ge=0)
+
+class SourceSearchResponse(StrictModel):
+    success:bool=True
+    query:Optional[str]=None
+    sources:List[SourceRecord]=Field(default_factory=list)
+
+class FlightSourcesResponse(StrictModel):
+    success:bool=True
+    sources:List[FlightSourceCard]=Field(default_factory=list)
 
 class ErrorResponse(StrictModel):
     success:bool=False
