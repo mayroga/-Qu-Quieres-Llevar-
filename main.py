@@ -8,10 +8,10 @@ from fastapi import FastAPI,HTTPException,Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse,JSONResponse
 from fastapi.staticfiles import StaticFiles
-from rules_engine import rule_repo,BaggageAdvisor
-from flight_engine import flight_engine
-from source_registry import source_registry
-from legal_disclaimer import LegalNoticeManager
+from rules_engine import advisor
+from flight_engine import engine as flight_engine
+from source_registry import REGISTRY
+from legal_disclaimer import manager as legal_manager
 from schemas import *
 
 BASE_DIR=Path(__file__).resolve().parent
@@ -30,128 +30,148 @@ PRICE_USD=15.99
 SESSION_MINUTES=15
 SESSION_SECONDS=SESSION_MINUTES*60
 PAYMENT_TYPE="one_time"
+
 ACTIVE_PAID_SESSIONS:Dict[str,float]={}
 ADMIN_SESSIONS:Dict[str,float]={}
 PAYMENT_SESSIONS:Dict[str,float]={}
 
-app=FastAPI(title=APP_NAME,version=APP_VERSION,description="Servicio independiente de preparación de viaje de May Roga LLC.")
+app=FastAPI(title=APP_NAME,version=APP_VERSION,description=f"{APP_NAME} | {OWNER}")
 app.add_middleware(CORSMiddleware,allow_origins=["*"],allow_credentials=False,allow_methods=["*"],allow_headers=["*"])
+
 if STRIPE_SECRET_KEY:
     stripe.api_key=STRIPE_SECRET_KEY
+
 if STATIC_DIR.exists():
     app.mount("/static",StaticFiles(directory=str(STATIC_DIR)),name="static")
 
 def now()->float:
     return time.time()
 
-def new_token()->str:
-    return secrets.token_urlsafe(32)
+def new_token(prefix:str="tok")->str:
+    return f"{prefix}_{secrets.token_urlsafe(32)}"
 
 def clean_sessions():
     t=now()
-    for store in (ACTIVE_PAID_SESSIONS,ADMIN_SESSIONS,PAYMENT_SESSIONS):
-        for key,expires in list(store.items()):
-            if expires<=t:
-                store.pop(key,None)
+    for store in (ACTIVE_PAID_SESSIONS,ADMIN_SESSIONS):
+        expired=[k for k,v in store.items() if v<=t]
+        for k in expired:
+            store.pop(k,None)
 
-def session_active(token:Optional[str])->bool:
+def session_active(token:str)->bool:
     clean_sessions()
     return bool(token and ACTIVE_PAID_SESSIONS.get(token,0)>now())
 
-def admin_active(token:Optional[str])->bool:
+def admin_active(token:str)->bool:
     clean_sessions()
     return bool(token and ADMIN_SESSIONS.get(token,0)>now())
 
-def require_session(token:Optional[str]):
-    if not session_active(token):
-        raise HTTPException(status_code=401,detail="Sesión de servicio no activa.")
-
-def require_admin(token:Optional[str]):
-    if not admin_active(token):
-        raise HTTPException(status_code=401,detail="Sesión administrativa no activa.")
-
 def service_token_from_request(request:Request)->str:
-    return request.headers.get("X-Service-Token") or request.query_params.get("token") or ""
+    return str(request.headers.get("X-Service-Token") or "").strip()
 
 def admin_token_from_request(request:Request)->str:
-    return request.headers.get("X-Admin-Token") or request.query_params.get("token") or ""
+    return str(request.headers.get("X-Admin-Token") or "").strip()
+
+def require_session(request:Request)->str:
+    clean_sessions()
+    service=service_token_from_request(request)
+    if service_active:=session_active(service):
+        return service
+    admin=admin_token_from_request(request)
+    if admin_active(admin):
+        return admin
+    raise HTTPException(status_code=401,detail="Active service session required")
+
+def require_admin(request:Request)->str:
+    token=admin_token_from_request(request)
+    if not admin_active(token):
+        raise HTTPException(status_code=401,detail="Administrator session required")
+    return token
 
 def lang_of(value:Any)->str:
-    try:
-        if hasattr(value,"language"):
-            return "en" if value.language=="en" else "es"
-        if isinstance(value,dict):
-            return "en" if value.get("language")=="en" else "es"
-    except Exception:
-        pass
-    return "es"
+    return "en" if str(value or "es").lower()=="en" else "es"
 
-def model_data(value:Any)->Dict[str,Any]:
-    if hasattr(value,"model_dump"):
-        return value.model_dump()
-    if hasattr(value,"dict"):
-        return value.dict()
-    return dict(value) if isinstance(value,dict) else {}
+def model_data(payload:Any)->Dict[str,Any]:
+    if hasattr(payload,"model_dump"):
+        return payload.model_dump(exclude_none=True)
+    if isinstance(payload,dict):
+        return dict(payload)
+    return {}
 
-def source_dict(source):
+def source_dict(source:Any)->Dict[str,Any]:
     if hasattr(source,"to_dict"):
         return source.to_dict()
-    return dict(source)
+    if isinstance(source,dict):
+        return source
+    return {}
 
-def error_response(message:str,code:str="error",status:int=400,next_action:Optional[str]=None):
-    return JSONResponse(status_code=status,content={"success":False,"message":message,"code":code,"next_action":next_action})
+def error_response(message:str,status:int=400,code:str="error"):
+    return JSONResponse(status_code=status,content={"success":False,"error":code,"message":message})
 
-def datetime_from_timestamp(ts:float)->str:
-    return datetime.fromtimestamp(ts,timezone.utc).isoformat()
+def datetime_from_timestamp(value:Any)->str:
+    try:
+        return datetime.fromtimestamp(float(value),tz=timezone.utc).isoformat()
+    except Exception:
+        return ""
 
-def official_links():
-    return [
-        {"name":"TSA — What Can I Bring","url":"https://www.tsa.gov/travel/security-screening/whatcanibring/all-list","description":"Consulta artículos y seguridad en el control TSA.","authority":"TSA","country":"United States","verified":True,"verified_at":"2026-10-01"},
-        {"name":"FAA — PackSafe","url":"https://www.faa.gov/hazmat/packsafe","description":"Consulta reglas de artículos y materiales peligrosos.","authority":"FAA","country":"United States","verified":True,"verified_at":"2026-10-01"},
-        {"name":"FAA — Batteries","url":"https://www.faa.gov/hazmat/packsafe/airline-passengers-and-batteries","description":"Consulta baterías y power banks.","authority":"FAA","country":"United States","verified":True,"verified_at":"2026-10-01"},
-        {"name":"D'Viajeros Cuba","url":"https://dviajeros.mitrans.gob.cu/","description":"Sitio oficial de D'Viajeros. Confirma la información vigente antes del viaje.","authority":"Cuba","country":"Cuba","verified":False,"verified_at":None},
-        {"name":"eVisa Cuba","url":"https://evisacuba.cu/","description":"Información oficial sobre visa electrónica de Cuba.","authority":"Cuba","country":"Cuba","verified":False,"verified_at":None}
-    ]
+def official_links(language:str="es")->List[Dict[str,Any]]:
+    en=lang_of(language)=="en"
+    ids=["tsa","faa_packsafe","faa_batteries","dviajeros","evisa_cuba"]
+    out=[]
+    for sid in ids:
+        s=REGISTRY.get(sid)
+        if not s:
+            continue
+        d=s.to_dict()
+        d["verified"]=bool(s.verified)
+        if en and sid=="dviajeros":
+            d["notes"]="Official Cuban government source. Confirm current requirements directly."
+        elif not en and sid=="dviajeros":
+            d["notes"]="Fuente oficial cubana. Confirma directamente los requisitos actuales."
+        elif en and sid=="evisa_cuba":
+            d["notes"]="Official Cuban eVisa source. Confirm current eligibility and requirements directly."
+        elif not en and sid=="evisa_cuba":
+            d["notes"]="Fuente oficial cubana de eVisa. Confirma directamente la elegibilidad y los requisitos actuales."
+        out.append(d)
+    return out
 
-@app.get("/",include_in_schema=False)
-async def root():
+@app.get("/")
+def root():
     index=STATIC_DIR/"index.html"
     if index.exists():
         return FileResponse(index)
-    return {"success":True,"app_name":APP_NAME,"version":APP_VERSION,"owner":OWNER}
+    return {"app":APP_NAME,"version":APP_VERSION,"owner":OWNER}
 
 @app.get("/health")
-async def health():
-    return {"status":"ok","app_name":APP_NAME,"version":APP_VERSION}
+def health():
+    return {"status":"ok","app":APP_NAME,"version":APP_VERSION}
 
-@app.get("/api/v1")
-async def api_root():
-    return {"success":True,"app_name":APP_NAME,"version":APP_VERSION,"owner":OWNER}
+@app.get("/api")
+def api_root():
+    return {"success":True,"app":APP_NAME,"version":APP_VERSION}
 
-@app.get("/api/v1/meta",response_model=AppMetaResponse)
-async def meta():
+@app.get("/api/v1/meta")
+def meta(language:str="es"):
     return {
+        "success":True,
         "app_name":APP_NAME,
-        "version":APP_VERSION,
         "owner":OWNER,
+        "version":APP_VERSION,
+        "price_usd":PRICE_USD,
         "session_minutes":SESSION_MINUTES,
         "payment_type":PAYMENT_TYPE,
-        "price_usd":PRICE_USD,
-        "ai_rule_authority":"Las reglas verificadas y las fuentes oficiales tienen prioridad; la IA no sustituye a la autoridad.",
+        "stripe_enabled":bool(STRIPE_SECRET_KEY and STRIPE_PRICE_ID1),
+        "stripe_publishable_key":STRIPE_PUBLISHABLE_KEY,
         "rules_are_verified":False,
-        "legal_version":LegalNoticeManager.VERSION,
-        "independent_service":True,
-        "booking_enabled":False,
-        "ticket_sales_enabled":False
+        "language":lang_of(language),
+        "independent_service":True
     }
 
-@app.get("/api/v1/legal",response_model=LegalResponse)
-async def legal(language:str="es"):
-    m=LegalNoticeManager(language)
-    return {"success":True,"version":m.VERSION,"owner":m.OWNER,"app_name":m.APP_NAME,"notice":m.full_notice(),"short_notice":m.short_notice(),"source_notice":m.source_notice()}
+@app.get("/api/v1/legal")
+def legal(language:str="es"):
+    return legal_manager.to_dict(lang_of(language))
 
 @app.get("/api/v1/config")
-async def config():
+def config(language:str="es"):
     return {
         "success":True,
         "app_name":APP_NAME,
@@ -161,277 +181,351 @@ async def config():
         "session_minutes":SESSION_MINUTES,
         "payment_type":PAYMENT_TYPE,
         "stripe_enabled":bool(STRIPE_SECRET_KEY and STRIPE_PRICE_ID1),
-        "publishable_key":STRIPE_PUBLISHABLE_KEY or None,
-        "booking_enabled":False,
-        "ticket_sales_enabled":False,
-        "independent_service":True
+        "stripe_publishable_key":STRIPE_PUBLISHABLE_KEY,
+        "language":lang_of(language),
+        "admin_login_enabled":bool(ADMIN_USERNAME and ADMIN_PASSWORD)
     }
 
-@app.get("/api/v1/official",response_model=OfficialSourcesResponse)
-async def official():
-    return {"success":True,"sources":official_links()}
+@app.get("/api/v1/official")
+def official(language:str="es"):
+    return {"success":True,"sources":official_links(lang_of(language))}
 
-@app.get("/api/v1/rules",response_model=RulesResponse)
-async def rules(status:Optional[str]=None):
-    try:
-        items=rule_repo.to_dicts(status=status)
-    except Exception:
-        items=[]
-    return {"success":True,"version":getattr(rule_repo,"VERSION",None),"rules":items,"count":len(items)}
+@app.get("/api/v1/rules")
+def rules(language:str="es"):
+    data=advisor.repo.to_dicts() if hasattr(advisor,"repo") else []
+    return {"success":True,"version":getattr(advisor,"VERSION","8.0.1"),"rules":data,"verified":False,"language":lang_of(language)}
 
 @app.post("/api/v1/admin/login",response_model=AdminLoginResponse)
-async def admin_login(payload:AdminLoginRequest):
+def admin_login(payload:AdminLoginRequest):
     if not ADMIN_USERNAME or not ADMIN_PASSWORD:
-        return {"success":False,"message":"La administración no está configurada en Render."}
-    if not secrets.compare_digest(payload.username,ADMIN_USERNAME) or not secrets.compare_digest(payload.password,ADMIN_PASSWORD):
-        raise HTTPException(status_code=401,detail="Usuario o contraseña incorrectos.")
-    token=new_token()
+        raise HTTPException(status_code=503,detail="Administrator access is not configured")
+    username=str(payload.username or "")
+    password=str(payload.password or "")
+    if not secrets.compare_digest(username,ADMIN_USERNAME) or not secrets.compare_digest(password,ADMIN_PASSWORD):
+        raise HTTPException(status_code=401,detail="Invalid administrator credentials")
+    clean_sessions()
+    token=new_token("admin")
     ADMIN_SESSIONS[token]=now()+SESSION_SECONDS
-    return {"success":True,"token":token,"message":"Sesión administrativa activa."}
+    return {
+        "success":True,
+        "token":token,
+        "expires_at":datetime_from_timestamp(ADMIN_SESSIONS[token]),
+        "message":"Administrator access activated"
+    }
 
 @app.post("/api/v1/admin/logout")
-async def admin_logout(request:Request):
+def admin_logout(request:Request):
     token=admin_token_from_request(request)
-    if token:
-        ADMIN_SESSIONS.pop(token,None)
-    return {"success":True,"message":"Sesión administrativa cerrada."}
+    ADMIN_SESSIONS.pop(token,None)
+    return {"success":True}
 
 @app.get("/api/v1/admin/status")
-async def admin_status(request:Request):
+def admin_status(request:Request):
     token=admin_token_from_request(request)
-    clean_sessions()
-    remaining=max(0,int(ADMIN_SESSIONS.get(token,0)-now())) if token else 0
-    return {"success":True,"active":bool(token and remaining>0),"remaining_seconds":remaining}
+    active=admin_active(token)
+    return {"success":True,"active":active,"expires_at":datetime_from_timestamp(ADMIN_SESSIONS.get(token)) if active else ""}
 
 @app.post("/api/v1/create-checkout-session",response_model=CreateCheckoutResponse)
-async def create_checkout(payload:CreateCheckoutRequest,request:Request):
-    if not STRIPE_SECRET_KEY or not STRIPE_PRICE_ID1:
-        return {"success":False,"message":"El pago no está configurado todavía."}
+def create_checkout_session(payload:CreateCheckoutRequest,request:Request):
+    if not STRIPE_SECRET_KEY:
+        raise HTTPException(status_code=503,detail="Stripe is not configured")
+    if not STRIPE_PRICE_ID1:
+        raise HTTPException(status_code=503,detail="Stripe price is not configured")
     try:
         base=APP_BASE_URL or str(request.base_url).rstrip("/")
-        path=payload.return_path or "/"
-        if not path.startswith("/") or path.startswith("//"):
-            path="/"
-        success_url=f"{base}{path}?payment=success&session_id={{CHECKOUT_SESSION_ID}}"
-        cancel_url=f"{base}{path}?payment=cancelled"
+        success_url=f"{base}/?payment=success&session_id={{CHECKOUT_SESSION_ID}}"
+        cancel_url=f"{base}/?payment=cancelled"
+        return_path=str(getattr(payload,"return_path","") or "/")
+        if not return_path.startswith("/") or return_path.startswith("//"):
+            return_path="/"
         session=stripe.checkout.Session.create(
             mode="payment",
             line_items=[{"price":STRIPE_PRICE_ID1,"quantity":1}],
             success_url=success_url,
             cancel_url=cancel_url,
-            metadata={"app":APP_NAME,"owner":OWNER,"service":"travel_preparation","payment_type":PAYMENT_TYPE}
+            metadata={
+                "app":APP_NAME,
+                "owner":OWNER,
+                "payment_type":PAYMENT_TYPE,
+                "return_path":return_path
+            }
         )
-        return {"success":True,"checkout_url":session.url,"session_id":session.id,"message":"Continúa con el pago para iniciar tu servicio de preparación."}
-    except Exception as e:
-        return {"success":False,"message":f"No pudimos iniciar el pago: {e}"}
+        return {"success":True,"session_id":session.id,"url":session.url or ""}
+    except Exception:
+        raise HTTPException(status_code=502,detail="Unable to start the payment session")
 
 @app.post("/api/v1/verify-payment",response_model=PaymentVerifyResponse)
-async def verify_payment(payload:PaymentVerifyRequest):
+def verify_payment(payload:PaymentVerifyRequest):
     if not STRIPE_SECRET_KEY:
-        return {"success":False,"paid":False,"message":"El pago no está configurado."}
+        raise HTTPException(status_code=503,detail="Stripe is not configured")
+    sid=str(payload.session_id or "").strip()
+    if not sid:
+        raise HTTPException(status_code=400,detail="Stripe session id is required")
     try:
-        session=stripe.checkout.Session.retrieve(payload.session_id)
-        paid=session.payment_status=="paid"
-        if not paid:
-            return {"success":True,"paid":False,"message":"El pago todavía no aparece como completado."}
-        metadata=session.metadata or {}
-        if metadata.get("app") and metadata.get("app")!=APP_NAME:
-            return {"success":False,"paid":False,"message":"El pago no corresponde a este servicio."}
-        if metadata.get("service") and metadata.get("service")!="travel_preparation":
-            return {"success":False,"paid":False,"message":"El pago no corresponde a este servicio."}
-        existing=PAYMENT_SESSIONS.get(payload.session_id)
-        if existing and existing>now():
-            return {"success":False,"paid":False,"message":"Este pago ya tiene una sesión activa."}
-        token=new_token()
-        expires=now()+SESSION_SECONDS
-        ACTIVE_PAID_SESSIONS[token]=expires
-        PAYMENT_SESSIONS[payload.session_id]=expires
-        return {"success":True,"paid":True,"service_token":token,"expires_at":datetime_from_timestamp(expires),"message":"Pago confirmado. Tu sesión de preparación está activa."}
-    except Exception as e:
-        return {"success":False,"paid":False,"message":f"No pudimos confirmar el pago: {e}"}
+        checkout=stripe.checkout.Session.retrieve(sid)
+    except Exception:
+        raise HTTPException(status_code=400,detail="Unable to verify the payment session")
+    if getattr(checkout,"payment_status","")!="paid":
+        raise HTTPException(status_code=402,detail="Payment has not been completed")
+    metadata=dict(getattr(checkout,"metadata",{}) or {})
+    if metadata.get("app")!=APP_NAME or metadata.get("owner")!=OWNER:
+        raise HTTPException(status_code=400,detail="Payment session does not belong to this service")
+    if sid in PAYMENT_SESSIONS:
+        token=PAYMENT_SESSIONS[sid].get("token","")
+        if token and session_active(token):
+            return {
+                "success":True,
+                "token":token,
+                "expires_at":datetime_from_timestamp(ACTIVE_PAID_SESSIONS[token]),
+                "minutes":SESSION_MINUTES
+            }
+    token=new_token("service")
+    expires=now()+SESSION_SECONDS
+    ACTIVE_PAID_SESSIONS[token]=expires
+    PAYMENT_SESSIONS[sid]={
+        "token":token,
+        "expires_at":expires,
+        "created_at":now()
+    }
+    return {
+        "success":True,
+        "token":token,
+        "expires_at":datetime_from_timestamp(expires),
+        "minutes":SESSION_MINUTES
+    }
 
-@app.post("/api/v1/webhook")
+@app.post("/api/v1/stripe/webhook")
 async def stripe_webhook(request:Request):
     if not STRIPE_WEBHOOK_SECRET:
-        raise HTTPException(status_code=503,detail="El webhook de Stripe no está configurado.")
+        raise HTTPException(status_code=503,detail="Stripe webhook is not configured")
     body=await request.body()
-    signature=request.headers.get("stripe-signature")
-    if not signature:
-        raise HTTPException(status_code=400,detail="Falta la firma de Stripe.")
+    signature=request.headers.get("stripe-signature","")
     try:
         event=stripe.Webhook.construct_event(body,signature,STRIPE_WEBHOOK_SECRET)
-    except Exception as e:
-        raise HTTPException(status_code=400,detail=f"Webhook inválido: {e}")
-    if event["type"]=="checkout.session.completed":
-        obj=event["data"]["object"]
+    except ValueError:
+        raise HTTPException(status_code=400,detail="Invalid webhook payload")
+    except stripe.error.SignatureVerificationError:
+        raise HTTPException(status_code=400,detail="Invalid webhook signature")
+    obj=event.get("data",{}).get("object",{}) or {}
+    if event.get("type")=="checkout.session.completed":
         sid=obj.get("id")
-        if sid:
-            PAYMENT_SESSIONS[sid]=now()+SESSION_SECONDS
-    return {"received":True,"verified":True}
+        metadata=obj.get("metadata",{}) or {}
+        if sid and metadata.get("app")==APP_NAME:
+            PAYMENT_SESSIONS.setdefault(sid,{
+                "token":"",
+                "expires_at":0,
+                "created_at":now(),
+                "event":event.get("type")
+            })
+    return {"received":True}
 
 @app.get("/api/v1/session/{token}",response_model=SessionStatusResponse)
-async def session_status(token:str):
-    clean_sessions()
-    if not session_active(token):
-        raise HTTPException(status_code=401,detail="Sesión de servicio no activa.")
-    remaining=max(0,int(ACTIVE_PAID_SESSIONS.get(token,0)-now()))
-    return {"active":True,"token":token,"remaining_seconds":remaining,"expires_at":datetime_from_timestamp(now()+remaining),"message":None}
+def session_by_token(token:str):
+    active=session_active(token)
+    return {
+        "success":True,
+        "active":active,
+        "expires_at":datetime_from_timestamp(ACTIVE_PAID_SESSIONS.get(token)) if active else "",
+        "minutes_remaining":max(0,int((ACTIVE_PAID_SESSIONS.get(token,0)-now())/60)) if active else 0
+    }
 
 @app.get("/api/v1/session",response_model=SessionStatusResponse)
-async def session_from_header(request:Request):
-    token=service_token_from_request(request)
-    if not session_active(token):
-        raise HTTPException(status_code=401,detail="Sesión de servicio no activa.")
-    return await session_status(token)
+def session_status(request:Request):
+    service=service_token_from_request(request)
+    if session_active(service):
+        expires=ACTIVE_PAID_SESSIONS.get(service,0)
+        return {
+            "success":True,
+            "active":True,
+            "expires_at":datetime_from_timestamp(expires),
+            "minutes_remaining":max(0,int((expires-now())/60))
+        }
+    admin=admin_token_from_request(request)
+    if admin_active(admin):
+        expires=ADMIN_SESSIONS.get(admin,0)
+        return {
+            "success":True,
+            "active":True,
+            "expires_at":datetime_from_timestamp(expires),
+            "minutes_remaining":max(0,int((expires-now())/60))
+        }
+    return {"success":True,"active":False,"expires_at":"","minutes_remaining":0}
 
-@app.get("/api/v1/flight/sources",response_model=FlightSourcesResponse)
-async def flight_sources(origin:Optional[str]=None,destination:Optional[str]=None,airline:Optional[str]=None):
-    sources=flight_engine.search_sources(origin,destination,airline)
-    return {"success":True,"sources":sources}
+@app.get("/api/v1/flight/sources")
+def flight_sources(origin:str="",destination:str="",airline:str="",language:str="es"):
+    lang=lang_of(language)
+    return {
+        "success":True,
+        "sources":flight_engine.source_cards(origin,destination,airline,lang),
+        "airline_sources":flight_engine.airline_sources(airline,lang) if airline else [],
+        "is_cuba_route":flight_engine.is_cuba_route(origin,destination)
+    }
+
+@app.get("/api/v1/sources/search")
+def source_search(q:str="",country:str="",airline:str="",destination:str="",source_type:str=""):
+    return {"success":True,"sources":[source_dict(s) for s in REGISTRY.search(q,country,airline,destination,source_type)]}
+
+@app.get("/api/v1/sources/route")
+def source_route(origin:str="",destination:str="",airline:str="",language:str="es"):
+    return {
+        "success":True,
+        "sources":flight_engine.source_cards(origin,destination,airline,lang_of(language)),
+        "is_cuba_route":flight_engine.is_cuba_route(origin,destination)
+    }
+
+@app.get("/api/v1/sources/baggage")
+def source_baggage(origin:str="",destination:str="",airline:str="",language:str="es"):
+    lang=lang_of(language)
+    return {"success":True,"sources":[flight_engine._source_card(s,lang) for s in REGISTRY.baggage_sources(origin,destination,airline)]}
+
+@app.get("/api/v1/cuba/sources")
+def cuba_sources(origin:str="",destination:str="Cuba",airline:str="",language:str="es"):
+    return {"success":True,"sources":flight_engine.cuba_sources(origin,destination,airline,lang_of(language))}
+
+@app.get("/api/v1/cuba/official")
+def cuba_official(language:str="es"):
+    lang=lang_of(language)
+    return {
+        "success":True,
+        "sources":flight_engine.cuba_sources("United States","Cuba","",lang),
+        "important":(
+            [
+                "Check entry and exit requirements.",
+                "Check passport and nationality requirements.",
+                "Check visa or eVisa requirements.",
+                "Complete D’Viajeros when required.",
+                "Check baggage and prohibited-item rules."
+            ] if lang=="en" else
+            [
+                "Revisa los requisitos de entrada y salida.",
+                "Revisa los requisitos de pasaporte y nacionalidad.",
+                "Revisa los requisitos de visa o eVisa.",
+                "Completa D’Viajeros cuando corresponda.",
+                "Revisa las reglas de equipaje y artículos prohibidos."
+            ]
+        )
+    }
 
 @app.post("/api/v1/flight/search-external",response_model=FlightSearchResponse)
-async def flight_search_external(payload:FlightSearchRequest,request:Request):
-    require_session(service_token_from_request(request))
-    result=flight_engine.search(**model_data(payload))
-    return result
+def flight_search_external(payload:FlightSearchRequest,request:Request):
+    require_session(request)
+    return flight_engine.search(**model_data(payload))
 
 @app.post("/api/v1/flight/understand",response_model=FlightUnderstandResponse)
-async def flight_understand(payload:SelectedFlightRequest,request:Request):
-    require_session(service_token_from_request(request))
-    data=model_data(payload.flight)
-    return flight_engine.understand(data,language=payload.language)
+def flight_understand(payload:FlightContext,request:Request):
+    require_session(request)
+    data=model_data(payload)
+    return flight_engine.understand(data,language=lang_of(payload.language))
 
 @app.post("/api/v1/consultar-articulo",response_model=ItemCheckResponse)
-async def check_item(payload:ItemCheckRequest,request:Request):
-    require_session(service_token_from_request(request))
+def consultar_articulo(payload:ItemCheckRequest,request:Request):
+    require_session(request)
     data=model_data(payload)
-    language=data.pop("language","es")
-    flight=data.pop("flight",None)
-    baggage_type=data.pop("baggage_type",None)
-    if hasattr(baggage_type,"value"):
-        baggage_type=baggage_type.value
     try:
-        result=BaggageAdvisor().advise(
-            data.get("item"),
-            flight=flight,
-            baggage_type=baggage_type,
-            language=language,
-            quantity=data.get("quantity"),
-            weight=data.get("weight"),
-            weight_unit=data.get("weight_unit"),
-            dimensions=data.get("dimensions"),
-            category=data.get("category"),
-            description=data.get("description")
+        result=advisor.advise(
+            item=data.get("item",""),
+            baggage_type=data.get("baggage_type"),
+            airline=data.get("airline",""),
+            destination=data.get("destination",""),
+            origin=data.get("origin",""),
+            cabin=data.get("cabin",""),
+            fare=data.get("fare",""),
+            language=lang_of(data.get("language","es"))
         )
     except TypeError:
-        try:
-            result=BaggageAdvisor().advise(data.get("item"),flight=flight,baggage_type=baggage_type,language=language)
-        except Exception as e:
-            return error_response(f"No pudimos analizar el artículo todavía: {e}","item_error",500)
-    except Exception as e:
-        return error_response(f"No pudimos analizar el artículo todavía: {e}","item_error",500)
-    if hasattr(result,"to_dict"):
-        result=result.to_dict()
-    if not isinstance(result,dict):
-        result=dict(result)
+        result=advisor.advise_item(
+            data.get("item",""),
+            baggage_type=data.get("baggage_type"),
+            airline=data.get("airline",""),
+            destination=data.get("destination",""),
+            language=lang_of(data.get("language","es"))
+        )
     return result
 
 @app.post("/api/v1/item/teach",response_model=TeachTermResponse)
-async def teach_item(payload:TeachTermRequest,request:Request):
-    require_session(service_token_from_request(request))
-    advisor=BaggageAdvisor()
+def teach_term(payload:TeachTermRequest,request:Request):
+    require_session(request)
+    lang=lang_of(payload.language)
     try:
-        result=advisor.explain_term(payload.term,payload.language)
-    except Exception:
-        result={"term":payload.term,"explanation":"Este término se refiere a una condición de viaje que debemos entender antes de decidir dónde llevar el artículo.","example":None,"next_action":"Busca el término en las condiciones de tu vuelo y confirma su significado."}
-    if not isinstance(result,dict):
-        result=dict(result)
-    return {"success":True,"term":result.get("term",payload.term),"explanation":result.get("explanation",""),"example":result.get("example"),"next_action":result.get("next_action")}
-
-@app.post("/api/v1/guide",response_model=GuideResponse)
-async def guide(payload:GuideRequest,request:Request):
-    require_session(service_token_from_request(request))
-    lang=payload.language
-    if lang=="en":
-        title="Prepare your trip"
-        steps=["Understand your flight.","Check whether you have a connection.","Understand your baggage.","Review the items you want to carry.","Prepare your documents.","Practice important steps.","Confirm current requirements with the official source.","Save your personalized preparation guide."]
-        next_action="Start with your flight or tell us what you want to carry."
-    else:
-        title="Prepara tu viaje"
-        steps=["Entiende tu vuelo.","Comprueba si tienes una escala o conexión.","Entiende tu equipaje.","Revisa lo que quieres llevar.","Prepara tus documentos.","Practica los pasos importantes.","Confirma los requisitos vigentes en la fuente oficial.","Guarda tu guía personalizada de preparación."]
-        next_action="Empieza por tu vuelo o dime qué quieres llevar."
-    links=[OfficialLink(**x) for x in official_links()]
-    return {"success":True,"title":title,"steps":steps,"next_action":next_action,"official_links":links}
-
-@app.get("/api/v1/sources/search",response_model=SourceSearchResponse)
-async def sources_search(q:str="",official_only:bool=False,verified_only:bool=False):
-    items=source_registry.search(q,official_only=official_only,verified_only=verified_only)
-    return {"success":True,"query":q,"sources":[source_dict(x) for x in items]}
-
-@app.get("/api/v1/sources/route")
-async def sources_route(origin:Optional[str]=None,destination:Optional[str]=None,airline:Optional[str]=None):
-    items=source_registry.route_sources(origin,destination,airline,include_search=True)
-    return {"success":True,"origin":origin,"destination":destination,"airline":airline,"sources":[source_dict(x) for x in items]}
-
-@app.get("/api/v1/sources/baggage")
-async def sources_baggage(airline:Optional[str]=None,origin:Optional[str]=None,destination:Optional[str]=None):
-    items=source_registry.baggage_sources(airline,origin,destination)
-    return {"success":True,"airline":airline,"origin":origin,"destination":destination,"sources":[source_dict(x) for x in items]}
-
-@app.get("/api/v1/cuba/sources")
-async def cuba_sources(airline:Optional[str]=None):
-    return {"success":True,"sources":flight_engine.cuba_sources(airline)}
-
-@app.get("/api/v1/cuba/guide")
-async def cuba_guide(language:str="es"):
-    if language=="en":
-        return {
-            "success":True,
-            "title":"Cuba travel preparation",
-            "steps":[
-                "Identify whether you are traveling as a Cuban citizen, foreign traveler or dual national and determine which documents apply to your situation.",
-                "Check passport and travel-document requirements using the applicable official source.",
-                "Check visa or entry authorization requirements when applicable.",
-                "Complete D'Viajeros when required by the current official process.",
-                "Review airline baggage rules for your exact itinerary.",
-                "Confirm current requirements immediately before traveling."
-            ],
-            "official_sources":flight_engine.cuba_sources()
-        }
+        result=advisor.explain_term(payload.term,language=lang)
+    except TypeError:
+        result=advisor.explain_term(payload.term)
+    if isinstance(result,dict):
+        return result
     return {
         "success":True,
-        "title":"Preparación para viajar a Cuba",
-        "steps":[
-            "Identifica si viajas como ciudadano cubano, extranjero o persona con doble nacionalidad y determina qué documentos corresponden a tu situación.",
-            "Revisa la vigencia y los documentos de viaje en la fuente oficial correspondiente.",
-            "Comprueba si necesitas visa o autorización de entrada según tu situación.",
-            "Completa D'Viajeros cuando corresponda según el proceso oficial vigente.",
-            "Revisa las reglas de equipaje de tu itinerario concreto.",
-            "Confirma nuevamente los requisitos oficiales antes de viajar."
-        ],
-        "official_sources":flight_engine.cuba_sources()
+        "term":payload.term,
+        "explanation":str(result),
+        "language":lang
     }
 
-@app.get("/api/v1/official/{source_id}")
-async def official_source(source_id:str):
-    source=source_registry.get(source_id)
-    if not source:
-        return error_response("No encontramos esa fuente en el registro.","source_not_found",404)
-    return {"success":True,"source":source_dict(source)}
+@app.post("/api/v1/guide",response_model=GuideResponse)
+def guide(payload:GuideRequest,request:Request):
+    require_session(request)
+    lang=lang_of(payload.language)
+    if lang=="en":
+        steps=[
+            {"id":"flight","title":"1. Flight","text":"Confirm the actual airline, route, date, fare and itinerary."},
+            {"id":"documents","title":"2. Documents","text":"Review passport, nationality, visa and destination-entry requirements."},
+            {"id":"entry_exit","title":"3. Entry and exit","text":"Check the current official entry and exit requirements for the destination."},
+            {"id":"baggage","title":"4. Baggage","text":"Check carry-on, checked baggage, prohibited items and airline-specific conditions."},
+            {"id":"declaration","title":"5. Forms","text":"Complete required official travel forms such as D’Viajeros when applicable."},
+            {"id":"confirm","title":"6. Final confirmation","text":"Confirm the final conditions directly with the applicable official sources before traveling."}
+        ]
+        cuba=[
+            "Check Cuban entry and exit requirements.",
+            "Check passport rules according to nationality and any Cuban dual-nationality situation.",
+            "Check passport validity and required travel documents.",
+            "Check visa or eVisa requirements.",
+            "Complete D’Viajeros when required.",
+            "Check baggage allowances and prohibited items.",
+            "Confirm the final requirements directly before travel."
+        ]
+    else:
+        steps=[
+            {"id":"flight","title":"1. Vuelo","text":"Confirma la aerolínea, ruta, fecha, tarifa e itinerario reales."},
+            {"id":"documents","title":"2. Documentos","text":"Revisa pasaporte, nacionalidad, visa y requisitos de entrada del destino."},
+            {"id":"entry_exit","title":"3. Entrada y salida","text":"Revisa los requisitos oficiales actuales de entrada y salida del destino."},
+            {"id":"baggage","title":"4. Equipaje","text":"Revisa equipaje de mano, equipaje facturado, artículos prohibidos y condiciones de la aerolínea."},
+            {"id":"declaration","title":"5. Formularios","text":"Completa los formularios oficiales de viaje que correspondan, como D’Viajeros."},
+            {"id":"confirm","title":"6. Confirmación final","text":"Confirma las condiciones finales directamente con las fuentes oficiales correspondientes antes de viajar."}
+        ]
+        cuba=[
+            "Revisa los requisitos cubanos de entrada y salida.",
+            "Revisa las reglas de pasaporte según la nacionalidad y cualquier situación de doble nacionalidad cubana.",
+            "Revisa la vigencia del pasaporte y los documentos de viaje requeridos.",
+            "Revisa los requisitos de visa o eVisa.",
+            "Completa D’Viajeros cuando corresponda.",
+            "Revisa el equipaje permitido y los artículos prohibidos.",
+            "Confirma los requisitos finales directamente antes del viaje."
+        ]
+    return {
+        "success":True,
+        "language":lang,
+        "topic":payload.topic,
+        "steps":steps,
+        "cuba_steps":cuba if flight_engine.is_cuba_route((payload.flight or {}).get("origin",""),(payload.flight or {}).get("destination","")) else [],
+        "official_sources":official_links(lang),
+        "legal_notice":legal_manager.short_notice(lang),
+        "next_action":(
+            "Confirm the final requirements directly with the applicable official sources."
+            if lang=="en" else
+            "Confirma los requisitos finales directamente con las fuentes oficiales correspondientes."
+        )
+    }
 
-@app.get("/api/v1/legal/full")
-async def legal_full(language:str="es"):
-    m=LegalNoticeManager(language)
-    return {"success":True,**m.to_dict(),"notice":m.full_notice()}
+@app.get("/api/v1/admin/protected")
+def admin_protected(request:Request):
+    require_admin(request)
+    return {"success":True,"message":"Administrator access active"}
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request:Request,exc:HTTPException):
-    return JSONResponse(status_code=exc.status_code,content={"success":False,"message":str(exc.detail),"code":"http_error"})
+    detail=exc.detail
+    if isinstance(detail,dict):
+        return JSONResponse(status_code=exc.status_code,content=detail)
+    return JSONResponse(status_code=exc.status_code,content={"success":False,"error":"http_error","message":str(detail)})
 
 @app.exception_handler(Exception)
 async def general_exception_handler(request:Request,exc:Exception):
-    return JSONResponse(status_code=500,content={"success":False,"message":"Ocurrió un error inesperado. Puedes volver a intentar la acción.","code":"internal_error"})
-
-if __name__=="__main__":
-    import uvicorn
-    uvicorn.run("main:app",host="0.0.0.0",port=int(os.getenv("PORT","10000")))
+    return JSONResponse(status_code=500,content={"success":False,"error":"server_error","message":"An unexpected server error occurred."})
