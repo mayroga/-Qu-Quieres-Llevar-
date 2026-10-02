@@ -1,5 +1,5 @@
 "use strict";
-const APP={name:"¿QUÉ QUIERES LLEVAR?",version:"8.0.2",lang:localStorage.getItem("cuba_lang")||"es",token:localStorage.getItem("cuba_service_token")||"",adminToken:localStorage.getItem("cuba_admin_token")||"",config:null};
+const APP={name:"¿QUÉ QUIERES LLEVAR?",version:"8.0.3",lang:localStorage.getItem("cuba_lang")||"es",token:localStorage.getItem("cuba_service_token")||"",adminToken:localStorage.getItem("cuba_admin_token")||"",config:null};
 const $=id=>document.getElementById(id);
 const q=s=>document.querySelector(s);
 const qa=s=>[...document.querySelectorAll(s)];
@@ -13,7 +13,7 @@ const api=async(path,opt={})=>{
  try{
   const r=await fetch(path,o);
   let d=null;
-  try{d=await r.json()}catch(_){d={success:false,message:"Respuesta inválida del servidor."}}
+  try{d=await r.json()}catch(_){d={success:false,message:APP.lang==="es"?"Respuesta inválida del servidor.":"Invalid server response."}}
   if(!r.ok)throw Object.assign(new Error(d.message||d.detail||d.error||`Error ${r.status}`),{status:r.status,data:d});
   return d
  }catch(e){
@@ -40,16 +40,73 @@ const requirePaid=()=>{
 };
 const langText={
  es:{
-  title:"¿Qué quieres llevar?",subtitle:"Te ayudamos a organizar tu preparación de viaje, entender tu vuelo, revisar artículos y confirmar la información oficial.",start:"Empezar",flight:"Mi vuelo",flightSmall:"Entiende tu itinerario",item:"¿Qué llevo?",itemSmall:"Consulta un artículo",baggage:"Equipaje",baggageSmall:"Prepara tus maletas",cuba:"Cuba",cubaSmall:"Pasos y fuentes oficiales",guide:"Guía",guideSmall:"Prepara tu viaje",sources:"Fuentes oficiales",sourcesSmall:"Consulta directamente",teach:"Aprender un término",teachSmall:"Entiende lo que significa",legal:"Aviso legal",legalSmall:"Quién presta el servicio",paymentTitle:"Activa tu preparación",paymentText:"Servicio independiente de May Roga LLC. Pago único de $15.99 para una sesión de 15 minutos.",paymentNotice:"No somos una aerolínea, banco, agencia gubernamental ni vendedor de boletos.",pay:"Continuar al pago"
+  title:"¿Qué quieres llevar?",
+  subtitle:"Te ayudamos a organizar tu preparación de viaje, entender tu vuelo, revisar artículos y confirmar la información oficial.",
+  start:"Empezar",
+  flight:"Mi vuelo",
+  flightSmall:"Entiende tu itinerario",
+  item:"¿Qué llevo?",
+  itemSmall:"Consulta un artículo",
+  baggage:"Equipaje",
+  baggageSmall:"Prepara tus maletas",
+  cuba:"Cuba",
+  cubaSmall:"Pasos y fuentes oficiales",
+  guide:"Guía",
+  guideSmall:"Prepara tu viaje",
+  sources:"Fuentes oficiales",
+  sourcesSmall:"Consulta directamente",
+  teach:"Aprender un término",
+  teachSmall:"Entiende lo que significa",
+  legal:"Aviso legal",
+  legalSmall:"Quién presta el servicio",
+  paymentTitle:"Activa tu preparación",
+  paymentText:"Servicio independiente de May Roga LLC. Pago único de $15.99 para una sesión de 15 minutos.",
+  paymentNotice:"No somos una aerolínea, banco, agencia gubernamental ni vendedor de boletos.",
+  pay:"Continuar al pago",
+  charterTitle:"Vuelos oficiales a Cuba",
+  charterText:"Consulta directamente estas opciones de vuelos y servicios chárter. La compra se realiza con el proveedor.",
+  openOfficial:"Abrir sitio oficial",
+  beforeBuy:"Antes de comprar",
+  confirmProvider:"Confirma directamente con el proveedor el precio, fecha, horario, disponibilidad, equipaje y condiciones del boleto.",
+  noTicketSale:"¿QUÉ QUIERES LLEVAR? no vende ni reserva boletos."
  },
  en:{
-  title:"What do you want to carry?",subtitle:"We help you prepare for your trip, understand your flight, review items and confirm official information.",start:"Start",flight:"My flight",flightSmall:"Understand your itinerary",item:"What do I carry?",itemSmall:"Check an item",baggage:"Baggage",baggageSmall:"Prepare your bags",cuba:"Cuba",cubaSmall:"Steps and official sources",guide:"Guide",guideSmall:"Prepare your trip",sources:"Official sources",sourcesSmall:"Check directly",teach:"Learn a term",teachSmall:"Understand what it means",legal:"Legal notice",legalSmall:"Who provides the service",paymentTitle:"Activate your preparation",paymentText:"Independent May Roga LLC service. One-time $15.99 payment for a 15-minute session.",paymentNotice:"We are not an airline, bank, government agency or ticket seller.",pay:"Continue to payment"
+  title:"What do you want to carry?",
+  subtitle:"We help you prepare for your trip, understand your flight, review items and confirm official information.",
+  start:"Start",
+  flight:"My flight",
+  flightSmall:"Understand your itinerary",
+  item:"What do I carry?",
+  itemSmall:"Check an item",
+  baggage:"Baggage",
+  baggageSmall:"Prepare your bags",
+  cuba:"Cuba",
+  cubaSmall:"Steps and official sources",
+  guide:"Guide",
+  guideSmall:"Prepare your trip",
+  sources:"Official sources",
+  sourcesSmall:"Check directly",
+  teach:"Learn a term",
+  teachSmall:"Understand what it means",
+  legal:"Legal notice",
+  legalSmall:"Who provides the service",
+  paymentTitle:"Activate your preparation",
+  paymentText:"Independent May Roga LLC service. One-time $15.99 payment for a 15-minute session.",
+  paymentNotice:"We are not an airline, bank, government agency or ticket seller.",
+  pay:"Continue to payment",
+  charterTitle:"Official flights to Cuba",
+  charterText:"Check these flight and charter service options directly. Purchase is completed with the provider.",
+  openOfficial:"Open official site",
+  beforeBuy:"Before buying",
+  confirmProvider:"Confirm the price, date, schedule, availability, baggage and ticket conditions directly with the provider.",
+  noTicketSale:"¿QUÉ QUIERES LLEVAR? does not sell or book tickets."
  }
 };
 const renderLang=()=>{
  const t=langText[APP.lang]||langText.es;
  qa("[data-i18n]").forEach(e=>{if(t[e.dataset.i18n]!=null)e.textContent=t[e.dataset.i18n]});
- if($("langBtn"))$("langBtn").textContent=APP.lang==="es"?"EN":"ES"
+ if($("langBtn"))$("langBtn").textContent=APP.lang==="es"?"EN":"ES";
+ updateStatus()
 };
 const updateStatus=()=>{
  const e=$("sessionStatus");
@@ -66,6 +123,11 @@ const clearAdmin=()=>{
  APP.adminToken="";
  localStorage.removeItem("cuba_admin_token")
 };
+const clearAccess=()=>{
+ clearService();
+ clearAdmin();
+ updateStatus()
+};
 const loadConfig=async()=>{
  try{
   APP.config=await api("/api/v1/config?language="+encodeURIComponent(APP.lang));
@@ -80,18 +142,18 @@ const checkSession=async()=>{
  if(!APP.token&&!APP.adminToken)return false;
  try{
   const d=await api("/api/v1/session");
-  if(d.active)return true;
-  clearService();
-  clearAdmin();
-  updateStatus();
-  return false
+  if(d.active===true)return true;
+  if(d.active===false){
+   clearAccess();
+   return false
+  }
+  return active()
  }catch(e){
-  const adminWas=!!APP.adminToken;
-  const serviceWas=!!APP.token;
-  clearService();
-  clearAdmin();
-  updateStatus();
-  return !(adminWas||serviceWas)
+  if(e.status===401||e.status===403){
+   clearAccess();
+   return false
+  }
+  return active()
  }
 };
 const init=async()=>{
@@ -99,7 +161,7 @@ const init=async()=>{
  await checkSession();
  renderLang();
  updateStatus();
- show(active()?"home":"home")
+ show(active()?"home":"payment")
 };
 const payment=async()=>{
  const b=$("payBtn"),m=$("payMsg");
@@ -119,7 +181,7 @@ const payment=async()=>{
 };
 const verifyPayment=async()=>{
  const p=new URLSearchParams(location.search);
- const status=p.get("payment"),sid=p.get("session_id");
+ const status=p.get("payment"),sid=p.get("session_id")||p.get("checkout_session_id");
  if(status==="cancelled"){
   const m=$("payMsg");
   if(m)m.textContent=APP.lang==="es"?"El pago fue cancelado. Puedes intentarlo nuevamente.":"Payment was cancelled. You can try again.";
@@ -151,12 +213,53 @@ const verifyPayment=async()=>{
   show("payment")
  }
 };
+const charterFallback=[
+ {id:"cubazul",name:"Cubazul Air Charter",url:"https://cubazulaircharter.com/",type:"charter_booking",description_es:"Consulta y reserva vuelos chárter a Cuba.",description_en:"Check and book charter flights to Cuba."},
+ {id:"xael",name:"Xael Charters",url:"https://www.xaelcharter.com/",type:"charter_booking",description_es:"Consulta y reserva vuelos a Cuba.",description_en:"Check and book flights to Cuba."},
+ {id:"cuballama",name:"Cuballama Viajes",url:"https://www.cuballama.com/viajes/vuelos/charters",type:"charter_booking",description_es:"Consulta y reserva vuelos chárter a Cuba.",description_en:"Check and book charter flights to Cuba."},
+ {id:"ibc_airways",name:"IBC Airways / IBC Air",url:"https://ibcairways.com/",alternate_url:"https://flyibcair.com/",type:"charter_booking",description_es:"Consulta servicios de vuelos y chárter.",description_en:"Check flight and charter services."}
+];
+const onlyCharters=a=>{
+ const ids=["cubazul","xael","cuballama","ibc_airways"];
+ return Array.isArray(a)?a.filter(x=>ids.includes(x.id)):[] 
+};
+const renderCharterSources=a=>{
+ const data=onlyCharters(a).length?onlyCharters(a):charterFallback;
+ const t=langText[APP.lang]||langText.es;
+ return `<section class="charter-section"><article class="card"><h2>✈️ ${esc(t.charterTitle)}</h2><p>${esc(t.charterText)}</p><div class="charter-grid">${data.map(x=>`<article class="source charter-source"><h3>${esc(x.name||"Proveedor oficial")}</h3><p>${esc(x[APP.lang==="en"?"description_en":"description_es"]||x.description||"")}</p><a class="btn" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${esc(t.openOfficial)}</a>${x.alternate_url?`<a class="btn secondary" href="${esc(x.alternate_url)}" target="_blank" rel="noopener noreferrer">IBC Air</a>`:""}</article>`).join("")}</div><div class="notice"><b>${esc(t.beforeBuy)}</b><p>${esc(t.confirmProvider)}</p><p>${esc(t.noTicketSale)}</p></div></article></section>`
+};
+const charterSources=async()=>{
+ try{
+  let d=null;
+  try{
+   d=await api("/api/v1/flight/sources")
+  }catch(_){
+   try{d=await api("/api/v1/sources/official")}catch(__){d=null}
+  }
+  const list=onlyCharters(d?.sources||d?.official_booking_options||d?.data||[]);
+  const html=renderCharterSources(list);
+  const target=$("flightSourcesResult");
+  if(target){
+   target.innerHTML=html;
+   show("flightSources")
+  }else{
+   const existing=$("dynamicFlightSources");
+   if(existing)existing.remove();
+   const wrap=document.createElement("div");
+   wrap.id="dynamicFlightSources";
+   wrap.innerHTML=html;
+   document.body.appendChild(wrap);
+   wrap.scrollIntoView({behavior:"smooth",block:"start"})
+  }
+ }catch(e){
+  msg("flightResult",e.message)
+ }
+};
 const flight=async()=>{
  if(!requirePaid())return;
  const origin=($("origin")?.value||"").trim().toUpperCase();
  const destination=($("destination")?.value||"").trim().toUpperCase();
  const departure_date=$("departureDate")?.value||"";
- const passengers=Math.max(1,Number($("passengers")?.value||1));
  if(!origin||!destination||!departure_date){
   msg("flightResult",APP.lang==="es"?"Completa origen, destino y fecha.":"Complete origin, destination and date.");
   return
@@ -166,9 +269,17 @@ const flight=async()=>{
    method:"POST",
    body:{origin,destination,departure_date,language:APP.lang}
   });
-  $("flightResult").innerHTML=renderObject(d)
+  const options=d.official_booking_options||d.charter_sources||[];
+  let h=renderCharterSources(options);
+  if(d.message_es||d.message_en)h+=`<div class="notice"><p>${esc(APP.lang==="es"?d.message_es||"":d.message_en||"")}</p></div>`;
+  if(d.google_flights_url)h+=`<p><a href="${esc(d.google_flights_url)}" target="_blank" rel="noopener noreferrer">Google Flights</a></p>`;
+  $("flightResult").innerHTML=h
  }catch(e){
-  if(e.status===401){clearService();clearAdmin();updateStatus();show("payment");return}
+  if(e.status===401){
+   clearAccess();
+   show("payment");
+   return
+  }
   msg("flightResult",e.message)
  }
 };
@@ -188,7 +299,7 @@ const item=async()=>{
   });
   $("itemResult").innerHTML=renderObject(d)
  }catch(e){
-  if(e.status===401){clearService();clearAdmin();updateStatus();show("payment");return}
+  if(e.status===401){clearAccess();show("payment");return}
   msg("itemResult",e.message)
  }
 };
@@ -206,7 +317,7 @@ const teach=async()=>{
   });
   $("teachResult").innerHTML=renderObject(d)
  }catch(e){
-  if(e.status===401){clearService();clearAdmin();updateStatus();show("payment");return}
+  if(e.status===401){clearAccess();show("payment");return}
   msg("teachResult",e.message)
  }
 };
@@ -219,7 +330,7 @@ const guide=async()=>{
   });
   $("guideResult").innerHTML=renderObject(d)
  }catch(e){
-  if(e.status===401){clearService();clearAdmin();updateStatus();show("payment");return}
+  if(e.status===401){clearAccess();show("payment");return}
   msg("guideResult",e.message)
  }
 };
@@ -229,14 +340,14 @@ const cuba=async()=>{
   const d=await api(`/api/v1/cuba/official?language=${encodeURIComponent(APP.lang)}`);
   $("cubaResult").innerHTML=renderObject(d)
  }catch(e){
-  if(e.status===401){clearService();clearAdmin();updateStatus();show("payment");return}
+  if(e.status===401){clearAccess();show("payment");return}
   msg("cubaResult",e.message)
  }
 };
 const sources=async()=>{
  try{
   const d=await api("/api/v1/sources/official");
-  $("sourcesResult").innerHTML=renderSources(d.sources||[])
+  $("sourcesResult").innerHTML=renderSources(d.sources||d.official_sources||[]);
  }catch(e){msg("sourcesResult",e.message)}
 };
 const legal=async()=>{
@@ -245,7 +356,7 @@ const legal=async()=>{
   $("legalResult").innerHTML=`<article><h3>${esc(d.app_name||APP.name)}</h3><p>${esc(d.intro||"")}</p><p>${esc(d.short_notice||"")}</p><p>${esc(d.user_guidance||"")}</p><p>${esc(d.source_notice||"")}</p><p>${esc(d.full_notice||"")}</p></article>`
  }catch(e){msg("legalResult",e.message)}
 };
-const renderSources=a=>a.map(x=>`<article class="source"><h3>${esc(x.name||"Fuente oficial")}</h3><p>${esc(x.description||x.notes||"")}</p>${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">Abrir fuente oficial</a>`:""}</article>`).join("")||"<p>No hay fuentes disponibles.</p>";
+const renderSources=a=>Array.isArray(a)&&a.length?a.map(x=>`<article class="source"><h3>${esc(x.name||"Fuente oficial")}</h3><p>${esc(x.description||x.description_es||x.notes||"")}</p>${x.url?`<a href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">${APP.lang==="es"?"Abrir fuente oficial":"Open official source"}</a>`:""}</article>`).join(""):`<p>${APP.lang==="es"?"No hay fuentes disponibles.":"No sources available."}</p>`;
 const renderObject=o=>{
  if(o==null)return"<p>Sin información.</p>";
  if(Array.isArray(o))return o.map(renderObject).join("");
@@ -257,12 +368,14 @@ const renderObject=o=>{
  if(o.baggage_summary)h+=`<p>${esc(o.baggage_summary)}</p>`;
  if(o.next_action)h+=`<div class="next"><b>${APP.lang==="es"?"Siguiente acción":"Next action"}:</b> ${esc(o.next_action)}</div>`;
  if(o.legal_notice)h+=`<p>${esc(o.legal_notice)}</p>`;
+ if(o.official_booking_options&&Array.isArray(o.official_booking_options))h+=renderCharterSources(o.official_booking_options);
+ if(o.charter_sources&&Array.isArray(o.charter_sources))h+=renderCharterSources(o.charter_sources);
  if(o.steps&&Array.isArray(o.steps))h+=`<ol>${o.steps.map(x=>{
   if(typeof x==="object"){
    const title=x.title||x.name||"";
    const desc=x.description||x.action||"";
    const url=x.official_url||x.url||"";
-   return`<li><b>${esc(title)}</b>${desc?`<br>${esc(desc)}`:""}${url?`<br><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">Fuente oficial</a>`:""}</li>`
+   return`<li><b>${esc(title)}</b>${desc?`<br>${esc(desc)}`:""}${url?`<br><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">${APP.lang==="es"?"Fuente oficial":"Official source"}</a>`:""}</li>`
   }
   return`<li>${esc(x)}</li>`
  }).join("")}</ol>`;
@@ -273,15 +386,15 @@ const renderObject=o=>{
  if(!h){
   h="<dl>";
   Object.entries(o).forEach(([k,v])=>{
-   if(v!==null&&v!==undefined&&typeof v!=="object"&&k!=="success"&&k!=="version")h+=`<dt>${esc(k)}</dt><dd>${esc(v)}</dd>`
+   if(v!==null&&v!==undefined&&typeof v!=="object"&&k!=="success"&&k!=="version")h+=`<dt>${esc(k.replace(/_/g," "))}</dt><dd>${esc(v)}</dd>`
   });
   h+="</dl>"
  }
  return h||"<p>Sin información.</p>"
 };
 const adminLogin=async()=>{
- const u=($("adminUser")?.value||"").trim();
- const p=$("adminPass")?.value||"";
+ const u=($("adminUser")?.value||$("adminUsername")?.value||"").trim();
+ const p=$("adminPass")?.value||$("adminPassword")?.value||"";
  if(!u||!p){
   msg("adminMsg",APP.lang==="es"?"Escribe el usuario y la contraseña.":"Enter the username and password.");
   return
@@ -314,6 +427,7 @@ qa("[data-action]").forEach(b=>b.addEventListener("click",async()=>{
  const a=b.dataset.action;
  if(a==="home")show("home");
  else if(a==="flight"){if(requirePaid())show("flight")}
+ else if(a==="flight-sources"||a==="charter-sources"){await charterSources()}
  else if(a==="item"){if(requirePaid())show("item")}
  else if(a==="baggage"){if(requirePaid())show("baggage")}
  else if(a==="cuba"){if(requirePaid()){show("cuba");await cuba()}}
@@ -331,14 +445,25 @@ if($("itemBtn"))$("itemBtn").onclick=item;
 if($("teachBtn"))$("teachBtn").onclick=teach;
 if($("adminLoginBtn"))$("adminLoginBtn").onclick=adminLogin;
 if($("adminLogoutBtn"))$("adminLogoutBtn").onclick=adminLogout;
+if($("charterSourcesBtn"))$("charterSourcesBtn").onclick=charterSources;
+if($("flightSourcesBtn"))$("flightSourcesBtn").onclick=charterSources;
 if($("langBtn"))$("langBtn").onclick=()=>{
  APP.lang=APP.lang==="es"?"en":"es";
  localStorage.setItem("cuba_lang",APP.lang);
  renderLang();
- updateStatus();
  loadConfig()
 };
 if($("adminBtn"))$("adminBtn").onclick=()=>show("admin");
+window.charterSources=charterSources;
+window.flight=flight;
+window.item=item;
+window.teach=teach;
+window.guide=guide;
+window.cuba=cuba;
+window.sources=sources;
+window.legal=legal;
+window.adminLogin=adminLogin;
+window.adminLogout=adminLogout;
 window.addEventListener("load",async()=>{
  await init();
  await verifyPayment()
