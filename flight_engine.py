@@ -1,58 +1,58 @@
-# flight_engine.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v8.0.0
-from dataclasses import dataclass,asdict
-from datetime import datetime
+# flight_engine.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v8.0.1
+from dataclasses import asdict,dataclass
 from typing import Any,Dict,List,Optional
-from source_registry import REGISTRY,google_flights_url
+from source_registry import REGISTRY,Source,google_flights_url
+
+VERSION="8.0.1"
 
 @dataclass
 class FlightQuery:
-    origin:Optional[str]=None
-    destination:Optional[str]=None
-    departure_date:Optional[str]=None
-    return_date:Optional[str]=None
+    origin:str=""
+    destination:str=""
+    departure_date:str=""
+    return_date:str=""
     passengers:int=1
-    cabin:Optional[str]=None
-    airline:Optional[str]=None
+    cabin:str=""
+    airline:str=""
     nonstop:Optional[bool]=None
     language:str="es"
 
 @dataclass
 class FlightOption:
     id:str
-    airline:Optional[str]=None
-    flight_number:Optional[str]=None
-    origin:Optional[str]=None
-    destination:Optional[str]=None
-    departure:Optional[str]=None
-    arrival:Optional[str]=None
-    date:Optional[str]=None
-    direct:Optional[bool]=None
-    stops:Optional[int]=None
-    connection:Optional[bool]=None
-    connection_airport:Optional[str]=None
-    connection_duration:Optional[str]=None
-    passengers:Optional[int]=None
-    cabin:Optional[str]=None
-    fare:Optional[str]=None
-    currency:Optional[str]=None
-    baggage_summary:Optional[str]=None
-    source:Optional[str]=None
-    source_name:Optional[str]=None
+    airline:str=""
+    flight_number:str=""
+    origin:str=""
+    destination:str=""
+    departure:str=""
+    arrival:str=""
+    date:str=""
+    direct:bool=False
+    stops:int=0
+    connection:bool=False
+    connection_airport:str=""
+    connection_duration:str=""
+    passengers:int=1
+    cabin:str=""
+    fare:str=""
+    currency:str="USD"
+    baggage_summary:str=""
+    source:str=""
+    source_name:str=""
     verified:bool=False
-    verified_at:Optional[str]=None
+    verified_at:str=""
     official_source:bool=False
-    conditions:List[str]=None
+    conditions:Optional[List[str]]=None
     def to_dict(self)->Dict[str,Any]:
         d=asdict(self)
         d["conditions"]=self.conditions or []
         return d
 
 class FlightEngine:
-    VERSION="8.0.0"
-
+    VERSION=VERSION
     AIRPORTS={
-        "miami":"MIA","mia":"MIA","miami international":"MIA",
-        "la habana":"HAV","habana":"HAV","havana":"HAV","hav":"HAV",
+        "miami":"MIA","mia":"MIA",
+        "havana":"HAV","habana":"HAV","hav":"HAV",
         "fort lauderdale":"FLL","fll":"FLL",
         "tampa":"TPA","tpa":"TPA",
         "orlando":"MCO","mco":"MCO",
@@ -64,262 +64,320 @@ class FlightEngine:
         "baltimore":"BWI","bwi":"BWI",
         "santiago de cuba":"SCU","scu":"SCU",
         "varadero":"VRA","vra":"VRA",
-        "camaguey":"CMW","camagüey":"CMW",
+        "camaguey":"CMW","camaguey cuba":"CMW","cmw":"CMW",
     }
-
-    CUBA_AIRPORTS={"HAV","SCU","VRA","CMW"}
-
-    def __init__(self,registry=REGISTRY):
-        self.registry=registry
+    CUBA_AIRPORTS={"HAV","VRA","SCU","CMW"}
+    CUBA_TERMS={"cuba","havana","habana","hav","varadero","vra","santiago de cuba","scu","camaguey","cmw"}
 
     def normalize(self,value:Any)->str:
-        import unicodedata
-        s=unicodedata.normalize("NFKD",str(value or "")).encode("ascii","ignore").decode("ascii").lower()
-        return " ".join(s.split())
+        return " ".join(str(value or "").strip().lower().replace("_"," ").split())
 
-    def airport_code(self,value:Optional[str])->Optional[str]:
-        if not value:return None
-        n=self.normalize(value)
-        if len(n)==3 and n.upper() in set(self.AIRPORTS.values()):return n.upper()
-        return self.AIRPORTS.get(n)
+    def airport_code(self,value:Any)->str:
+        v=self.normalize(value)
+        return self.AIRPORTS.get(v,v.upper() if len(v)==3 else "")
 
-    def display_place(self,value:Optional[str])->str:
+    def display_place(self,value:Any)->str:
         code=self.airport_code(value)
-        names={"MIA":"Miami (MIA)","HAV":"La Habana (HAV)","FLL":"Fort Lauderdale (FLL)","TPA":"Tampa (TPA)","MCO":"Orlando (MCO)","ATL":"Atlanta (ATL)","JFK":"New York (JFK)","IAH":"Houston (IAH)","LAX":"Los Ángeles (LAX)","MSY":"New Orleans (MSY)","BWI":"Baltimore/Washington (BWI)","SCU":"Santiago de Cuba (SCU)","VRA":"Varadero (VRA)","CMW":"Camagüey (CMW)"}
-        return names.get(code,str(value or ""))
+        if code:
+            for name,c in self.AIRPORTS.items():
+                if c==code and len(name)>3:
+                    return name.title()
+            return code
+        return str(value or "").strip()
 
-    def is_cuba(self,value:Optional[str])->bool:
-        return self.airport_code(value) in self.CUBA_AIRPORTS or "cuba" in self.normalize(value) or "havana" in self.normalize(value) or "habana" in self.normalize(value)
+    def is_cuba(self,value:Any)->bool:
+        v=self.normalize(value)
+        code=self.airport_code(value)
+        return code in self.CUBA_AIRPORTS or any(term==v or term in v for term in self.CUBA_TERMS)
 
-    def is_cuba_route(self,origin:Optional[str],destination:Optional[str])->bool:
+    def is_cuba_route(self,origin:Any,destination:Any)->bool:
         return self.is_cuba(origin) or self.is_cuba(destination)
 
-    def build_query(self,origin=None,destination=None,departure_date=None,return_date=None,passengers=1,cabin=None,airline=None,nonstop=None,language="es",**kwargs)->FlightQuery:
-        if isinstance(origin,dict):
-            data=origin
-            return FlightQuery(
-                origin=data.get("origin"),
-                destination=data.get("destination"),
-                departure_date=data.get("departure_date"),
-                return_date=data.get("return_date"),
-                passengers=int(data.get("passengers") or 1),
-                cabin=data.get("cabin"),
-                airline=data.get("airline"),
-                nonstop=data.get("nonstop"),
-                language=data.get("language") or "es")
-        return FlightQuery(origin,destination,departure_date,return_date,int(passengers or 1),cabin,airline,nonstop,language or "es")
-
-    def validate_query(self,q:FlightQuery)->List[str]:
-        errors=[]
-        if not q.origin:errors.append("Falta el lugar desde donde sales.")
-        if not q.destination:errors.append("Falta el lugar al que vas.")
-        if q.origin and not self.airport_code(q.origin):errors.append("No reconocemos todavía ese aeropuerto o ciudad. Puedes escribir también el código de tres letras.")
-        if q.destination and not self.airport_code(q.destination) and not self.is_cuba(q.destination):errors.append("No reconocemos todavía ese destino. Puedes escribir la ciudad o el código del aeropuerto.")
-        if q.passengers<1 or q.passengers>20:errors.append("La cantidad de pasajeros debe estar entre 1 y 20.")
-        return errors
-
-    def source_cards(self,origin=None,destination=None,airline=None)->List[Dict[str,Any]]:
-        sources=self.registry.route_sources(origin,destination,airline,include_search=True)
-        return [self._source_card(s) for s in sources]
-
-    def airline_sources(self,origin=None,destination=None,airline=None)->List[Dict[str,Any]]:
-        sources=self.registry.route_sources(origin,destination,airline,include_search=False)
-        return [self._source_card(s) for s in sources if s.source_type in ("airline","charter")]
-
-    def search_sources(self,origin=None,destination=None,airline=None)->List[Dict[str,Any]]:
-        return self.source_cards(origin,destination,airline)
-
-    def _source_card(self,s)->Dict[str,Any]:
-        return {
-            "id":s.id,"name":s.name,"url":s.url,"source_type":s.source_type,
-            "country":s.country,"airline":s.airline,"destination":s.destination,
-            "scope":s.scope,"official":s.official,"verified":s.verified,
-            "verification_date":s.verification_date,"notes":s.notes
-        }
-
-    def search(self,origin=None,destination=None,departure_date=None,return_date=None,passengers=1,cabin=None,airline=None,nonstop=None,language="es",**kwargs)->Dict[str,Any]:
-        q=self.build_query(origin,destination,departure_date,return_date,passengers,cabin,airline,nonstop,language,**kwargs)
-        errors=self.validate_query(q)
-        url=google_flights_url(q.origin,q.destination,q.departure_date,q.return_date)
-        sources=self.source_cards(q.origin,q.destination,q.airline)
-        airline_sources=self.airline_sources(q.origin,q.destination,q.airline)
-        cuba=self.is_cuba_route(q.origin,q.destination)
-        if errors:
-            return {
-                "success":False,"results":[],"sources":sources,"airline_sources":airline_sources,
-                "route":{"origin":q.origin,"destination":q.destination,"origin_code":self.airport_code(q.origin),"destination_code":self.airport_code(q.destination)},
-                "google_flights_url":url,"is_cuba_route":cuba,
-                "message":self._message("errors",q.language,errors),
-                "important":self._important(q.language)
-            }
-        return {
-            "success":True,
-            "results":[],
-            "sources":sources,
-            "airline_sources":airline_sources,
-            "route":{
-                "origin":q.origin,"destination":q.destination,
-                "origin_code":self.airport_code(q.origin),
-                "destination_code":self.airport_code(q.destination),
-                "departure_date":q.departure_date,
-                "return_date":q.return_date,
-                "passengers":q.passengers,
-                "cabin":q.cabin,
-                "airline_filter":q.airline,
-                "nonstop":q.nonstop
-            },
-            "google_flights_url":url,
-            "is_cuba_route":cuba,
-            "message":self._message("search",q.language,[]),
-            "important":self._important(q.language),
-            "next_action":self._next_action(q.language)
-        }
-
-    def understand(self,flight:Any=None,language="es",**kwargs)->Dict[str,Any]:
-        if flight is None:flight=kwargs
-        if hasattr(flight,"model_dump"):data=flight.model_dump()
-        elif hasattr(flight,"dict"):data=flight.dict()
-        elif isinstance(flight,FlightOption):data=flight.to_dict()
-        elif isinstance(flight,dict):data=dict(flight)
-        else:data={}
-        lang=data.get("language") or language or "es"
-        airline=data.get("airline")
-        origin=data.get("origin")
-        destination=data.get("destination")
-        direct=data.get("direct")
-        stops=data.get("stops")
-        connection=data.get("connection")
-        connection_airport=data.get("connection_airport")
-        connection_duration=data.get("connection_duration")
-        if connection is None:
-            connection=(stops is not None and stops>0) or bool(connection_airport)
-        if direct is None and stops is not None:direct=stops==0
-        missing=[]
-        if not airline:missing.append("la aerolínea")
-        if not data.get("fare"):missing.append("la tarifa")
-        if not data.get("cabin"):missing.append("la cabina")
-        if not data.get("baggage"):missing.append("las condiciones de equipaje")
-        if direct is None and stops is None:missing.append("si es directo o tiene escala")
-        steps=self._understanding_steps(data,lang)
-        sources=self.airline_sources(origin,destination,airline) if airline else self.source_cards(origin,destination)
-        return {
-            "success":True,
-            "airline":airline,
-            "flight_number":data.get("flight_number"),
-            "origin":origin,
-            "destination":destination,
-            "direct":direct,
-            "stops":stops,
-            "connection":connection,
-            "connection_airport":connection_airport,
-            "connection_duration":connection_duration,
-            "fare":data.get("fare"),
-            "cabin":data.get("cabin"),
-            "baggage_summary":data.get("baggage_summary"),
-            "explanation":self._explanation(data,lang),
-            "steps":steps,
-            "missing_information":missing,
-            "next_action":self._next_action(lang,missing),
-            "sources":sources,
-            "verified":bool(data.get("verified")),
-            "official_source":bool(data.get("official_source"))
-        }
-
-    def _understanding_steps(self,data,lang)->List[str]:
-        if lang=="en":
-            steps=["Check the airline name.","Check whether the itinerary is nonstop or has a connection.","Check the fare and cabin.","Open the baggage conditions for this exact itinerary.","Confirm missing details on the official airline site."]
-            if data.get("connection") or (data.get("stops") or 0)>0:steps.insert(2,"If you have a connection, check whether you change aircraft and what happens to your baggage.")
-            return steps
-        steps=["Mira el nombre de la aerolínea.","Comprueba si el viaje es directo o tiene una conexión.","Mira la tarifa y la cabina.","Abre las condiciones de equipaje de este viaje concreto.","Confirma lo que falte en el sitio oficial de la aerolínea."]
-        if data.get("connection") or (data.get("stops") or 0)>0:steps.insert(2,"Si tienes una conexión, revisa si cambias de avión y qué ocurre con tu equipaje.")
-        return steps
-
-    def _explanation(self,data,lang):
-        direct=data.get("direct")
-        stops=data.get("stops")
-        connection=data.get("connection")
-        if lang=="en":
-            if direct is True:return "This itinerary is marked as nonstop."
-            if connection or (stops is not None and stops>0):return "This itinerary has a connection or stop. The exact procedure depends on the airports, airline and ticket."
-            return "We can explain the itinerary, but some details still need to be confirmed."
-        if direct is True:return "Este viaje aparece como directo: no se indica una conexión entre el origen y el destino."
-        if connection or (stops is not None and stops>0):return "Este viaje tiene una escala o conexión. Lo que debes hacer depende de los aeropuertos, la aerolínea y tu boleto."
-        return "Podemos explicar el viaje, pero todavía hay datos que deben confirmarse."
-
-    def baggage_source_for_flight(self,flight:Any)->List[Dict[str,Any]]:
-        if hasattr(flight,"model_dump"):d=flight.model_dump()
-        elif hasattr(flight,"dict"):d=flight.dict()
-        elif isinstance(flight,dict):d=flight
-        else:d={}
-        return [self._source_card(s) for s in self.registry.baggage_sources(d.get("airline"),d.get("origin"),d.get("destination"))]
-
-    def source_for_airline(self,airline:str)->List[Dict[str,Any]]:
-        return [self._source_card(s) for s in self.registry.official_for_airline(airline)]
-
-    def cuba_sources(self,airline:Optional[str]=None)->List[Dict[str,Any]]:
-        sources=[]
-        for s in self.registry.route_sources("United States","Cuba",airline,include_search=False):
-            if s not in sources:sources.append(s)
-        for sid in ("dviajeros","evisa_cuba"):
-            s=self.registry.get(sid)
-            if s and s not in sources:sources.append(s)
-        return [self._source_card(s) for s in sources]
-
-    def build_selected_flight(self,data:Dict[str,Any],source:Optional[str]=None,source_name:Optional[str]=None,verified:bool=False,official_source:bool=False)->FlightOption:
-        source_obj=self.registry.get(source) if source else None
-        return FlightOption(
-            id=str(data.get("id") or data.get("flight_id") or "selected-flight"),
-            airline=data.get("airline"),
-            flight_number=data.get("flight_number"),
-            origin=data.get("origin"),
-            destination=data.get("destination"),
-            departure=data.get("departure") or data.get("departure_time"),
-            arrival=data.get("arrival") or data.get("arrival_time"),
-            date=data.get("date") or data.get("departure_date"),
-            direct=data.get("direct"),
-            stops=data.get("stops"),
-            connection=data.get("connection"),
-            connection_airport=data.get("connection_airport"),
-            connection_duration=data.get("connection_duration"),
-            passengers=data.get("passengers"),
-            cabin=data.get("cabin"),
-            fare=data.get("fare"),
-            currency=data.get("currency"),
-            baggage_summary=data.get("baggage_summary"),
-            source=source or data.get("source") or (source_obj.url if source_obj else None),
-            source_name=source_name or data.get("source_name") or (source_obj.name if source_obj else None),
-            verified=verified or bool(data.get("verified")),
-            verified_at=data.get("verified_at") or (source_obj.verification_date if source_obj and source_obj.verified else None),
-            official_source=official_source or bool(data.get("official_source")) or bool(source_obj and source_obj.official),
-            conditions=data.get("conditions") or []
+    def build_query(self,data:Any=None,**kwargs)->FlightQuery:
+        if isinstance(data,FlightQuery):
+            return data
+        if isinstance(data,dict):
+            src=dict(data)
+            src.update({k:v for k,v in kwargs.items() if v is not None})
+        else:
+            src=dict(kwargs)
+        return FlightQuery(
+            origin=str(src.get("origin") or ""),
+            destination=str(src.get("destination") or ""),
+            departure_date=str(src.get("departure_date") or ""),
+            return_date=str(src.get("return_date") or ""),
+            passengers=max(1,int(src.get("passengers") or 1)),
+            cabin=str(src.get("cabin") or ""),
+            airline=str(src.get("airline") or ""),
+            nonstop=src.get("nonstop"),
+            language="en" if str(src.get("language") or "es").lower()=="en" else "es"
         )
 
-    def no_fake_results_message(self,language="es")->str:
+    def validate_query(self,query:Any)->List[str]:
+        q=self.build_query(query)
+        errors=[]
+        if not self.airport_code(q.origin):
+            errors.append("origin" if q.language=="en" else "origen")
+        if not self.airport_code(q.destination):
+            errors.append("destination" if q.language=="en" else "destino")
+        if q.passengers<1 or q.passengers>20:
+            errors.append("passengers" if q.language=="en" else "pasajeros")
+        return errors
+
+    def source_cards(self,origin:str="",destination:str="",airline:str="",language:str="es")->List[Dict[str,Any]]:
+        sources=REGISTRY.route_sources(origin,destination,airline,include_search=True)
+        out=[]
+        for s in sources:
+            out.append(self._source_card(s,language))
+        if not any(x.get("id")=="google_flights" for x in out):
+            s=REGISTRY.get("google_flights")
+            if s:
+                out.append(self._source_card(s,language))
+        return self._unique_dicts(out)
+
+    def airline_sources(self,airline:str="",language:str="es")->List[Dict[str,Any]]:
+        sources=REGISTRY.official_for_airline(airline)
+        return [self._source_card(s,language) for s in sources]
+
+    def search_sources(self,origin:str="",destination:str="",airline:str="",language:str="es")->List[Dict[str,Any]]:
+        return self.source_cards(origin,destination,airline,language)
+
+    def _source_card(self,source:Source,language:str="es")->Dict[str,Any]:
+        en=str(language or "es").lower()=="en"
+        note=source.notes or ""
+        if en and source.id=="google_flights":
+            note="Flight search and discovery. Confirm the final itinerary with the airline."
+        elif not en and source.id=="google_flights":
+            note="Búsqueda y descubrimiento de vuelos. Confirma el itinerario final con la aerolínea."
+        return {
+            "id":source.id,
+            "name":source.name,
+            "url":source.url,
+            "source_type":source.source_type,
+            "country":source.country,
+            "airline":source.airline,
+            "destination":source.destination,
+            "scope":source.scope,
+            "official":source.official,
+            "verified":source.verified,
+            "verification_date":source.verification_date,
+            "notes":note
+        }
+
+    def search(self,query:Any=None,**kwargs)->Dict[str,Any]:
+        q=self.build_query(query,**kwargs)
+        errors=self.validate_query(q)
+        sources=self.source_cards(q.origin,q.destination,q.airline,q.language)
+        google_url=google_flights_url(q.origin,q.destination,q.departure_date,q.return_date)
+        en=q.language=="en"
+        if errors:
+            message=("Please provide a valid origin and destination airport or city."
+                     if en else "Indica un origen y un destino válidos.")
+            next_action=("Review the origin and destination."
+                         if en else "Revisa el origen y el destino.")
+        else:
+            message=("The app does not invent or publish flight availability. Use the listed sources to search and confirm the actual itinerary."
+                     if en else "La aplicación no inventa ni publica disponibilidad de vuelos. Usa las fuentes mostradas para buscar y confirmar el itinerario real.")
+            next_action=("Open a source and confirm the actual flight, baggage conditions and itinerary."
+                         if en else "Abre una fuente y confirma el vuelo real, las condiciones de equipaje y el itinerario.")
+        return {
+            "results":[],
+            "sources":sources,
+            "message":message,
+            "source":"official_sources" if any(s.get("official") for s in sources) else "source_registry",
+            "verified":False,
+            "official_source":False,
+            "next_action":next_action,
+            "route":{"origin":q.origin,"destination":q.destination,"departure_date":q.departure_date,"return_date":q.return_date},
+            "google_flights_url":google_url,
+            "airline_sources":self.airline_sources(q.airline,q.language) if q.airline else [],
+            "is_cuba_route":self.is_cuba_route(q.origin,q.destination),
+            "important":self._important(q.language),
+            "errors":errors
+        }
+
+    def understand(self,data:Any,language:str="es")->Dict[str,Any]:
+        if not isinstance(data,dict):
+            data={}
+        lang="en" if str(language or "es").lower()=="en" else "es"
+        origin=str(data.get("origin") or "")
+        destination=str(data.get("destination") or "")
+        airline=str(data.get("airline") or "")
+        baggage=data.get("baggage") or {}
+        baggage_summary=str(data.get("baggage_summary") or baggage.get("summary") or "")
+        if not baggage_summary and isinstance(baggage,dict):
+            parts=[]
+            for k,v in baggage.items():
+                if v not in (None,"",False,0):
+                    parts.append(f"{k}: {v}")
+            baggage_summary=", ".join(parts)
+        missing=[]
+        if not origin:
+            missing.append("origin" if lang=="en" else "origen")
+        if not destination:
+            missing.append("destination" if lang=="en" else "destino")
+        if not airline:
+            missing.append("airline" if lang=="en" else "aerolínea")
+        if not baggage_summary:
+            missing.append("baggage information" if lang=="en" else "información de equipaje")
+        explanation=self._explanation(lang,origin,destination,airline,baggage_summary)
+        return {
+            "success":True,
+            "origin":origin,
+            "destination":destination,
+            "airline":airline,
+            "baggage":baggage if isinstance(baggage,dict) else {},
+            "baggage_summary":baggage_summary,
+            "missing_information":missing,
+            "explanation":explanation,
+            "steps":self._understanding_steps(lang),
+            "next_action":("Provide the missing information before applying a specific baggage interpretation."
+                           if lang=="en" else "Completa la información que falta antes de aplicar una interpretación específica del equipaje."),
+            "verified":False,
+            "official_source":False,
+            "legal_notice":self._message("legal",lang)
+        }
+
+    def _understanding_steps(self,lang:str)->List[str]:
+        if lang=="en":
+            return [
+                "Identify the actual airline and route.",
+                "Identify the baggage type and relevant article.",
+                "Check the airline's current conditions.",
+                "Check government/security requirements when applicable.",
+                "Confirm the final condition before traveling."
+            ]
+        return [
+            "Identifica la aerolínea y la ruta real.",
+            "Identifica el tipo de equipaje y el artículo.",
+            "Revisa las condiciones actuales de la aerolínea.",
+            "Revisa los requisitos de seguridad o gubernamentales cuando correspondan.",
+            "Confirma la condición final antes de viajar."
+        ]
+
+    def _explanation(self,lang:str,origin:str,destination:str,airline:str,baggage:str)->str:
+        if lang=="en":
+            base="Flight and baggage conditions depend on the actual itinerary, airline, fare, baggage type and applicable authorities."
+            if origin and destination:
+                base+=f" The route entered is {origin} → {destination}."
+            if airline:
+                base+=f" The airline entered is {airline}."
+            if baggage:
+                base+=f" The available baggage information is: {baggage}."
+            return base+" The app does not guess missing conditions."
+        base="Las condiciones del vuelo y del equipaje dependen del itinerario real, la aerolínea, la tarifa, el tipo de equipaje y las autoridades aplicables."
+        if origin and destination:
+            base+=f" La ruta indicada es {origin} → {destination}."
+        if airline:
+            base+=f" La aerolínea indicada es {airline}."
+        if baggage:
+            base+=f" La información de equipaje disponible es: {baggage}."
+        return base+" La aplicación no adivina condiciones que faltan."
+
+    def baggage_source_for_flight(self,flight:Any,language:str="es")->Optional[Dict[str,Any]]:
+        if isinstance(flight,FlightOption):
+            origin,destination,airline=flight.origin,flight.destination,flight.airline
+        elif isinstance(flight,dict):
+            origin=str(flight.get("origin") or "")
+            destination=str(flight.get("destination") or "")
+            airline=str(flight.get("airline") or "")
+        else:
+            return None
+        sources=REGISTRY.baggage_sources(origin,destination,airline)
+        if sources:
+            return self._source_card(sources[0],language)
+        if airline:
+            source=REGISTRY.official_for_airline(airline)
+            if source:
+                return self._source_card(source[0],language)
+        return None
+
+    def source_for_airline(self,airline:str,language:str="es")->Optional[Dict[str,Any]]:
+        sources=REGISTRY.official_for_airline(airline)
+        return self._source_card(sources[0],language) if sources else None
+
+    def cuba_sources(self,origin:str="",destination:str="",airline:str="",language:str="es")->List[Dict[str,Any]]:
+        sources=REGISTRY.route_sources(origin or "United States",destination or "Cuba",airline,include_search=False)
+        existing={s.id for s in sources}
+        for sid in ("dviajeros","evisa_cuba"):
+            s=REGISTRY.get(sid)
+            if s and sid not in existing:
+                sources.append(s)
+        return [self._source_card(s,language) for s in self._unique(sources)]
+
+    def build_selected_flight(self,data:Any)->FlightOption:
+        d=data if isinstance(data,dict) else {}
+        return FlightOption(
+            id=str(d.get("id") or "selected-flight"),
+            airline=str(d.get("airline") or ""),
+            flight_number=str(d.get("flight_number") or ""),
+            origin=str(d.get("origin") or ""),
+            destination=str(d.get("destination") or ""),
+            departure=str(d.get("departure") or ""),
+            arrival=str(d.get("arrival") or ""),
+            date=str(d.get("date") or d.get("departure_date") or ""),
+            direct=bool(d.get("direct") or d.get("nonstop")),
+            stops=int(d.get("stops") or 0),
+            connection=bool(d.get("connection")),
+            connection_airport=str(d.get("connection_airport") or ""),
+            connection_duration=str(d.get("connection_duration") or ""),
+            passengers=max(1,int(d.get("passengers") or 1)),
+            cabin=str(d.get("cabin") or ""),
+            fare=str(d.get("fare") or ""),
+            currency=str(d.get("currency") or "USD").upper(),
+            baggage_summary=str(d.get("baggage_summary") or ""),
+            source=str(d.get("source") or ""),
+            source_name=str(d.get("source_name") or ""),
+            verified=bool(d.get("verified")),
+            verified_at=str(d.get("verified_at") or ""),
+            official_source=bool(d.get("official_source")),
+            conditions=d.get("conditions") if isinstance(d.get("conditions"),list) else []
+        )
+
+    def no_fake_results_message(self,language:str="es")->str:
+        return self._message("no_results",language)
+
+    def _message(self,key:str,lang:str)->str:
+        if lang=="en":
+            return {
+                "no_results":"No live flight result is published here. Search the actual itinerary through the airline or a flight-search source and confirm it directly.",
+                "legal":"The app organizes and explains information but does not replace the airline, airport, government or other competent authority."
+            }.get(key,"")
+        return {
+            "no_results":"Aquí no se publica un resultado de vuelo en vivo. Busca el itinerario real mediante la aerolínea o una fuente de búsqueda y confírmalo directamente.",
+            "legal":"La aplicación organiza y explica información, pero no sustituye a la aerolínea, el aeropuerto, el gobierno ni a otra autoridad competente."
+        }.get(key,"")
+
+    def _next_action(self,language:str)->str:
+        return ("Confirm the actual itinerary with the airline and the applicable official sources."
+                if language=="en" else
+                "Confirma el itinerario real con la aerolínea y las fuentes oficiales aplicables.")
+
+    def _important(self,language:str)->List[str]:
         if language=="en":
-            return "We do not invent flight results. Select or enter the flight you found, and we will help you understand it and prepare your baggage."
-        return "No inventamos vuelos. Selecciona o escribe el vuelo que encontraste y te ayudamos a entenderlo y a preparar tu equipaje."
+            return [
+                "Flight availability is not invented by the app.",
+                "Search results are not a ticket or reservation.",
+                "Airline and official government requirements can change.",
+                "Confirm the final conditions before traveling."
+            ]
+        return [
+            "La aplicación no inventa disponibilidad de vuelos.",
+            "Un resultado de búsqueda no es un boleto ni una reserva.",
+            "Las condiciones de la aerolínea y los requisitos oficiales pueden cambiar.",
+            "Confirma las condiciones finales antes de viajar."
+        ]
 
-    def _message(self,kind,language,errors):
-        if language=="en":
-            if kind=="errors":return "Before we continue, fix this: "+" ".join(errors)
-            return "First find or select your flight. Then we will help you understand the route, connection, fare and baggage."
-        if kind=="errors":return "Antes de continuar, corrige esto: "+" ".join(errors)
-        return "Primero encuentra o selecciona tu vuelo. Después te ayudamos a entender la ruta, la conexión, la tarifa y el equipaje."
+    def _unique_dicts(self,items:List[Dict[str,Any]])->List[Dict[str,Any]]:
+        seen=set()
+        out=[]
+        for item in items:
+            key=item.get("id") or item.get("url") or item.get("name")
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(item)
+        return out
 
-    def _next_action(self,language="es",missing=None):
-        if missing:
-            if language=="en":return "Find the missing information in the flight details and then continue with baggage preparation."
-            return "Busca esos datos en los detalles del vuelo y después continúa con la preparación del equipaje."
-        if language=="en":return "Select the flight you will actually take so we can review it without inventing information."
-        return "Selecciona el vuelo que realmente vas a tomar para poder revisarlo sin inventar información."
-
-    def _important(self,language="es"):
-        if language=="en":return "A source being listed does not mean that you selected that airline or that a flight is confirmed. Final flight, baggage and travel conditions must be confirmed with the applicable official source."
-        return "Que una fuente aparezca en la lista no significa que hayas seleccionado esa aerolínea ni que exista un vuelo confirmado. El vuelo, el equipaje y las condiciones del viaje deben confirmarse con la fuente oficial correspondiente."
-
-ENGINE=FlightEngine()
-flight_engine=ENGINE
-search_flights=ENGINE.search
-understand_flight=ENGINE.understand
-
-__all__=["FlightQuery","FlightOption","FlightEngine","ENGINE","flight_engine","search_flights","understand_flight","google_flights_url"]
+engine=FlightEngine()
+flight_engine=engine
