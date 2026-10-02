@@ -1,103 +1,176 @@
-# legal_disclaimer.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v8.0.0
-from datetime import datetime,timezone
+# legal_disclaimer.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v8.0.1
+from typing import Any,Dict
+
+VERSION="8.0.1"
 
 class LegalNoticeManager:
-    VERSION="8.0.0"
+    VERSION=VERSION
     OWNER="May Roga LLC"
     APP_NAME="¿QUÉ QUIERES LLEVAR?"
     PRICE_USD=15.99
     SESSION_MINUTES=15
-    INDEPENDENCE="¿QUÉ QUIERES LLEVAR? es un servicio independiente de May Roga LLC."
-    PURPOSE="La aplicación orienta y enseña al viajero a preparar su viaje, comprender su vuelo, revisar su equipaje, practicar procesos y encontrar la fuente oficial que corresponde."
-    FLIGHT_SCOPE="La aplicación puede ayudar a interpretar información de vuelos proporcionada o encontrada por el usuario y fuentes disponibles, pero no vende, reserva, emite, modifica ni cobra boletos."
-    NO_BOOKING="La aplicación no es una aerolínea, agencia de viajes, vendedor de boletos, banco, gobierno, aeropuerto, consulado ni autoridad."
-    BAGGAGE_SCOPE="Las recomendaciones de equipaje dependen del artículo, tipo de equipaje, aerolínea, vuelo, ruta, tarifa, país y otras condiciones aplicables. No se debe tratar una regla específica como una regla universal."
-    AI_LIMITS="La inteligencia artificial puede ayudar a interpretar, organizar y explicar información, pero no sustituye una regla oficial ni decide por una aerolínea, aeropuerto, gobierno o autoridad."
-    OFFICIAL_SOURCE_RULE="Cuando una condición necesita confirmación oficial, la aplicación debe enseñar al usuario qué buscar, dónde buscarlo, qué significa y llevarlo a la fuente correspondiente."
-    SIMULATION_RULE="Las simulaciones de May Roga son prácticas educativas. No son formularios, aplicaciones, páginas ni sistemas oficiales de aerolíneas, gobiernos, aeropuertos o autoridades."
-    FINAL_AUTHORITY="La decisión final sobre transporte, equipaje, seguridad, documentación, entrada a un país o cualquier requisito corresponde a la aerolínea, aeropuerto, gobierno o autoridad competente."
-    NO_GUARANTEE="Las políticas, horarios, tarifas, rutas, requisitos y condiciones pueden cambiar. Una fuente consultada en una fecha anterior no garantiza que una condición permanezca igual el día del viaje."
-    PRIVACY="La aplicación debe solicitar y conservar solamente la información necesaria para prestar el servicio. No solicita contraseñas bancarias, CVV, códigos de seguridad, credenciales de aerolíneas ni credenciales gubernamentales."
-    PAYMENT="El pago corresponde al servicio de orientación y preparación de May Roga LLC. No es pago por un boleto, reserva, tarifa aeroportuaria, trámite gubernamental ni servicio de una aerolínea."
-    def __init__(self,language="es"):
-        self.language="en" if str(language).lower()=="en" else "es"
 
-    def metadata(self):
-        return {"version":self.VERSION,"owner":self.OWNER,"app_name":self.APP_NAME,"price_usd":self.PRICE_USD,"session_minutes":self.SESSION_MINUTES,"independent_service":True,"booking_enabled":False,"ticket_sales_enabled":False}
+    INDEPENDENCE_ES="¿QUÉ QUIERES LLEVAR? es un servicio independiente de May Roga LLC."
+    PURPOSE_ES="La aplicación orienta al viajero para preparar su viaje, comprender información de vuelos, revisar equipaje, practicar procesos y encontrar la fuente oficial correspondiente."
+    FLIGHT_SCOPE_ES="La aplicación puede ayudar a interpretar información de vuelos proporcionada o encontrada por el usuario y fuentes disponibles, pero no vende, reserva, emite, modifica ni cobra boletos."
+    NO_BOOKING_ES="La aplicación no es una aerolínea, agencia de viajes, vendedor de boletos, banco, gobierno, aeropuerto, consulado ni autoridad."
+    BAGGAGE_SCOPE_ES="Las condiciones del equipaje pueden depender del artículo, tipo de equipaje, aerolínea, vuelo, ruta, tarifa, país y otras condiciones aplicables. Una regla específica no debe tratarse como una regla universal."
+    AI_LIMITS_ES="La inteligencia artificial puede ayudar a interpretar, organizar y explicar información, pero no sustituye una regla oficial ni decide por una aerolínea, aeropuerto, gobierno o autoridad."
+    OFFICIAL_SOURCE_RULE_ES="Cuando una condición necesita confirmación oficial, la aplicación debe indicar qué debe buscar el usuario, dónde buscarlo, qué significa y dirigirlo a la fuente correspondiente."
+    SIMULATION_RULE_ES="Las simulaciones de May Roga son prácticas de orientación. No son formularios, solicitudes, páginas ni sistemas oficiales de aerolíneas, gobiernos, aeropuertos o autoridades."
+    FINAL_AUTHORITY_ES="La decisión final sobre transporte, equipaje, seguridad, documentación, entrada a un país o cualquier requisito corresponde a la aerolínea, aeropuerto, gobierno o autoridad competente."
+    NO_GUARANTEE_ES="Las políticas, horarios, tarifas, rutas, requisitos y condiciones pueden cambiar. Una fuente consultada anteriormente no garantiza que una condición permanezca igual el día del viaje."
+    PRIVACY_ES="La aplicación debe solicitar y conservar solamente la información necesaria para prestar el servicio. No solicita contraseñas bancarias, CVV, códigos de seguridad, credenciales de aerolíneas ni credenciales gubernamentales."
+    PAYMENT_ES="El pago corresponde al servicio de orientación y preparación de May Roga LLC. No es pago por un boleto, reserva, tarifa aeroportuaria, trámite gubernamental ni servicio de una aerolínea."
 
-    def intro(self):
-        if self.language=="en":
-            return "¿QUÉ QUIERES LLEVAR? is an independent May Roga LLC travel-preparation service. It helps you understand your trip, baggage and travel steps in simple language."
-        return "¿QUÉ QUIERES LLEVAR? es un servicio independiente de May Roga LLC que te ayuda a preparar tu viaje, entender tu vuelo, revisar tu equipaje y aprender qué debes hacer."
+    INDEPENDENCE_EN="¿QUÉ QUIERES LLEVAR? is an independent service of May Roga LLC."
+    PURPOSE_EN="The application helps travelers prepare for a trip, understand flight information, review baggage, practice processes and find the appropriate official source."
+    FLIGHT_SCOPE_EN="The application may help interpret flight information provided or found by the user and available sources, but it does not sell, book, issue, modify or charge for tickets."
+    NO_BOOKING_EN="The application is not an airline, travel agency, ticket seller, bank, government, airport, consulate or authority."
+    BAGGAGE_SCOPE_EN="Baggage conditions may depend on the item, baggage type, airline, flight, route, fare, country and other applicable conditions. A specific rule should not be treated as a universal rule."
+    AI_LIMITS_EN="Artificial intelligence may help interpret, organize and explain information, but it does not replace an official rule or make decisions for an airline, airport, government or authority."
+    OFFICIAL_SOURCE_RULE_EN="When a condition requires official confirmation, the application should tell the user what to look for, where to look, what it means and direct the user to the applicable source."
+    SIMULATION_RULE_EN="May Roga simulations are practice and orientation tools. They are not official forms, applications, pages or systems of airlines, governments, airports or authorities."
+    FINAL_AUTHORITY_EN="The final decision regarding transportation, baggage, security, documentation, entry into a country or any requirement belongs to the applicable airline, airport, government or competent authority."
+    NO_GUARANTEE_EN="Policies, schedules, fares, routes, requirements and conditions may change. A source consulted earlier does not guarantee that a condition will remain the same on the day of travel."
+    PRIVACY_EN="The application should request and retain only information necessary to provide the service. It does not request banking passwords, CVV numbers, security codes, airline credentials or government credentials."
+    PAYMENT_EN="Payment is for May Roga LLC's orientation and travel-preparation service. It is not payment for a ticket, reservation, airport fee, government procedure or airline service."
 
-    def short_notice(self):
-        if self.language=="en":
-            return "Independent educational service. We do not sell or reserve flights. Airline, government and authority rules must be confirmed with the applicable official source."
-        return "Servicio independiente y educativo. No vendemos ni reservamos vuelos. Las reglas de la aerolínea, gobierno o autoridad correspondiente deben confirmarse en la fuente oficial aplicable."
+    def _lang(self,language:str)->str:
+        return "en" if str(language or "es").lower()=="en" else "es"
 
-    def user_guidance(self):
-        if self.language=="en":
-            return "If a detail cannot be confirmed, we will explain what to look for, where to look, what the wording means and what to confirm before you travel."
-        return "Si un dato no puede confirmarse directamente, te explicamos qué debes buscar, dónde buscarlo, qué significa y qué debes confirmar antes de viajar."
+    def _texts(self,language:str)->Dict[str,str]:
+        en=self._lang(language)=="en"
+        if en:
+            return {
+                "independence":self.INDEPENDENCE_EN,
+                "purpose":self.PURPOSE_EN,
+                "flight_scope":self.FLIGHT_SCOPE_EN,
+                "no_booking":self.NO_BOOKING_EN,
+                "baggage_scope":self.BAGGAGE_SCOPE_EN,
+                "ai_limits":self.AI_LIMITS_EN,
+                "official_source_rule":self.OFFICIAL_SOURCE_RULE_EN,
+                "simulation_rule":self.SIMULATION_RULE_EN,
+                "final_authority":self.FINAL_AUTHORITY_EN,
+                "no_guarantee":self.NO_GUARANTEE_EN,
+                "privacy":self.PRIVACY_EN,
+                "payment":self.PAYMENT_EN
+            }
+        return {
+            "independence":self.INDEPENDENCE_ES,
+            "purpose":self.PURPOSE_ES,
+            "flight_scope":self.FLIGHT_SCOPE_ES,
+            "no_booking":self.NO_BOOKING_ES,
+            "baggage_scope":self.BAGGAGE_SCOPE_ES,
+            "ai_limits":self.AI_LIMITS_ES,
+            "official_source_rule":self.OFFICIAL_SOURCE_RULE_ES,
+            "simulation_rule":self.SIMULATION_RULE_ES,
+            "final_authority":self.FINAL_AUTHORITY_ES,
+            "no_guarantee":self.NO_GUARANTEE_ES,
+            "privacy":self.PRIVACY_ES,
+            "payment":self.PAYMENT_ES
+        }
 
-    def source_notice(self):
-        if self.language=="en":
-            return "A source being shown does not mean that a flight, fare or condition is confirmed. The source must match your airline, route, trip and situation."
-        return "Que una fuente aparezca no significa que un vuelo, tarifa o condición esté confirmado. La fuente debe corresponder a tu aerolínea, ruta, viaje y situación."
-
-    def confirmation_message(self):
-        if self.language=="en":
-            return "Before traveling, confirm the current requirement with the official airline, government, airport or authority that has final responsibility."
-        return "Antes de viajar, confirma el requisito vigente con la aerolínea, gobierno, aeropuerto o autoridad oficial que tenga la decisión final."
-
-    def session_expired_message(self):
-        if self.language=="en":
-            return "Your May Roga preparation session has ended. You can start another service session when you are ready."
-        return "Tu sesión de preparación de May Roga terminó. Puedes iniciar otra sesión de servicio cuando estés listo."
-
-    def full_notice(self):
-        if self.language=="en":
-            return (
-                f"{self.intro()} {self.FLIGHT_SCOPE} {self.NO_BOOKING} "
-                f"{self.BAGGAGE_SCOPE} {self.AI_LIMITS} {self.SIMULATION_RULE} "
-                f"{self.FINAL_AUTHORITY} {self.NO_GUARANTEE} {self.PRIVACY} {self.PAYMENT}"
-            )
-        return (
-            f"{self.intro()} {self.FLIGHT_SCOPE} {self.NO_BOOKING} "
-            f"{self.BAGGAGE_SCOPE} {self.AI_LIMITS} {self.SIMULATION_RULE} "
-            f"{self.FINAL_AUTHORITY} {self.NO_GUARANTEE} {self.PRIVACY} {self.PAYMENT}"
-        )
-
-    def to_dict(self):
+    def metadata(self,language:str="es")->Dict[str,Any]:
         return {
             "version":self.VERSION,
             "owner":self.OWNER,
             "app_name":self.APP_NAME,
             "price_usd":self.PRICE_USD,
             "session_minutes":self.SESSION_MINUTES,
-            "independence":self.INDEPENDENCE,
-            "purpose":self.PURPOSE,
-            "flight_scope":self.FLIGHT_SCOPE,
-            "no_booking":self.NO_BOOKING,
-            "baggage_scope":self.BAGGAGE_SCOPE,
-            "ai_limits":self.AI_LIMITS,
-            "official_source_rule":self.OFFICIAL_SOURCE_RULE,
-            "simulation_rule":self.SIMULATION_RULE,
-            "final_authority":self.FINAL_AUTHORITY,
-            "no_guarantee":self.NO_GUARANTEE,
-            "privacy":self.PRIVACY,
-            "payment":self.PAYMENT
+            "independent_service":True,
+            "booking":False,
+            "ticket_sales":False,
+            "texts":self._texts(language)
         }
 
-def legal_notice(language="es"):
-    return LegalNoticeManager(language).full_notice()
+    def intro(self,language:str="es")->str:
+        t=self._texts(language)
+        return t["independence"]+" "+t["purpose"]
 
-def short_legal_notice(language="es"):
-    return LegalNoticeManager(language).short_notice()
+    def short_notice(self,language:str="es")->str:
+        t=self._texts(language)
+        if self._lang(language)=="en":
+            return t["independence"]+" "+t["no_booking"]
+        return t["independence"]+" "+t["no_booking"]
 
-def legal_metadata():
-    return LegalNoticeManager().metadata()
+    def user_guidance(self,language:str="es")->str:
+        t=self._texts(language)
+        return t["official_source_rule"]+" "+t["final_authority"]
+
+    def source_notice(self,language:str="es")->str:
+        t=self._texts(language)
+        return t["no_guarantee"]+" "+t["official_source_rule"]
+
+    def confirmation_message(self,language:str="es")->str:
+        t=self._texts(language)
+        if self._lang(language)=="en":
+            return "Before traveling, confirm the final flight, baggage, documentation and entry requirements with the applicable official sources."
+        return "Antes de viajar, confirma el vuelo, el equipaje, la documentación y los requisitos de entrada finales con las fuentes oficiales correspondientes."
+
+    def session_expired_message(self,language:str="es")->str:
+        if self._lang(language)=="en":
+            return "Your 15-minute service session has expired. Start a new session to continue."
+        return "Tu sesión de servicio de 15 minutos terminó. Inicia una nueva sesión para continuar."
+
+    def full_notice(self,language:str="es")->str:
+        t=self._texts(language)
+        return "\n\n".join([
+            t["independence"],
+            t["purpose"],
+            t["flight_scope"],
+            t["no_booking"],
+            t["baggage_scope"],
+            t["ai_limits"],
+            t["official_source_rule"],
+            t["simulation_rule"],
+            t["final_authority"],
+            t["no_guarantee"],
+            t["privacy"],
+            t["payment"]
+        ])
+
+    def to_dict(self,language:str="es")->Dict[str,Any]:
+        t=self._texts(language)
+        return {
+            "version":self.VERSION,
+            "owner":self.OWNER,
+            "app_name":self.APP_NAME,
+            "price_usd":self.PRICE_USD,
+            "session_minutes":self.SESSION_MINUTES,
+            "independent_service":True,
+            "booking":False,
+            "ticket_sales":False,
+            "independence":t["independence"],
+            "purpose":t["purpose"],
+            "flight_scope":t["flight_scope"],
+            "no_booking":t["no_booking"],
+            "baggage_scope":t["baggage_scope"],
+            "ai_limits":t["ai_limits"],
+            "official_source_rule":t["official_source_rule"],
+            "simulation_rule":t["simulation_rule"],
+            "final_authority":t["final_authority"],
+            "no_guarantee":t["no_guarantee"],
+            "privacy":t["privacy"],
+            "payment":t["payment"]
+        }
+
+    def legal_notice(self,language:str="es")->str:
+        return self.full_notice(language)
+
+    def short_legal_notice(self,language:str="es")->str:
+        return self.short_notice(language)
+
+    def legal_metadata(self,language:str="es")->Dict[str,Any]:
+        return self.metadata(language)
 
 manager=LegalNoticeManager()
 
-__all__=["LegalNoticeManager","legal_notice","short_legal_notice","legal_metadata","manager"]
+def legal_notice(language:str="es")->str:
+    return manager.full_notice(language)
+
+def short_legal_notice(language:str="es")->str:
+    return manager.short_notice(language)
+
+def legal_metadata(language:str="es")->Dict[str,Any]:
+    return manager.metadata(language)
