@@ -278,6 +278,46 @@ function finishPractice(){
  b.innerHTML=`<div><button id="practiceClose" type="button">× ${APP.lang==="en"?"Close":"Cerrar"}</button><h2>${APP.lang==="en"?"Practice completed":"Práctica completada"}</h2><div class="next-action"><strong>${APP.lang==="en"?"This was a simulation.":"Esta fue una simulación."}</strong>${html}<p>${APP.lang==="en"?"No real information was submitted or purchased.":"No se envió información real ni se realizó ninguna compra."}</p></div></div>`;
  $("#practiceClose").onclick=closePractice
 }
+let adminTaps=0,adminTapTimer=null;
+
+function hiddenAdmin(){
+ adminTaps++;
+ clearTimeout(adminTapTimer);
+ adminTapTimer=setTimeout(()=>adminTaps=0,900);
+ if(adminTaps<3)return;
+ adminTaps=0;
+ clearTimeout(adminTapTimer);
+ let old=document.getElementById("hiddenAdmin");
+ if(old)old.remove();
+ const d=document.createElement("div");
+ d.id="hiddenAdmin";
+ d.innerHTML=`<div class="hidden-admin-backdrop"><div class="hidden-admin-box"><button id="hiddenAdminClose" type="button">×</button><h2>Acceso privado</h2><label>Usuario<input id="hiddenAdminUser" type="text" autocomplete="username"></label><label>Contraseña<input id="hiddenAdminPass" type="password" autocomplete="current-password"></label><button id="hiddenAdminLogin" class="primary" type="button">Entrar</button><p id="hiddenAdminMsg"></p></div></div>`;
+ document.body.appendChild(d);
+ const u=document.getElementById("hiddenAdminUser");
+ const p=document.getElementById("hiddenAdminPass");
+ const m=document.getElementById("hiddenAdminMsg");
+ document.getElementById("hiddenAdminClose").onclick=()=>d.remove();
+ document.getElementById("hiddenAdminLogin").onclick=async()=>{
+  const user=u.value.trim(),pass=p.value;
+  if(!user||!pass){m.textContent="Escribe usuario y contraseña.";return}
+  try{
+   const r=await api("/api/v1/admin/login",{method:"POST",body:JSON.stringify({username:user,password:pass})},15000);
+   const t=r.token||r.admin_token;
+   if(!t)throw new Error("No se pudo activar el acceso.");
+   APP.adminToken=t;
+   APP.serviceToken="";
+   saveTokens();
+   APP.session={active:true,admin:true};
+   d.remove();
+   setView("home");
+   translate();
+   msg(APP.lang==="en"?"Administrator access is active.":"Acceso de administrador activo.","success");
+  }catch(e){
+   m.textContent=e.message||"Usuario o contraseña incorrectos.";
+  }
+ };
+ u.focus();
+}
 function bind(){
  if(APP._bound)return;
  APP._bound=true;
@@ -289,6 +329,7 @@ function bind(){
  $("#itemBtn")?.addEventListener("click",itemConsult);
  $("#teachBtn")?.addEventListener("click",teach);
  $("#adminLoginBtn")?.addEventListener("click",adminLogin);
+ document.querySelector(".top>div:first-child")?.addEventListener("click",hiddenAdmin);
  document.addEventListener("click",e=>{
   const b=e.target.closest("[data-action]");if(!b)return;
   const a=b.dataset.action;
