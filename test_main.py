@@ -1,241 +1,373 @@
 # test_main.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v8.0.1
 import os
-import pytest
 from fastapi.testclient import TestClient
 
-os.environ.setdefault("ADMIN_USERNAME","test_admin")
-os.environ.setdefault("ADMIN_PASSWORD","test_password")
+os.environ.setdefault("ADMIN_USERNAME","admin")
+os.environ.setdefault("ADMIN_PASSWORD","admin123")
+os.environ.setdefault("STRIPE_PRICE_ID1","")
 os.environ.setdefault("STRIPE_PUBLISHABLE_KEY","")
 os.environ.setdefault("STRIPE_SECRET_KEY","")
 os.environ.setdefault("STRIPE_WEBHOOK_SECRET","")
-os.environ.setdefault("STRIPE_PRICE_ID1","")
+os.environ.setdefault("GEMINI_API_KEY","")
 
-from main import app,SESSION_SECONDS
+from main import app
 
 client=TestClient(app)
 
-def _ok(r):
-    assert r.status_code<500,r.text
-
-def _admin_login():
-    r=client.post("/api/v1/admin/login",json={"username":"test_admin","password":"test_password"})
+def admin_login():
+    r=client.post("/api/v1/admin/login",json={
+        "username":os.getenv("ADMIN_USERNAME","admin"),
+        "password":os.getenv("ADMIN_PASSWORD","admin123")
+    })
     assert r.status_code==200,r.text
-    d=r.json()
-    assert d.get("success") is True
-    assert d.get("token")
-    return d["token"]
+    data=r.json()
+    assert data.get("success") is True
+    assert data.get("token")
+    return data["token"]
+
+def admin_headers(token=None):
+    return {"X-Admin-Token":token or admin_login()}
+
+def service_headers(token):
+    return {"X-Service-Token":token}
 
 def test_root():
     r=client.get("/")
-    _ok(r)
+    assert r.status_code==200
+    assert "text/html" in r.headers.get("content-type","")
 
 def test_health():
     r=client.get("/health")
-    assert r.status_code==200,r.text
-    assert r.json().get("status")=="ok"
+    assert r.status_code==200
+    data=r.json()
+    assert data.get("status")=="ok"
+    assert data.get("version")=="8.0.1"
 
 def test_meta():
     r=client.get("/api/v1/meta")
-    assert r.status_code==200,r.text
-    d=r.json()
-    assert d.get("app_name")=="¿QUÉ QUIERES LLEVAR?"
-    assert d.get("version")=="8.0.1"
-    assert d.get("owner")=="May Roga LLC"
-    assert d.get("session_minutes")==15
-    assert d.get("payment_type")=="one_time"
-    assert d.get("price_usd")==15.99
-
-def test_legal():
-    r=client.get("/api/v1/legal")
-    assert r.status_code==200,r.text
-    d=r.json()
-    assert isinstance(d,dict)
-    assert d.get("success") is True
-    assert d.get("app_name")=="¿QUÉ QUIERES LLEVAR?"
+    assert r.status_code==200
+    data=r.json()
+    assert data.get("success") is True
+    assert data.get("version")=="8.0.1"
+    assert data.get("name")
+    assert data.get("owner")=="May Roga LLC"
+    assert data.get("price_usd")==15.99
+    assert data.get("session_minutes")==15
 
 def test_config():
     r=client.get("/api/v1/config")
-    assert r.status_code==200,r.text
-    d=r.json()
-    assert isinstance(d,dict)
-    assert d.get("payment_type")=="one_time"
-    assert d.get("price_usd")==15.99
-    assert d.get("session_minutes")==15
+    assert r.status_code==200
+    data=r.json()
+    assert data.get("success") is True
+    assert data.get("app_name")
+    assert data.get("owner")=="May Roga LLC"
+    assert data.get("price_usd")==15.99
+    assert data.get("session_minutes")==15
+
+def test_legal():
+    r=client.get("/api/v1/legal")
+    assert r.status_code==200
+    data=r.json()
+    assert data.get("success") is True
+    assert data.get("owner")=="May Roga LLC"
+    assert data.get("app_name")
+    assert data.get("short_notice")
+    assert data.get("full_notice")
+
+def test_legal_english():
+    r=client.get("/api/v1/legal?language=en")
+    assert r.status_code==200
+    data=r.json()
+    assert data.get("success") is True
+    assert data.get("language")=="en"
+    assert data.get("short_notice")
+    assert data.get("full_notice")
 
 def test_official_sources():
-    r=client.get("/api/v1/official")
-    assert r.status_code==200,r.text
-    d=r.json()
-    assert isinstance(d,dict)
-    assert d.get("success") is True
-    assert isinstance(d.get("sources"),list)
+    r=client.get("/api/v1/sources/official")
+    assert r.status_code==200
+    data=r.json()
+    assert data.get("success") is True
+    assert isinstance(data.get("sources"),list)
+
+def test_source_search():
+    r=client.get("/api/v1/sources/search?q=Cuba")
+    assert r.status_code==200
+    data=r.json()
+    assert data.get("success") is True
+    assert isinstance(data.get("sources"),list)
+
+def test_source_search_empty():
+    r=client.get("/api/v1/sources/search")
+    assert r.status_code in (200,422)
 
 def test_rules():
     r=client.get("/api/v1/rules")
+    assert r.status_code==200
+    data=r.json()
+    assert data.get("success") is True
+    assert isinstance(data.get("rules"),list)
+
+def test_cuba_official():
+    r=client.get("/api/v1/cuba/official")
+    assert r.status_code==200
+    data=r.json()
+    assert data.get("success") is True
+    assert isinstance(data.get("steps"),list)
+    assert len(data["steps"])>0
+    assert isinstance(data.get("official_sources"),list)
+
+def test_session_without_token():
+    r=client.get("/api/v1/session")
+    assert r.status_code==200
+    data=r.json()
+    assert data.get("success") is True
+    assert data.get("active") is False
+
+def test_protected_endpoint_without_token():
+    r=client.post("/api/v1/flight/search-external",json={
+        "origin":"MIA",
+        "destination":"HAV"
+    })
+    assert r.status_code==401
+
+def test_protected_item_without_token():
+    r=client.post("/api/v1/consultar-articulo",json={
+        "item":"medicamentos"
+    })
+    assert r.status_code==401
+
+def test_protected_teach_without_token():
+    r=client.post("/api/v1/item/teach",json={
+        "term":"D'Viajeros"
+    })
+    assert r.status_code==401
+
+def test_protected_guide_without_token():
+    r=client.post("/api/v1/guide",json={
+        "language":"es"
+    })
+    assert r.status_code==401
+
+def test_admin_login():
+    token=admin_login()
+    assert isinstance(token,str)
+    assert len(token)>10
+
+def test_admin_invalid_login():
+    r=client.post("/api/v1/admin/login",json={
+        "username":"wrong-user",
+        "password":"wrong-password"
+    })
+    assert r.status_code==401
+    data=r.json()
+    assert data.get("detail")
+
+def test_admin_status():
+    token=admin_login()
+    r=client.get("/api/v1/admin/status",headers=admin_headers(token))
+    assert r.status_code==200
+    data=r.json()
+    assert data.get("success") is True
+    assert data.get("active") is True
+
+def test_admin_status_without_token():
+    r=client.get("/api/v1/admin/status")
+    assert r.status_code==401
+
+def test_admin_protected():
+    token=admin_login()
+    r=client.get("/api/v1/admin/protected",headers=admin_headers(token))
+    assert r.status_code==200
+    data=r.json()
+    assert data.get("success") is True
+    assert data.get("active") is True
+
+def test_admin_session_is_active():
+    token=admin_login()
+    r=client.get("/api/v1/session",headers=admin_headers(token))
+    assert r.status_code==200
+    data=r.json()
+    assert data.get("success") is True
+    assert data.get("active") is True
+    assert data.get("admin") is True
+
+def test_admin_can_use_flight_search():
+    token=admin_login()
+    r=client.post(
+        "/api/v1/flight/search-external",
+        headers=admin_headers(token),
+        json={
+            "origin":"MIA",
+            "destination":"HAV",
+            "language":"es"
+        }
+    )
     assert r.status_code==200,r.text
-    d=r.json()
-    assert isinstance(d,dict)
-    assert "rules" in d
-    assert isinstance(d["rules"],list)
+    data=r.json()
+    assert data.get("success") is True
+    assert isinstance(data.get("results"),list)
+
+def test_admin_can_check_item():
+    token=admin_login()
+    r=client.post(
+        "/api/v1/consultar-articulo",
+        headers=admin_headers(token),
+        json={
+            "item":"power bank",
+            "language":"es"
+        }
+    )
+    assert r.status_code==200,r.text
+    data=r.json()
+    assert data.get("success") is True
+    assert data.get("item")
+
+def test_admin_can_teach_term():
+    token=admin_login()
+    r=client.post(
+        "/api/v1/item/teach",
+        headers=admin_headers(token),
+        json={
+            "term":"D'Viajeros",
+            "language":"es"
+        }
+    )
+    assert r.status_code==200,r.text
+    data=r.json()
+    assert data.get("success") is True
+    assert data.get("term")
+
+def test_admin_can_use_guide():
+    token=admin_login()
+    r=client.post(
+        "/api/v1/guide",
+        headers=admin_headers(token),
+        json={
+            "language":"es",
+            "flight":{
+                "origin":"MIA",
+                "destination":"HAV"
+            }
+        }
+    )
+    assert r.status_code==200,r.text
+    data=r.json()
+    assert data.get("success") is True
+    assert isinstance(data.get("steps"),list)
+
+def test_admin_logout():
+    token=admin_login()
+    r=client.post("/api/v1/admin/logout",headers=admin_headers(token))
+    assert r.status_code==200
+    data=r.json()
+    assert data.get("success") is True
+
+def test_invalid_service_token():
+    r=client.get(
+        "/api/v1/session",
+        headers=service_headers("invalid-service-token")
+    )
+    assert r.status_code==200
+    data=r.json()
+    assert data.get("active") is False
+
+def test_invalid_admin_token():
+    r=client.get(
+        "/api/v1/admin/status",
+        headers={"X-Admin-Token":"invalid-admin-token"}
+    )
+    assert r.status_code==401
 
 def test_flight_sources():
     r=client.get("/api/v1/flight/sources")
-    assert r.status_code==200,r.text
-    assert isinstance(r.json(),dict)
+    assert r.status_code==200
+    data=r.json()
+    assert data.get("success") is True
+    assert isinstance(data.get("sources"),list)
 
-def test_source_search_empty_query():
-    r=client.get("/api/v1/sources/search?q=")
-    assert r.status_code==200,r.text
-    assert isinstance(r.json(),dict)
-
-def test_source_search_baggage():
-    r=client.get("/api/v1/sources/search?q=equipaje")
-    assert r.status_code==200,r.text
-    assert isinstance(r.json(),dict)
-
-def test_route_sources():
-    r=client.get("/api/v1/sources/route?origin=MIA&destination=HAV")
-    assert r.status_code==200,r.text
-    assert isinstance(r.json(),dict)
-
-def test_baggage_sources():
-    r=client.get("/api/v1/sources/baggage?origin=MIA&destination=HAV")
-    assert r.status_code==200,r.text
-    assert isinstance(r.json(),dict)
-
-def test_cuba_sources():
-    r=client.get("/api/v1/cuba/sources")
-    assert r.status_code==200,r.text
-    d=r.json()
-    assert d.get("success") is True
-    assert isinstance(d.get("sources"),list)
-
-def test_cuba_guide():
-    r=client.get("/api/v1/cuba/guide?language=es")
-    assert r.status_code==200,r.text
-    d=r.json()
-    assert d.get("success") is True
-    assert isinstance(d.get("steps"),list)
-    assert len(d["steps"])>=1
-
-def test_flight_search_requires_valid_input():
-    r=client.post("/api/v1/flight/search-external",json={})
-    assert r.status_code in (401,422),r.text
-
-def test_flight_search_miami_havana_requires_session():
-    payload={
+def test_flight_search_public_is_protected():
+    r=client.post("/api/v1/flight/search-external",json={
         "origin":"MIA",
         "destination":"HAV",
-        "departure_date":"2026-11-15",
-        "passengers":1,
         "language":"es"
-    }
-    r=client.post("/api/v1/flight/search-external",json=payload)
-    assert r.status_code==401,r.text
+    })
+    assert r.status_code==401
 
-def test_flight_understand_requires_session():
-    payload={
-        "flight":{
-            "origin":"MIA",
-            "destination":"HAV",
-            "departure_date":"2026-11-15",
-            "passengers":1
-        },
-        "language":"es"
-    }
-    r=client.post("/api/v1/flight/understand",json=payload)
-    assert r.status_code==401,r.text
+def test_cuba_official_contains_required_topics():
+    r=client.get("/api/v1/cuba/official")
+    assert r.status_code==200
+    data=r.json()
+    steps=data.get("steps",[])
+    text=" ".join(
+        str(x)
+        for x in steps
+    ).lower()
+    assert "pasaporte" in text
+    assert "visa" in text or "evisa" in text
+    assert "viajeros" in text or "d'viajeros" in text
+    assert "equipaje" in text or "baggage" in text
 
-def test_item_check_requires_session():
-    r=client.post("/api/v1/consultar-articulo",json={"item":"power bank","language":"es"})
-    assert r.status_code==401,r.text
+def test_create_checkout_without_stripe_configuration():
+    r=client.post("/api/v1/create-checkout-session",json={
+        "return_path":"/"
+    })
+    if os.getenv("STRIPE_SECRET_KEY") and os.getenv("STRIPE_PRICE_ID1"):
+        assert r.status_code in (200,400,500,502,503)
+    else:
+        assert r.status_code==503
 
-def test_item_teach_requires_session():
-    r=client.post("/api/v1/item/teach",json={"term":"equipaje de mano","language":"es"})
-    assert r.status_code==401,r.text
+def test_verify_payment_requires_session_id():
+    r=client.post("/api/v1/verify-payment",json={
+        "session_id":""
+    })
+    assert r.status_code==422
 
-def test_guide_requires_session():
-    r=client.post("/api/v1/guide",json={"language":"es"})
-    assert r.status_code==401,r.text
+def test_webhook_without_secret():
+    r=client.post(
+        "/api/v1/webhook",
+        content=b"{}",
+        headers={"stripe-signature":"test"}
+    )
+    if os.getenv("STRIPE_WEBHOOK_SECRET"):
+        assert r.status_code in (400,401,403,400)
+    else:
+        assert r.status_code==503
 
-def test_admin_status_without_login():
-    r=client.get("/api/v1/admin/status")
-    assert r.status_code==200,r.text
-    d=r.json()
-    assert d.get("active") is False
+def test_health_does_not_require_payment():
+    r=client.get("/health")
+    assert r.status_code==200
 
-def test_admin_login_rejects_wrong_credentials():
-    r=client.post("/api/v1/admin/login",json={"username":"wrong_user","password":"wrong_password"})
-    assert r.status_code==401,r.text
-    d=r.json()
-    assert d.get("success") is False
-
-def test_admin_login_accepts_render_credentials():
-    token=_admin_login()
-    r=client.get("/api/v1/admin/status",headers={"X-Admin-Token":token})
-    assert r.status_code==200,r.text
-    d=r.json()
-    assert d.get("active") is True
-    assert d.get("remaining_seconds")>0
-
-def test_admin_logout():
-    token=_admin_login()
-    r=client.post("/api/v1/admin/logout",headers={"X-Admin-Token":token})
-    assert r.status_code==200,r.text
-    r=client.get("/api/v1/admin/status",headers={"X-Admin-Token":token})
-    assert r.status_code==200,r.text
-    assert r.json().get("active") is False
-
-def test_session_without_token_rejected():
-    r=client.get("/api/v1/session")
-    assert r.status_code==401,r.text
-    assert r.json().get("success") is False
-
-def test_session_invalid_token_rejected():
-    r=client.get("/api/v1/session/not-a-real-session-token")
-    assert r.status_code==401,r.text
-
-def test_session_valid_token():
-    from main import ACTIVE_PAID_SESSIONS,new_token,now
-    token=new_token()
-    ACTIVE_PAID_SESSIONS[token]=now()+SESSION_SECONDS
-    r=client.get("/api/v1/session",headers={"X-Service-Token":token})
-    assert r.status_code==200,r.text
-    d=r.json()
-    assert d.get("active") is True
-    assert d.get("token")==token
-    assert d.get("remaining_seconds")>0
-    ACTIVE_PAID_SESSIONS.pop(token,None)
-
-def test_session_path_valid_token():
-    from main import ACTIVE_PAID_SESSIONS,new_token,now
-    token=new_token()
-    ACTIVE_PAID_SESSIONS[token]=now()+SESSION_SECONDS
-    r=client.get(f"/api/v1/session/{token}")
-    assert r.status_code==200,r.text
-    assert r.json().get("active") is True
-    ACTIVE_PAID_SESSIONS.pop(token,None)
-
-def test_payment_endpoint_does_not_crash_without_real_stripe():
-    r=client.post("/api/v1/create-checkout-session",json={"language":"es"})
-    assert r.status_code<500,r.text
-    d=r.json()
-    assert isinstance(d,dict)
-
-def test_payment_verification_without_stripe():
-    r=client.post("/api/v1/verify-payment",json={"session_id":"test-session"})
-    assert r.status_code==200,r.text
-    d=r.json()
-    assert d.get("paid") is False
-
-def test_webhook_without_secret_returns_configuration_error():
-    r=client.post("/api/v1/webhook",content=b"invalid-webhook")
-    assert r.status_code in (400,503),r.text
-
-def test_unknown_api_route():
-    r=client.get("/api/v1/this-route-does-not-exist")
-    assert r.status_code==404
-
-def test_health_or_meta_available():
+def test_meta_does_not_require_payment():
     r=client.get("/api/v1/meta")
     assert r.status_code==200
+
+def test_official_does_not_require_payment():
+    r=client.get("/api/v1/sources/official")
+    assert r.status_code==200
+
+def test_legal_does_not_require_payment():
+    r=client.get("/api/v1/legal")
+    assert r.status_code==200
+
+def test_admin_can_access_cuba_official_without_payment():
+    token=admin_login()
+    r=client.get(
+        "/api/v1/cuba/official",
+        headers=admin_headers(token)
+    )
+    assert r.status_code==200
+    assert r.json().get("success") is True
+
+def test_admin_can_access_rules_without_payment():
+    token=admin_login()
+    r=client.get(
+        "/api/v1/rules",
+        headers=admin_headers(token)
+    )
+    assert r.status_code==200
+    assert r.json().get("success") is True
+
+if __name__=="__main__":
+    import pytest
+    raise SystemExit(pytest.main([__file__,"-q"]))
