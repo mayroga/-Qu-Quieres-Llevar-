@@ -1,66 +1,329 @@
 "use strict";
-const APP={name:"QUE QUIERES LLEVAR",version:"8.2.0",lang:localStorage.getItem("qql_lang")||"es",serviceToken:localStorage.getItem("qql_service_token")||"",adminToken:localStorage.getItem("qql_admin_token")||"",session:null,config:null};
+const APP={name:"QUE QUIERES LLEVAR",version:"8.1.0",lang:localStorage.getItem("qql_lang")||"es",serviceToken:localStorage.getItem("qql_service_token")||"",adminToken:localStorage.getItem("qql_admin_token")||"",session:null,config:null,_bound:false};
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>Array.from(r.querySelectorAll(s));
-const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&","<":"<",">":">",'"':""","'":"'"}[m]));
+const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const txt=v=>String(v??"").trim();
-const lang=()=>APP.lang==="en"?"en":"es";
-function active(){return !!(APP.serviceToken||APP.adminToken)}
+const val=id=>txt(document.getElementById(id)?.value);
+function active(){return!!(APP.serviceToken||APP.adminToken)}
 function headers(extra={}){const h={"Content-Type":"application/json",...extra};if(APP.serviceToken)h["X-Service-Token"]=APP.serviceToken;if(APP.adminToken)h["X-Admin-Token"]=APP.adminToken;return h}
 function saveTokens(){localStorage.setItem("qql_service_token",APP.serviceToken||"");localStorage.setItem("qql_admin_token",APP.adminToken||"")}
 function clearTokens(){APP.serviceToken="";APP.adminToken="";APP.session=null;saveTokens()}
-function msg(t,type="info"){const b=$("#appMessage");if(b){b.className="app-message "+type;b.textContent=t}}
-async function api(path,opt={},timeout=25000){const c=new AbortController(),tm=setTimeout(()=>c.abort(),timeout);try{const r=await fetch(path,{...opt,headers:headers(opt.headers||{}),signal:c.signal});let d={};try{d=await r.json()}catch(_){}if(!r.ok){const e=new Error(d.detail||d.message||("HTTP "+r.status));e.status=r.status;throw e}return d}catch(e){if(e.name==="AbortError")throw new Error(lang()==="en"?"The request took too long. Please try again.":"La solicitud tardó demasiado. Intenta nuevamente.");throw e}finally{clearTimeout(tm)}}
-
-function show(name){$$(".screen").forEach(x=>x.classList.add("hidden"));const x=$("#"+name);if(x)x.classList.remove("hidden");window.scrollTo({top:0,behavior:"smooth"});document.body.dataset.screen=name}
-function home(){if(active())show("home");else show("payment")}
-function requirePaid(){if(active())return true;show("payment");msg(lang()==="en"?"Activate the service first.":"Primero activa el servicio.","warn");return false}
-function setLang(v){APP.lang=v==="en"?"en":"es";localStorage.setItem("qql_lang",APP.lang);document.documentElement.lang=APP.lang;const b=$("#langBtn");if(b)b.textContent=APP.lang==="en"?"ES":"EN";loadConfig()}
+function msg(text,type="info"){let b=$("#appMessage")||$("#message")||$(".app-message");if(!b){b=document.createElement("div");b.id="appMessage";document.body.prepend(b)}b.className=`app-message ${type}`;b.textContent=text}
+async function api(path,options={},timeout=25000){
+ const c=new AbortController(),tm=setTimeout(()=>c.abort(),timeout);
+ try{
+  const r=await fetch(path,{...options,headers:headers(options.headers||{}),signal:c.signal});
+  let d={};try{d=await r.json()}catch(_){}
+  if(!r.ok){const e=new Error(d.detail||d.message||`HTTP ${r.status}`);e.status=r.status;e.data=d;throw e}
+  return d
+ }catch(e){
+  if(e.name==="AbortError")throw new Error(APP.lang==="en"?"The request took too long. Please try again.":"La solicitud tardó demasiado. Intenta nuevamente.");
+  throw e
+ }finally{clearTimeout(tm)}
+}
+function screens(){return["loading","home","payment","flight","item","baggage","cuba","guide","sources","teach","legal","admin"].map(id=>document.getElementById(id)).filter(Boolean)}
+function setView(name){
+ screens().forEach(x=>x.classList.toggle("hidden",x.id!==name));
+ document.body.dataset.view=name
+}
+function home(){setView(active()?"home":"payment")}
+function requirePaid(){
+ if(active())return true;
+ setView("payment");
+ msg(APP.lang==="en"?"Payment or administrator access is required.":"Se requiere acceso mediante pago o administrador.","warn");
+ return false
+}
+function lang(){return APP.lang==="en"?"en":"es"}
+function setLang(v){APP.lang=v==="en"?"en":"es";localStorage.setItem("qql_lang",APP.lang);translate();loadConfig()}
 function toggleLang(){setLang(APP.lang==="es"?"en":"es")}
-
-async function loadConfig(){try{APP.config=await api("/api/v1/config",{method:"GET"});const p=APP.config.price_usd||15.99;const m=APP.config.session_minutes||15;const x=$("#payMsg");if(x)x.textContent=(lang()==="en"?"One-time service: $":"Servicio único: $")+p+" / "+m+(lang()==="en"?" minutes":" minutos")}catch(_){}}
-
-async function checkSession(){if(!active()){show("payment");return false}try{const d=await api("/api/v1/session",{method:"GET"});if(d.active===false){clearTokens();show("payment");return false}APP.session=d;show("home");const s=$("#sessionStatus");if(s)s.textContent=d.admin?(lang()==="en"?"Administrator access active":"Acceso de administrador activo"):(lang()==="en"?"Service active":"Servicio activo");return true}catch(e){if(e.status===401){clearTokens();show("payment");return false}show("home");return true}}
-
-async function createCheckout(){try{const d=await api("/api/v1/create-checkout-session",{method:"POST",body:JSON.stringify({language:lang()})});const u=d.checkout_url||d.url;if(u)location.href=u;else msg(lang()==="en"?"Payment link unavailable.":"No se recibió el enlace de pago.","error")}catch(e){msg(e.message||"No se pudo iniciar el pago.","error")}}
-
-async function verifyPayment(){const q=new URLSearchParams(location.search),sid=q.get("session_id")||q.get("checkout_session_id");if(!sid)return;try{const d=await api("/api/v1/verify-payment",{method:"POST",body:JSON.stringify({session_id:sid})});const t=d.token||d.service_token;if(t){APP.serviceToken=t;APP.adminToken="";saveTokens();history.replaceState({},document.title,location.pathname);await checkSession();msg(lang()==="en"?"Your service is active for 15 minutes.":"Tu servicio está activo durante 15 minutos.","success")}}catch(e){msg(e.message||"No se pudo verificar el pago.","error")}}
-
-async function adminLogin(){const u=txt($("#adminUsername")?.value),p=txt($("#adminPassword")?.value);if(!u||!p){msg(lang()==="en"?"Enter your username and password.":"Escribe tu usuario y contraseña.","warn");return}try{const d=await api("/api/v1/admin/login",{method:"POST",body:JSON.stringify({username:u,password:p})});const t=d.token||d.admin_token;if(!t)throw Error("No se recibió el acceso.");APP.adminToken=t;APP.serviceToken="";saveTokens();await checkSession();msg(lang()==="en"?"Administrator access active.":"Acceso de administrador activo.","success")}catch(e){msg(e.message||"No se pudo iniciar sesión.","error")}}
-function logout(){clearTokens();show("payment");msg(lang()==="en"?"Session closed.":"Sesión cerrada.","info")}
-function val(id){return txt($("#"+id)?.value)}
-
-function flightData(){const d={language:lang(),origin:val("origin"),destination:val("destination"),departure_date:val("departureDate"),airline:val("airline"),passengers:Number(val("passengers")||1)};return d}
-async function flight(){if(!requirePaid())return;const d=flightData();if(!d.origin||!d.destination){msg(lang()==="en"?"Enter your origin and destination.":"Escribe tu origen y destino.","warn");return}const box=$("#flightResult");if(box)box.innerHTML="<p>Preparando la información de tu vuelo...</p>";try{const r=await api("/api/v1/flight/understand",{method:"POST",body:JSON.stringify(d)});renderFlight(r)}catch(e){if(box)box.innerHTML=`<p><strong>${esc(lang()==="en"?"Your next step:":"Tu siguiente paso:")}</strong> ${esc(lang()==="en"?"Open the official flight source and check the itinerary using the information you entered.":"Abre la fuente oficial de vuelos y comprueba el itinerario con la información que escribiste.")}</p>`;if(d.origin&&d.destination){const u="https://www.google.com/travel/flights?q=flights+from+"+encodeURIComponent(d.origin)+"+to+"+encodeURIComponent(d.destination);box.innerHTML+=`<p><a href="${u}" target="_blank" rel="noopener noreferrer">${lang()==="en"?"Open Google Flights":"Abrir Google Flights"}</a></p>`}}}
-function renderFlight(d){const b=$("#flightResult");if(!b)return;let h="";if(d.origin||d.destination)h+=`<p><strong>${esc(d.origin||"")} → ${esc(d.destination||"")}</strong></p>`;if(d.airline)h+=`<p><strong>${esc(lang()==="en"?"Airline:":"Aerolínea:")}</strong> ${esc(d.airline)}</p>`;if(d.departure_date)h+=`<p><strong>${esc(lang()==="en"?"Date:":"Fecha:")}</strong> ${esc(d.departure_date)}</p>`;if(d.message)h+=`<p>${esc(d.message)}</p>`;if(d.google_flights_url)h+=`<p><a href="${esc(d.google_flights_url)}" target="_blank" rel="noopener noreferrer">${lang()==="en"?"Open Google Flights":"Abrir Google Flights"}</a></p>`;const a=d.airline_sources||d.sources||[];if(a.length)h+=sourceList(a);if(d.next_action)h+=`<p class="next-action"><strong>${esc(d.next_action)}</strong></p>`;b.innerHTML=h||`<p>${esc(lang()==="en"?"Your next step is to verify the itinerary with the airline or official source.":"Tu siguiente paso es verificar el itinerario con la aerolínea o fuente oficial.")}</p>`}
-
-function sourceList(items){if(!Array.isArray(items)||!items.length)return"";return`<div class="source-list">${items.map(x=>{const n=esc(x.name||"Fuente oficial"),u=esc(x.url||""),d=x.description?`<p>${esc(x.description)}</p>`:"";return`<div class="source-card"><strong>${n}</strong>${d}${u?`<a href="${u}" target="_blank" rel="noopener noreferrer">${lang()==="en"?"Open official source":"Abrir fuente oficial"}</a>`:""}</div>`}).join("")}</div>`}
-
-function practice(){if(!requirePaid())return;show("practice");const a=val("airline");if(a&&$("#practiceAirline"))$("#practiceAirline").value=a}
-function startPractice(){if(!requirePaid())return;const a=val("practiceAirline"),b=$("#practiceResult");if(!a){msg(lang()==="en"?"Choose your airline first.":"Primero selecciona tu aerolínea.","warn");return}const names={ "American Airlines":"American Airlines","Delta Air Lines":"Delta Air Lines","United Airlines":"United Airlines","Southwest Airlines":"Southwest Airlines","JetBlue":"JetBlue","Spirit Airlines":"Spirit Airlines","Frontier Airlines":"Frontier Airlines","Otra aerolínea":"Tu aerolínea"};const n=names[a]||a;b.innerHTML=`<div class="simulation"><h3>✈️ ${esc(n)}</h3><p><strong>Paso 1 — Encontrar un vuelo</strong></p><p>Busca dónde aparece origen, destino y fecha. Esta práctica no compra nada.</p><label>Origen<input id="simOrigin" placeholder="MIA"></label><label>Destino<input id="simDestination" placeholder="HAV"></label><label>Fecha<input id="simDate" type="date"></label><button class="primary" data-action="sim-next" type="button">Siguiente</button></div>`}
-function simNext(){const b=$("#practiceResult");if(!b)return;const o=val("simOrigin"),d=val("simDestination"),f=val("simDate");b.innerHTML=`<div class="simulation"><h3>✈️ ${esc(val("practiceAirline"))}</h3><p><strong>Paso 2 — Revisar el vuelo</strong></p><p>${o&&d?`Tu práctica es ${esc(o)} → ${esc(d)}${f?" · "+esc(f):""}.`:"Mira primero dónde aparecen origen, destino y fecha."}</p><p>Ahora aprende a identificar horario, duración, equipaje y condiciones antes de continuar.</p><button class="primary" data-action="sim-next2" type="button">Continuar</button></div>`}
-function simNext2(){const b=$("#practiceResult");if(!b)return;b.innerHTML=`<div class="simulation"><h3>✈️ ${esc(val("practiceAirline"))}</h3><p><strong>Paso 3 — Datos del pasajero</strong></p><p>Aprende dónde normalmente se escriben nombre, fecha de nacimiento y documento. En esta simulación no introduzcas datos reales.</p><p><strong>Regla de seguridad:</strong> nunca escribas aquí contraseñas, CVV, códigos de seguridad ni credenciales.</p><button class="primary" data-action="sim-next3" type="button">Continuar</button></div>`}
-function simNext3(){const b=$("#practiceResult");if(!b)return;b.innerHTML=`<div class="simulation"><h3>✈️ ${esc(val("practiceAirline"))}</h3><p><strong>Paso 4 — Equipaje y revisión</strong></p><p>Aprende a encontrar la sección donde la aerolínea muestra las condiciones del equipaje y revisa todo antes de pagar.</p><button class="primary" data-action="sim-finish" type="button">Terminar práctica</button></div>`}
-function simFinish(){const b=$("#practiceResult");if(!b)return;b.innerHTML=`<div class="simulation"><h3>✅ Práctica terminada</h3><p>Ya conoces el orden básico: buscar → revisar → escribir datos → revisar equipaje → comprobar condiciones → continuar.</p><p><strong>Ahora puedes entrar al sitio oficial de tu aerolínea con mayor seguridad.</strong></p></div>`}
-
-async function itemConsult(){if(!requirePaid())return;const item=val("itemName"),q=val("itemQty")||"1",desc=val("itemDescription"),air=val("itemAirline")||val("airline");if(!item){msg(lang()==="en"?"Write the item first.":"Escribe primero el artículo.","warn");return}const b=$("#itemResult");try{const d=await api("/api/v1/consultar-articulo",{method:"POST",body:JSON.stringify({item,quantity:q,description:desc,language:lang(),airline:air,origin:val("origin"),destination:val("destination"),baggage_type:"",cabin:"",fare:""})});renderObject(b,d)}catch(e){if(b)b.innerHTML=`<p><strong>${esc(lang()==="en"?"What to do:":"Qué hacer:")}</strong> ${esc(lang()==="en"?"Check the airline and official security source for this specific item.":"Comprueba este artículo con la aerolínea y la fuente oficial de seguridad correspondiente.")}</p>`}}
-
-async function teach(){if(!requirePaid())return;const t=val("term");if(!t){msg(lang()==="en"?"Write the term first.":"Escribe primero el término.","warn");return}try{const d=await api("/api/v1/item/teach",{method:"POST",body:JSON.stringify({term:t,language:lang()})});renderObject($("#teachResult"),d)}catch(e){$("#teachResult").innerHTML=`<p><strong>${esc(t)}</strong></p><p>${esc(lang()==="en"?"We will help you understand this word when the official explanation is available.":"Te ayudaremos a entender esta palabra y dónde confirmarla en la fuente correspondiente.")}</p>`}}
-
-async function guide(){if(!requirePaid())return;try{const d=await api("/api/v1/guide",{method:"POST",body:JSON.stringify({language:lang(),flight:flightData()})});renderObject($("#guideResult"),d)}catch(e){$("#guideResult").innerHTML=`<ol><li>Confirma origen, destino y fecha.</li><li>Revisa tu aerolínea.</li><li>Revisa documentación.</li><li>Revisa visa o eVisa cuando corresponda.</li><li>Revisa equipaje.</li><li>Confirma todo en las fuentes oficiales.</li></ol>`}}
-
-async function officialSources(){if(!requirePaid())return;try{const d=await api("/api/v1/sources/official",{method:"GET"});$("#sourcesResult").innerHTML=sourceList(d.sources||d.official_sources||[])}catch(e){$("#sourcesResult").innerHTML=sourceList([{name:"D’Viajeros",url:"https://dviajeros.mitrans.gob.cu/"},{name:"eVisa Cuba",url:"https://evisacuba.cu/"},{name:"TSA",url:"https://www.tsa.gov/travel/security-screening/whatcanibring/all"},{name:"FAA PackSafe",url:"https://www.faa.gov/hazmat/packsafe"}])}}
-
-function cuba(type){if(!requirePaid())return;show("cuba");if(type==="visa")cubaPractice("visa");else if(type==="dviajeros")cubaPractice("dviajeros")}
-function cubaPractice(type){show("cubaPractice");const title=$("#cubaPracticeTitle"),b=$("#cubaPracticeResult");if(type==="visa"){title.textContent="🇨🇺 Practicar visa / eVisa";b.innerHTML=`<div class="simulation"><h3>Paso 1 — Entender la visa</h3><p>Primero aprende qué tipo de autorización debes comprobar según tu nacionalidad y viaje.</p><p><strong>No introduzcas datos reales en esta práctica.</strong></p><button class="primary" data-action="cuba-next" type="button">Siguiente</button></div>`}else{title.textContent="🇨🇺 Practicar D’Viajeros";b.innerHTML=`<div class="simulation"><h3>Paso 1 — Preparar D’Viajeros</h3><p>Aprende qué información debes tener preparada antes de entrar al formulario oficial.</p><p>La práctica no envía ningún formulario.</p><button class="primary" data-action="cuba-next" type="button">Siguiente</button></div>`}}
-function cubaNext(){const b=$("#cubaPracticeResult");if(!b)return;b.innerHTML=`<div class="simulation"><h3>Paso 2 — Revisar antes de enviar</h3><p>Lee cada campo, comprende qué te están preguntando y verifica tus documentos antes de continuar.</p><p><strong>Cuando estés preparado, utiliza el sitio oficial.</strong></p><button class="primary" data-action="cuba-official" type="button">Ver fuentes oficiales</button></div>`}
-
-function renderObject(b,d){if(!b)return;if(typeof d==="string"){b.innerHTML=`<p>${esc(d)}</p>`;return}let h="";if(d.title)h+=`<h3>${esc(d.title)}</h3>`;if(d.intro)h+=`<p>${esc(d.intro)}</p>`;if(d.message)h+=`<p>${esc(d.message)}</p>`;if(d.explanation)h+=`<p>${esc(d.explanation)}</p>`;if(d.reason)h+=`<p>${esc(d.reason)}</p>`;if(d.next_action)h+=`<p class="next-action"><strong>${esc(d.next_action)}</strong></p>`;const s=d.sources||d.official_sources||[];if(Array.isArray(s)&&s.length)h+=sourceList(s);b.innerHTML=h||`<p>${esc(lang()==="en"?"Your next step is to verify the information with the applicable official source.":"Tu siguiente paso es verificar la información con la fuente oficial correspondiente.")}</p>`}
-
-async function legal(){try{const d=await api("/api/v1/legal?language="+encodeURIComponent(lang()),{method:"GET"});const b=$("#legalResult");if(b)b.innerHTML=`<p>${esc(d.short_notice||"")}</p><p>${esc(d.full_notice||"")}</p><p>${esc(d.user_guidance||"")}</p><p>${esc(d.source_notice||"")}</p>`}catch(e){const b=$("#legalResult");if(b)b.innerHTML="<p>¿QUÉ QUIERES LLEVAR? es un servicio independiente de May Roga LLC.</p>"}}
-
-function bind(){if(APP._bound)return;APP._bound=true;document.addEventListener("click",e=>{const b=e.target.closest("[data-action]");if(!b)return;const a=b.dataset.action;if(a==="home")home();else if(a==="flight"){if(requirePaid())show("flight")}else if(a==="practice"){practice()}else if(a==="item"){if(requirePaid())show("item")}else if(a==="baggage"){if(requirePaid())show("baggage")}else if(a==="cuba"){if(requirePaid())show("cuba")}else if(a==="cuba-visa")cuba("visa");else if(a==="cuba-dviajeros")cuba("dviajeros");else if(a==="cuba-official"){show("sources");officialSources()}else if(a==="guide"){if(requirePaid())show("guide")}else if(a==="sources"){if(requirePaid()){show("sources");officialSources()}}else if(a==="teach"){if(requirePaid())show("teach")}else if(a==="legal"){show("legal");legal()}else if(a==="sim-next")simNext();else if(a==="sim-next2")simNext2();else if(a==="sim-next3")simNext3();else if(a==="sim-finish")simFinish();else if(a==="cuba-next")cubaNext()});
-$("#langBtn")?.addEventListener("click",toggleLang);$("#adminBtn")?.addEventListener("click",()=>show("admin"));$("#payBtn")?.addEventListener("click",createCheckout);$("#adminLoginBtn")?.addEventListener("click",adminLogin);$("#startBtn")?.addEventListener("click",()=>{if(active())show("flight");else show("payment")});$("#flightBtn")?.addEventListener("click",flight);$("#itemBtn")?.addEventListener("click",itemConsult);$("#teachBtn")?.addEventListener("click",teach);$("#guideBtn")?.addEventListener("click",guide);$("#practiceStartBtn")?.addEventListener("click",startPractice)}
-
-async function init(){document.documentElement.lang=APP.lang;bind();await loadConfig();show("loading");setTimeout(async()=>{await verifyPayment();if(active())await checkSession();else show("payment")},150)}
-window.APP=APP;window.createCheckout=createCheckout;window.adminLogin=adminLogin;window.logout=logout;window.flight=flight;window.itemConsult=itemConsult;window.teach=teach;window.guide=guide;window.officialSources=officialSources;window.cubaPractice=cubaPractice;window.startPractice=startPractice;window.toggleLang=toggleLang;
+function translate(){
+ document.documentElement.lang=APP.lang;
+ $$("[data-es][data-en]").forEach(e=>e.textContent=e.dataset[APP.lang]||e.dataset.es||"");
+ const b=$("#langBtn");if(b)b.textContent=APP.lang==="en"?"ES":"EN";
+ const l=$("#loadingText");if(l)l.textContent=APP.lang==="en"?"Preparing your trip...":"Preparando tu viaje...";
+ const s=$("#sessionStatus");if(s)s.textContent=active()?(APP.lang==="en"?"Access active":"Acceso activo"):(APP.lang==="en"?"Session not active":"Sesión no activa");
+}
+async function checkSession(){
+ if(!active()){home();return false}
+ try{
+  const d=await api("/api/v1/session",{method:"GET"});
+  if(d.active===false){clearTokens();home();return false}
+  APP.session=d;translate();home();return true
+ }catch(e){
+  if(e.status===401||e.status===403){clearTokens();home();return false}
+  APP.session={active:true};translate();home();return true
+ }
+}
+async function loadConfig(){
+ try{APP.config=await api("/api/v1/config",{method:"GET"});renderConfig(APP.config)}catch(_){}
+}
+function renderConfig(d){
+ if(!d)return;
+ $$("[data-config]").forEach(e=>{const k=e.dataset.config;if(d[k]!=null)e.textContent=d[k]})
+}
+async function createCheckout(){
+ try{
+  const d=await api("/api/v1/create-checkout-session",{method:"POST",body:JSON.stringify({language:lang()})});
+  const u=d.checkout_url||d.url;
+  if(u)location.href=u;
+  else msg(APP.lang==="en"?"Payment link ready to continue.":"El enlace de pago está listo para continuar.","error")
+ }catch(e){msg(e.message||"No se pudo iniciar el pago.","error")}
+}
+async function verifyPayment(){
+ const q=new URLSearchParams(location.search),sid=q.get("session_id")||q.get("checkout_session_id");
+ if(!sid)return false;
+ try{
+  const d=await api("/api/v1/verify-payment",{method:"POST",body:JSON.stringify({session_id:sid})});
+  const t=d.token||d.service_token;
+  if(!t)throw new Error(APP.lang==="en"?"Access could not be activated.":"No se pudo activar el acceso.");
+  APP.serviceToken=t;APP.adminToken="";saveTokens();
+  history.replaceState({},document.title,location.pathname);
+  await checkSession();
+  msg(APP.lang==="en"?"Your 15-minute preparation session is active.":"Tu sesión de preparación de 15 minutos está activa.","success");
+  return true
+ }catch(e){msg(e.message||"No se pudo verificar el pago.","error");return false}
+}
+async function adminLogin(){
+ const user=val("adminUser"),pass=val("adminPass");
+ if(!user||!pass){msg(APP.lang==="en"?"Enter username and password.":"Escribe usuario y contraseña.","warn");return}
+ try{
+  const d=await api("/api/v1/admin/login",{method:"POST",body:JSON.stringify({username:user,password:pass})});
+  const t=d.token||d.admin_token;
+  if(!t)throw new Error(APP.lang==="en"?"Administrator access is ready to be activated.":"El acceso de administrador está listo para activarse.");
+  APP.adminToken=t;APP.serviceToken="";saveTokens();await checkSession();
+  msg(APP.lang==="en"?"Administrator access is active.":"El acceso de administrador está activo.","success")
+ }catch(e){msg(e.message||"No se pudo iniciar sesión.","error")}
+}
+function logout(){clearTokens();home();translate();msg(APP.lang==="en"?"Session closed.":"Sesión cerrada.","info")}
+function ensureAirlineField(){
+ const form=$("#flight")?.querySelector(".form");
+ if(!form||$("#airline"))return;
+ const label=document.createElement("label");
+ label.innerHTML=APP.lang==="en"?"Airline":"Aerolínea";
+ const input=document.createElement("input");
+ input.id="airline";
+ input.maxLength=40;
+ input.placeholder=APP.lang==="en"?"Example: American Airlines":"Ej.: American Airlines";
+ label.appendChild(input);
+ const passengers=$("#passengers")?.closest("label");
+ if(passengers)form.insertBefore(label,passengers);else form.insertBefore(label,form.querySelector("button"));
+}
+function dataObject(){
+ ensureAirlineField();
+ const o={language:lang()};
+ ["origin","destination","departureDate","returnDate","airline","cabin","fare","passengers","stops"].forEach(id=>{
+  const v=val(id);
+  if(v!==""){
+   const k=id==="departureDate"?"departure_date":id==="returnDate"?"return_date":id;
+   o[k]=k==="passengers"||k==="stops"?Number(v):v
+  }
+ });
+ return o
+}
+async function flight(){
+ if(!requirePaid())return;
+ const data=dataObject();
+ if(!data.origin||!data.destination){
+  msg(APP.lang==="en"?"Enter your origin and destination to continue.":"Escribe tu origen y destino para continuar.","warn");
+  return
+ }
+ try{
+  const d=await api("/api/v1/flight/understand",{method:"POST",body:JSON.stringify(data)});
+  renderFlight(d)
+ }catch(e){msg(e.message||"No se pudo preparar la información del vuelo.","error")}
+}
+function sourceList(items){
+ if(!Array.isArray(items)||!items.length)return"";
+ return `<div class="source-list">${items.map(x=>{
+  const name=esc(x.name||"Fuente oficial"),url=esc(x.url||"#");
+  const desc=x.description?`<p>${esc(x.description)}</p>`:"";
+  const alt=x.alternate_url?` <a href="${esc(x.alternate_url)}" target="_blank" rel="noopener noreferrer">${APP.lang==="en"?"Alternative":"Alternativa"}</a>`:"";
+  return `<div class="source-card"><strong>${name}</strong>${desc}${x.url?`<a href="${url}" target="_blank" rel="noopener noreferrer">${APP.lang==="en"?"Open source":"Abrir fuente"}</a>${alt}`:""}</div>`
+ }).join("")}</div>`
+}
+function renderFlight(d){
+ const b=$("#flightResult");if(!b)return;
+ let h="";
+ const airline=d.airline||val("airline");
+ const origin=d.origin||val("origin");
+ const destination=d.destination||val("destination");
+ const date=d.departure_date||val("departureDate");
+ if(origin||destination||date||airline){
+  h+=`<div class="next-action"><strong>${APP.lang==="en"?"Flight information":"Información del vuelo"}</strong>`;
+  if(origin)h+=`<p>${esc(APP.lang==="en"?"Origin: ":"Origen: ")}${esc(origin)}</p>`;
+  if(destination)h+=`<p>${esc(APP.lang==="en"?"Destination: ":"Destino: ")}${esc(destination)}</p>`;
+  if(date)h+=`<p>${esc(APP.lang==="en"?"Date: ":"Fecha: ")}${esc(date)}</p>`;
+  if(airline)h+=`<p>${esc(APP.lang==="en"?"Airline: ":"Aerolínea: ")}${esc(airline)}</p>`;
+  h+="</div>"
+ }
+ if(d.understood){
+  h+=`<p>${esc(typeof d.understood==="string"?d.understood:JSON.stringify(d.understood))}</p>`
+ }
+ if(d.steps&&Array.isArray(d.steps)&&d.steps.length){
+  h+=`<h3>${APP.lang==="en"?"Next steps":"Próximos pasos"}</h3><ol>${d.steps.map(x=>`<li>${esc(typeof x==="string"?x:(x.text||x.title||x.description||JSON.stringify(x)))}</li>`).join("")}</ol>`
+ }
+ if(d.google_flights_url){
+  h+=`<div class="next-action"><strong>${APP.lang==="en"?"Continue with flight availability":"Continúa con la disponibilidad del vuelo"}</strong><p>${APP.lang==="en"?"Open Google Flights to review the route and current flight options.":"Abre Google Flights para revisar la ruta y las opciones actuales de vuelo."}</p><p><a href="${esc(d.google_flights_url)}" target="_blank" rel="noopener noreferrer">${APP.lang==="en"?"Open Google Flights":"Abrir Google Flights"}</a></p></div>`
+ }
+ const chars=d.charter_sources||[];
+ if(chars.length)h+=`<h3>${APP.lang==="en"?"Charter flight/travel providers":"Proveedores de vuelos chárter/servicios de viaje"}</h3>${sourceList(chars)}`;
+ const airs=d.airline_sources||[];
+ if(airs.length)h+=`<h3>${APP.lang==="en"?"Airline sources":"Fuentes de la aerolínea"}</h3>${sourceList(airs)}`;
+ const sources=d.sources||[];
+ if(!chars.length&&!airs.length&&sources.length)h+=sourceList(sources);
+ if(d.next_action)h+=`<p><strong>${esc(d.next_action)}</strong></p>`;
+ if(d.legal_notice)h+=`<p>${esc(typeof d.legal_notice==="string"?d.legal_notice:(d.legal_notice.full_notice||d.legal_notice.short_notice||""))}</p>`;
+ if(!h)h=`<div class="next-action"><strong>${APP.lang==="en"?"Continue your flight preparation":"Continúa la preparación de tu vuelo"}</strong><p>${APP.lang==="en"?"Enter the airline and open the available official flight source to verify the current itinerary.":"Indica la aerolínea y abre la fuente de vuelo disponible para verificar directamente el itinerario vigente."}</p></div>`;
+ b.innerHTML=h
+}
+async function charterSources(){
+ if(!requirePaid())return;
+ try{
+  const d=await api("/api/v1/flight/sources",{method:"POST",body:JSON.stringify({origin:val("origin"),destination:val("destination"),airline:val("airline"),language:lang()})});
+  renderSources(d.charter_sources||d.sources||[])
+ }catch(e){
+  try{
+   const d=await api(`/api/v1/sources/charter?language=${encodeURIComponent(lang())}`,{method:"GET"});
+   renderSources(d.sources||d.charter_sources||[])
+  }catch(x){msg(x.message||e.message||"No se pudieron cargar las fuentes.","error")}
+ }
+}
+function renderSources(items){
+ const b=$("#sourcesResult")||$("#flightResult");if(!b)return;
+ b.innerHTML=Array.isArray(items)&&items.length?sourceList(items):`<div class="next-action"><strong>${APP.lang==="en"?"Official sources":"Fuentes oficiales"}</strong><p>${APP.lang==="en"?"Use the official source for your airline and route to verify the current information.":"Usa la fuente oficial de tu aerolínea y ruta para verificar la información vigente."}</p></div>`
+}
+async function officialSources(){
+ if(!requirePaid())return;
+ try{
+  const d=await api("/api/v1/sources/official",{method:"GET"});
+  renderSources(d.sources||d.official_sources||d.links||[])
+ }catch(e){msg(e.message||"No se pudieron cargar las fuentes oficiales.","error")}
+}
+async function cubaGuide(){
+ if(!requirePaid())return;
+ try{
+  const d=await api(`/api/v1/cuba/official?language=${encodeURIComponent(lang())}`,{method:"GET"});
+  renderObject($("#cubaResult"),d)
+ }catch(e){msg(e.message||"No se pudo cargar la preparación de Cuba.","error")}
+}
+async function guide(){
+ if(!requirePaid())return;
+ const payload={language:lang(),flight:dataObject()};
+ try{renderGuide(await api("/api/v1/guide",{method:"POST",body:JSON.stringify(payload)}))}
+ catch(e){msg(e.message||"No se pudo preparar la guía.","error")}
+}
+function renderGuide(d){
+ const b=$("#guideResult");if(!b)return;
+ let h="";
+ if(d.next_action)h+=`<div class="next-action"><strong>${esc(d.next_action)}</strong></div>`;
+ if(Array.isArray(d.steps)&&d.steps.length)h+=`<ol>${d.steps.map(x=>`<li>${esc(typeof x==="string"?x:(x.text||x.title||x.description||JSON.stringify(x)))}</li>`).join("")}</ol>`;
+ if(Array.isArray(d.cuba_steps)&&d.cuba_steps.length)h+=`<h3>${APP.lang==="en"?"Cuba preparation":"Preparación para Cuba"}</h3><ol>${d.cuba_steps.map(x=>`<li>${esc(typeof x==="string"?x:(x.text||x.title||x.description||JSON.stringify(x)))}</li>`).join("")}</ol>`;
+ if(Array.isArray(d.official_sources)&&d.official_sources.length)h+=sourceList(d.official_sources);
+ if(d.legal_notice)h+=`<p>${esc(typeof d.legal_notice==="string"?d.legal_notice:(d.legal_notice.full_notice||d.legal_notice.short_notice||""))}</p>`;
+ b.innerHTML=h||`<div class="next-action"><strong>${APP.lang==="en"?"Continue your preparation":"Continúa tu preparación"}</strong></div>`
+}
+function renderObject(b,d){
+ if(!b)return;
+ if(typeof d==="string"){b.innerHTML=`<p>${esc(d)}</p>`;return}
+ let h="";
+ if(d.title)h+=`<h2>${esc(d.title)}</h2>`;
+ if(d.intro)h+=`<p>${esc(d.intro)}</p>`;
+ if(d.short_notice)h+=`<p>${esc(d.short_notice)}</p>`;
+ if(d.status){
+  const l={prohibited:APP.lang==="en"?"Restricted/prohibited":"Restringido/prohibido",conditional:APP.lang==="en"?"Conditions apply":"Tiene condiciones",allowed:APP.lang==="en"?"May be allowed":"Puede estar permitido",unknown:APP.lang==="en"?"Needs verification":"Necesita verificación"};
+  h+=`<p><strong>${esc(l[d.status]||d.status)}</strong></p>`
+ }
+ ["message","reason","explanation"].forEach(k=>{if(d[k])h+=`<p>${esc(d[k])}</p>`});
+ if(d.baggage_place)h+=`<p><strong>${APP.lang==="en"?"Baggage:":"Equipaje:"}</strong> ${esc(d.baggage_place)}</p>`;
+ if(Array.isArray(d.conditions)&&d.conditions.length)h+=`<h3>${APP.lang==="en"?"Conditions":"Condiciones"}</h3><ul>${d.conditions.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
+ if(Array.isArray(d.missing_information)&&d.missing_information.length)h+=`<h3>${APP.lang==="en"?"Still needed":"Información que falta"}</h3><ul>${d.missing_information.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
+ if(d.source)h+=`<p><strong>${APP.lang==="en"?"Source:":"Fuente:"}</strong> ${esc(d.source)}</p>`;
+ if(d.source_name)h+=`<p>${esc(d.source_name)}</p>`;
+ if(d.verified===true)h+=`<p>${APP.lang==="en"?"Verified source information.":"Información de fuente verificada."}</p>`;
+ if(d.official_link)h+=`<p><a href="${esc(d.official_link)}" target="_blank" rel="noopener noreferrer">${APP.lang==="en"?"Open official source":"Abrir fuente oficial"}</a></p>`;
+ const s=d.sources||d.official_sources||d.links||[];
+ if(Array.isArray(s)&&s.length)h+=sourceList(s);
+ if(d.next_action)h+=`<p><strong>${esc(d.next_action)}</strong></p>`;
+ if(d.legal_notice)h+=`<p>${esc(typeof d.legal_notice==="string"?d.legal_notice:(d.legal_notice.full_notice||d.legal_notice.short_notice||""))}</p>`;
+ b.innerHTML=h||`<div class="next-action"><strong>${APP.lang==="en"?"Continue":"Continúa"}</strong></div>`
+}
+async function legal(){
+ try{
+  const d=await api(`/api/v1/legal?language=${encodeURIComponent(lang())}`,{method:"GET"}),b=$("#legalResult");
+  if(!b)return;
+  let h="";
+  ["short_notice","full_notice","user_guidance","source_notice"].forEach(k=>{if(d[k])h+=`<p>${esc(d[k])}</p>`});
+  b.innerHTML=h||`<p>${APP.lang==="en"?"Review the service information.":"Revisa la información del servicio."}</p>`
+ }catch(e){msg(e.message||"No se pudo cargar el aviso legal.","error")}
+}
+async function itemConsult(){
+ if(!requirePaid())return;
+ const item=val("itemName"),quantity=val("itemQty")||"1",description=val("itemDescription");
+ if(!item){msg(APP.lang==="en"?"Enter the item to continue.":"Escribe el artículo para continuar.","warn");return}
+ try{
+  const d=await api("/api/v1/consultar-articulo",{method:"POST",body:JSON.stringify({item,quantity,description,language:lang(),baggage_type:val("baggage_type"),airline:val("airline"),destination:val("destination"),origin:val("origin"),cabin:val("cabin"),fare:val("fare")})});
+  renderObject($("#itemResult"),d)
+ }catch(e){msg(e.message||"No se pudo preparar la consulta del artículo.","error")}
+}
+async function teach(){
+ if(!requirePaid())return;
+ const term=val("term");
+ if(!term){msg(APP.lang==="en"?"Enter a term to continue.":"Escribe un término para continuar.","warn");return}
+ try{renderObject($("#teachResult"),await api("/api/v1/item/teach",{method:"POST",body:JSON.stringify({term,language:lang()})}))}
+ catch(e){msg(e.message||"No se pudo preparar la explicación.","error")}
+}
+function bind(){
+ if(APP._bound)return;
+ APP._bound=true;
+ $("#langBtn")?.addEventListener("click",toggleLang);
+ $("#adminBtn")?.addEventListener("click",()=>setView("admin"));
+ $("#startBtn")?.addEventListener("click",()=>{if(requirePaid())setView("flight")});
+ $("#payBtn")?.addEventListener("click",createCheckout);
+ $("#flightBtn")?.addEventListener("click",flight);
+ $("#itemBtn")?.addEventListener("click",itemConsult);
+ $("#teachBtn")?.addEventListener("click",teach);
+ $("#adminLoginBtn")?.addEventListener("click",adminLogin);
+ document.addEventListener("click",e=>{
+  const b=e.target.closest("[data-action]");if(!b)return;
+  const a=b.dataset.action;
+  if(a==="home")home();
+  else if(a==="flight"){if(requirePaid())setView("flight")}
+  else if(a==="item"){if(requirePaid())setView("item")}
+  else if(a==="baggage"){if(requirePaid()){setView("baggage")}}
+  else if(a==="cuba"){if(requirePaid()){setView("cuba");cubaGuide()}}
+  else if(a==="guide"){if(requirePaid()){setView("guide");guide()}}
+  else if(a==="sources"){if(requirePaid()){setView("sources");officialSources()}}
+  else if(a==="teach"){if(requirePaid())setView("teach")}
+  else if(a==="legal"){setView("legal");legal()}
+  else if(a==="pay"||a==="payment")createCheckout();
+  else if(a==="logout")logout()
+ });
+}
+async function init(){
+ document.documentElement.lang=APP.lang;
+ bind();
+ translate();
+ ensureAirlineField();
+ setView("loading");
+ await loadConfig();
+ const paid=active()?await checkSession():false;
+ if(!paid)setView("payment");
+ const verified=await verifyPayment();
+ if(verified)await checkSession();
+ else if(active())await checkSession();
+}
+window.APP=APP;
+window.createCheckout=createCheckout;
+window.adminLogin=adminLogin;
+window.logout=logout;
+window.flight=flight;
+window.charterSources=charterSources;
+window.flightSources=charterSources;
+window.officialSources=officialSources;
+window.cubaGuide=cubaGuide;
+window.guide=guide;
+window.itemConsult=itemConsult;
+window.teach=teach;
+window.toggleLang=toggleLang;
+window.legal=legal;
 document.addEventListener("DOMContentLoaded",init);
