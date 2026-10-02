@@ -1,1 +1,234 @@
-<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>¿QUÉ QUIERES LLEVAR? | May Roga LLC</title><meta name="description" content="Preparación independiente para tu viaje y lo que quieres llevar."><link rel="stylesheet" href="/static/styles.css"></head><body><header class="top"><div><strong>¿QUÉ QUIERES LLEVAR?</strong><small>May Roga LLC</small></div><div class="top-actions"><button id="langBtn" type="button">EN</button><button id="adminBtn" type="button">ADMIN</button></div></header><main id="app"><section id="loading" class="screen"><div class="card"><h1>¿QUÉ QUIERES LLEVAR?</h1><p id="loadingText">Preparando tu viaje...</p></div></section><section id="home" class="screen hidden"><div class="hero card"><p class="eyebrow">MAY ROGA LLC</p><h1 data-i18n="title">¿Qué quieres llevar?</h1><p data-i18n="subtitle">Te ayudamos a organizar tu preparación de viaje, entender tu vuelo, revisar artículos y confirmar la información oficial.</p><div class="status" id="sessionStatus">Sesión no activa</div><button id="startBtn" class="primary" type="button" data-i18n="start">Empezar</button></div><div class="grid"><button class="box" data-action="flight"><b>✈️</b><span data-i18n="flight">Mi vuelo</span><small data-i18n="flightSmall">Entiende tu itinerario</small></button><button class="box" data-action="item"><b>🧳</b><span data-i18n="item">¿Qué llevo?</span><small data-i18n="itemSmall">Consulta un artículo</small></button><button class="box" data-action="baggage"><b>🎒</b><span data-i18n="baggage">Equipaje</span><small data-i18n="baggageSmall">Prepara tus maletas</small></button><button class="box" data-action="cuba"><b>🇨🇺</b><span data-i18n="cuba">Cuba</span><small data-i18n="cubaSmall">Pasos y fuentes oficiales</small></button><button class="box" data-action="guide"><b>📋</b><span data-i18n="guide">Guía</span><small data-i18n="guideSmall">Prepara tu viaje</small></button><button class="box" data-action="sources"><b>🔎</b><span data-i18n="sources">Fuentes oficiales</span><small data-i18n="sourcesSmall">Consulta directamente</small></button><button class="box" data-action="teach"><b>💡</b><span data-i18n="teach">Aprender un término</span><small data-i18n="teachSmall">Entiende lo que significa</small></button><button class="box" data-action="legal"><b>⚖️</b><span data-i18n="legal">Aviso legal</span><small data-i18n="legalSmall">Quién presta el servicio</small></button></div></section><section id="payment" class="screen hidden"><div class="card"><button class="back" data-action="home">← Volver</button><h2 data-i18n="paymentTitle">Activa tu preparación</h2><p data-i18n="paymentText">Servicio independiente de May Roga LLC. Pago único de $15.99 para una sesión de 15 minutos.</p><div class="notice" data-i18n="paymentNotice">No somos una aerolínea, banco, agencia gubernamental ni vendedor de boletos.</div><button id="payBtn" class="primary" type="button" data-i18n="pay">Continuar al pago</button><p id="payMsg" class="message"></p></div></section><section id="flight" class="screen hidden"><div class="card"><button class="back" data-action="home">← Volver</button><h2>✈️ <span data-i18n="flight">Mi vuelo</span></h2><div class="form"><label>Origen<input id="origin" maxlength="10" placeholder="MIA"></label><label>Destino<input id="destination" maxlength="10" placeholder="HAV"></label><label>Fecha<input id="departureDate" type="date"></label><label>Pasajeros<input id="passengers" type="number" min="1" max="20" value="1"></label><button id="flightBtn" class="primary" type="button">Buscar / entender</button></div><div id="flightResult" class="result"></div></div></section><section id="item" class="screen hidden"><div class="card"><button class="back" data-action="home">← Volver</button><h2>🧳 <span data-i18n="item">¿Qué llevo?</span></h2><div class="form"><label>Artículo<input id="itemName" placeholder="Ej.: power bank"></label><label>Cantidad<input id="itemQty" type="number" min="1" value="1"></label><label>Descripción<textarea id="itemDescription" rows="3" placeholder="Cuéntanos qué es"></textarea></label><button id="itemBtn" class="primary" type="button">Consultar</button></div><div id="itemResult" class="result"></div></div></section><section id="baggage" class="screen hidden"><div class="card"><button class="back" data-action="home">← Volver</button><h2>🎒 <span data-i18n="baggage">Equipaje</span></h2><p>Las reglas dependen del vuelo y del proveedor. Usa la consulta de artículo para revisar algo concreto.</p><button class="primary" data-action="item">Consultar un artículo</button><div id="baggageResult" class="result"></div></div></section><section id="cuba" class="screen hidden"><div class="card"><button class="back" data-action="home">← Volver</button><h2>🇨🇺 Cuba</h2><p id="cubaIntro">Pasos generales de preparación. Confirma siempre los requisitos vigentes en las fuentes oficiales.</p><div id="cubaResult" class="result"></div></div></section><section id="guide" class="screen hidden"><div class="card"><button class="back" data-action="home">← Volver</button><h2>📋 <span data-i18n="guide">Guía</span></h2><div id="guideResult" class="result"></div></div></section><section id="sources" class="screen hidden"><div class="card"><button class="back" data-action="home">← Volver</button><h2>🔎 <span data-i18n="sources">Fuentes oficiales</span></h2><div id="sourcesResult" class="result"></div></div></section><section id="teach" class="screen hidden"><div class="card"><button class="back" data-action="home">← Volver</button><h2>💡 <span data-i18n="teach">Aprender un término</span></h2><div class="form"><label>Término<input id="term" placeholder="Ej.: equipaje de mano"></label><button id="teachBtn" class="primary" type="button">Explicar</button></div><div id="teachResult" class="result"></div></div></section><section id="legal" class="screen hidden"><div class="card"><button class="back" data-action="home">← Volver</button><h2>⚖️ <span data-i18n="legal">Aviso legal</span></h2><div id="legalResult" class="result"></div></div></section><section id="admin" class="screen hidden"><div class="card"><button class="back" data-action="home">← Volver</button><h2>ADMIN</h2><div class="form"><label>Usuario<input id="adminUser" autocomplete="username"></label><label>Contraseña<input id="adminPass" type="password" autocomplete="current-password"></label><button id="adminLoginBtn" class="primary" type="button">Entrar</button></div><p id="adminMsg" class="message"></p></div></section></main><footer><span>May Roga LLC</span><span>© 2026</span></footer><script src="/static/app.js" defer></script></body></html>
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>¿QUÉ QUIERES LLEVAR? | May Roga LLC</title>
+<meta name="description" content="Preparación y acompañamiento independiente para viajar, entender vuelos, equipaje, aerolíneas, D’Viajeros, visa y procesos de viaje.">
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<header class="top">
+<div><strong>¿QUÉ QUIERES LLEVAR?</strong><small>May Roga LLC</small></div>
+<div class="top-actions">
+<button id="langBtn" type="button">EN</button>
+<button id="adminBtn" type="button" data-action="admin">ADMIN</button>
+</div>
+</header>
+
+<main id="app">
+
+<section id="loading" class="screen">
+<div class="card">
+<h1>¿QUÉ QUIERES LLEVAR?</h1>
+<p id="loadingText">Preparando tu viaje...</p>
+</div>
+</section>
+
+<section id="home" class="screen hidden">
+<div class="hero card">
+<p class="eyebrow">MAY ROGA LLC</p>
+<h1 data-i18n="title">¿Qué quieres llevar?</h1>
+<p data-i18n="subtitle">Te acompañamos paso a paso para entender tu viaje, tu vuelo, tu aerolínea, tu equipaje y los procesos que necesitas realizar.</p>
+<div class="status" id="sessionStatus">Sesión no activa</div>
+<button id="startBtn" class="primary" type="button" data-action="payment" data-i18n="start">Empezar</button>
+</div>
+
+<div class="grid">
+<button class="box" data-action="flight"><b>✈️</b><span data-i18n="flight">Mi vuelo</span><small data-i18n="flightSmall">Entiende tu itinerario y tu aerolínea</small></button>
+<button class="box" data-action="item"><b>🧳</b><span data-i18n="item">¿Qué llevo?</span><small data-i18n="itemSmall">Aprende dónde y cómo llevar cada artículo</small></button>
+<button class="box" data-action="baggage"><b>🎒</b><span data-i18n="baggage">Equipaje</span><small data-i18n="baggageSmall">Aprende a preparar tus maletas</small></button>
+<button class="box" data-action="airline"><b>🛫</b><span data-i18n="airline">Mi aerolínea</span><small data-i18n="airlineSmall">Aprende a usar su proceso paso a paso</small></button>
+<button class="box" data-action="simulation"><b>🖥️</b><span data-i18n="simulation">Practicar</span><small data-i18n="simulationSmall">Simula procesos antes de hacerlos</small></button>
+<button class="box" data-action="cuba"><b>🇨🇺</b><span data-i18n="cuba">Cuba</span><small data-i18n="cubaSmall">Visa, D’Viajeros y preparación</small></button>
+<button class="box" data-action="guide"><b>📋</b><span data-i18n="guide">Guía</span><small data-i18n="guideSmall">Organiza tu viaje paso a paso</small></button>
+<button class="box" data-action="sources"><b>🔎</b><span data-i18n="sources">Fuentes oficiales</span><small data-i18n="sourcesSmall">Encuentra dónde confirmar</small></button>
+<button class="box" data-action="teach"><b>💡</b><span data-i18n="teach">Aprender</span><small data-i18n="teachSmall">Entiende palabras y procesos</small></button>
+<button class="box" data-action="legal"><b>⚖️</b><span data-i18n="legal">Aviso legal</span><small data-i18n="legalSmall">Conoce el servicio</small></button>
+</div>
+</section>
+
+<section id="payment" class="screen hidden">
+<div class="card">
+<button class="back" data-action="home">← Volver</button>
+<h2 data-i18n="paymentTitle">Antes de empezar, conoce el servicio</h2>
+<p data-i18n="paymentIntro">¿QUÉ QUIERES LLEVAR? está diseñado para acompañarte cuando quieres viajar pero no sabes exactamente qué hacer, dónde hacerlo o cómo entender lo que ves en una página de una aerolínea, gobierno o proveedor.</p>
+
+<div class="info-grid">
+<div class="info-card"><b>¿Qué hace?</b><p>Te explica la información con palabras sencillas, organiza los pasos y te acompaña mientras aprendes.</p></div>
+<div class="info-card"><b>¿Qué resuelve?</b><p>Te ayuda a entender vuelos, aerolíneas, equipaje, artículos, visa, D’Viajeros y otros procesos de preparación.</p></div>
+<div class="info-card"><b>¿Por qué usarlo?</b><p>Para practicar primero y llegar al proceso real con más claridad, menos miedo y mayor seguridad.</p></div>
+<div class="info-card"><b>¿Qué ganas?</b><p>Aprendes qué hacer, dónde buscar, qué información necesitas y cómo avanzar paso a paso.</p></div>
+</div>
+
+<h3 data-i18n="simulationTitle">Aprendes practicando</h3>
+<p data-i18n="simulationText">La aplicación puede mostrar simulaciones educativas inspiradas en el tipo de proceso que encontrarás en una aerolínea, D’Viajeros, visa u otro servicio. La simulación te enseña antes de entrar al sitio real.</p>
+
+<div class="notice" data-i18n="paymentNotice">Es un servicio independiente de May Roga LLC. El pago es único: $15.99 por una sesión de 15 minutos.</div>
+
+<button id="payBtn" class="primary" type="button" data-action="pay" data-i18n="pay">Continuar al pago</button>
+<p id="payMsg" class="message"></p>
+</div>
+</section>
+
+<section id="flight" class="screen hidden">
+<div class="card">
+<button class="back" data-action="home">← Volver</button>
+<h2>✈️ <span data-i18n="flight">Mi vuelo</span></h2>
+<div class="form">
+<label>Origen<input id="origin" maxlength="20" placeholder="MIA"></label>
+<label>Destino<input id="destination" maxlength="20" placeholder="HAV"></label>
+<label>Fecha<input id="departureDate" type="date"></label>
+<label>Aerolínea<input id="airline" maxlength="80" placeholder="Ej.: American Airlines"></label>
+<label>Pasajeros<input id="passengers" type="number" min="1" max="20" value="1"></label>
+<label>Cabina<input id="cabin" placeholder="Ej.: Economy"></label>
+<label>Tarifa<input id="fare" placeholder="Si la conoces"></label>
+<button id="flightBtn" class="primary" type="button" data-action="search-flight">Buscar / entender</button>
+</div>
+<div id="flightResult" class="result"></div>
+</div>
+</section>
+
+<section id="airline" class="screen hidden">
+<div class="card">
+<button class="back" data-action="home">← Volver</button>
+<h2>🛫 <span data-i18n="airline">Mi aerolínea</span></h2>
+<p>Aprende a reconocer y recorrer los pasos habituales de una aerolínea antes de realizar el proceso real.</p>
+<div class="form">
+<label>Aerolínea<input id="airlineName" placeholder="Ej.: American Airlines"></label>
+<label>¿Qué quieres aprender?
+<select id="airlineProcess">
+<option value="booking">Comprar / reservar un vuelo</option>
+<option value="checkin">Hacer check-in</option>
+<option value="baggage">Agregar o revisar equipaje</option>
+<option value="manage">Administrar una reserva</option>
+<option value="boarding">Entender el pase de abordar</option>
+</select>
+</label>
+<button class="primary" data-action="simulation">Comenzar simulación</button>
+</div>
+<div id="simulationResult" class="result"></div>
+</div>
+</section>
+
+<section id="simulation" class="screen hidden">
+<div class="card">
+<button class="back" data-action="home">← Volver</button>
+<h2>🖥️ <span data-i18n="simulation">Practicar antes de hacerlo</span></h2>
+<p>La práctica te enseña dónde mirar, qué significa cada parte y cuál es el siguiente paso.</p>
+<div class="form">
+<label>Aerolínea<input id="simulationAirline" placeholder="Ej.: American Airlines"></label>
+<label>Proceso
+<select id="simulationProcess">
+<option value="booking">Booking / reservar</option>
+<option value="checkin">Check-in</option>
+<option value="baggage">Equipaje</option>
+<option value="manage">Administrar reserva</option>
+<option value="boarding">Pase de abordar</option>
+<option value="dviajeros">D’Viajeros</option>
+<option value="visa">Visa / eVisa</option>
+</select>
+</label>
+<button class="primary" data-action="run-simulation">Practicar ahora</button>
+</div>
+<div id="simulationResult" class="result"></div>
+</div>
+</section>
+
+<section id="item" class="screen hidden">
+<div class="card">
+<button class="back" data-action="home">← Volver</button>
+<h2>🧳 <span data-i18n="item">¿Qué llevo?</span></h2>
+<div class="form">
+<label>Artículo<input id="itemName" placeholder="Ej.: power bank"></label>
+<label>Cantidad<input id="itemQty" type="number" min="1" value="1"></label>
+<label>Descripción<textarea id="itemDescription" rows="3" placeholder="Cuéntanos qué es"></textarea></label>
+<label>Aerolínea<input id="itemAirline" placeholder="Ej.: American Airlines"></label>
+<button id="itemBtn" class="primary" type="button" data-action="consult-item">Consultar</button>
+</div>
+<div id="itemResult" class="result"></div>
+</div>
+</section>
+
+<section id="baggage" class="screen hidden">
+<div class="card">
+<button class="back" data-action="home">← Volver</button>
+<h2>🎒 <span data-i18n="baggage">Equipaje</span></h2>
+<p>Aprende la diferencia entre tus tipos de equipaje, cómo prepararlos y qué información debes confirmar con tu aerolínea.</p>
+<button class="primary" data-action="item">Consultar un artículo</button>
+<button class="secondary" data-action="simulation">Practicar equipaje</button>
+<div id="baggageResult" class="result"></div>
+</div>
+</section>
+
+<section id="cuba" class="screen hidden">
+<div class="card">
+<button class="back" data-action="home">← Volver</button>
+<h2>🇨🇺 Cuba</h2>
+<p>Aprende paso a paso los procesos relacionados con tu viaje a Cuba.</p>
+<div class="info-grid">
+<button class="box" data-action="cuba-guide"><b>📋</b><span>Preparar entrada</span><small>Pasos principales</small></button>
+<button class="box" data-action="simulation-dviajeros"><b>🧾</b><span>D’Viajeros</span><small>Practicar el proceso</small></button>
+<button class="box" data-action="simulation-visa"><b>🛂</b><span>Visa / eVisa</span><small>Aprender el proceso</small></button>
+<button class="box" data-action="sources"><b>🔎</b><span>Fuentes oficiales</span><small>Confirmar directamente</small></button>
+</div>
+<div id="cubaResult" class="result"></div>
+<div id="cubaGuideResult" class="result"></div>
+</div>
+</section>
+
+<section id="guide" class="screen hidden">
+<div class="card">
+<button class="back" data-action="home">← Volver</button>
+<h2>📋 <span data-i18n="guide">Guía</span></h2>
+<div id="guideResult" class="result"></div>
+</div>
+</section>
+
+<section id="sources" class="screen hidden">
+<div class="card">
+<button class="back" data-action="home">← Volver</button>
+<h2>🔎 <span data-i18n="sources">Fuentes oficiales</span></h2>
+<div id="sourcesResult" class="result"></div>
+</div>
+</section>
+
+<section id="teach" class="screen hidden">
+<div class="card">
+<button class="back" data-action="home">← Volver</button>
+<h2>💡 <span data-i18n="teach">Aprender</span></h2>
+<div class="form">
+<label>Término o proceso<input id="term" placeholder="Ej.: check-in, D’Viajeros, equipaje de mano"></label>
+<button id="teachBtn" class="primary" type="button" data-action="teach-item">Explicar</button>
+</div>
+<div id="teachResult" class="result"></div>
+</div>
+</section>
+
+<section id="legal" class="screen hidden">
+<div class="card">
+<button class="back" data-action="home">← Volver</button>
+<h2>⚖️ <span data-i18n="legal">Aviso legal</span></h2>
+<div id="legalResult" class="result"></div>
+</div>
+</section>
+
+<section id="admin" class="screen hidden">
+<div class="card">
+<button class="back" data-action="home">← Volver</button>
+<h2>ADMIN</h2>
+<div class="form">
+<label>Usuario<input id="adminUser" autocomplete="username"></label>
+<label>Contraseña<input id="adminPass" type="password" autocomplete="current-password"></label>
+<button id="adminLoginBtn" class="primary" type="button" data-action="admin-login">Entrar</button>
+</div>
+<p id="adminMsg" class="message"></p>
+</div>
+</section>
+
+</main>
+
+<footer><span>May Roga LLC</span><span>© 2026</span></footer>
+<script src="/static/app.js" defer></script>
+</body>
+</html>
