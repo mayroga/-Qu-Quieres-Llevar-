@@ -1,5 +1,5 @@
 "use strict";
-const APP={name:"QUE QUIERES LLEVAR",version:"8.1.1",lang:localStorage.getItem("qql_lang")||"es",serviceToken:localStorage.getItem("qql_service_token")||"",adminToken:localStorage.getItem("qql_admin_token")||"",session:null,config:null,_bound:false,practice:null};
+const APP={name:"QUE QUIERES LLEVAR",version:"8.1.2",lang:localStorage.getItem("qql_lang")||"es",serviceToken:localStorage.getItem("qql_service_token")||"",adminToken:localStorage.getItem("qql_admin_token")||"",session:null,config:null,_bound:false,practice:null};
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
 const txt=v=>String(v??"").trim();
@@ -9,7 +9,7 @@ function headers(extra={}){const h={"Content-Type":"application/json",...extra};
 function saveTokens(){localStorage.setItem("qql_service_token",APP.serviceToken||"");localStorage.setItem("qql_admin_token",APP.adminToken||"")}
 function clearTokens(){APP.serviceToken="";APP.adminToken="";APP.session=null;saveTokens()}
 function msg(text,type="info"){let b=$("#appMessage")||$("#message")||$(".app-message");if(!b){b=document.createElement("div");b.id="appMessage";document.body.prepend(b)}b.className=`app-message ${type}`;b.textContent=text}
-async function api(path,options={},timeout=25000){
+async function api(path,options={},timeout=10000){
  const c=new AbortController(),tm=setTimeout(()=>c.abort(),timeout);
  try{
   const r=await fetch(path,{...options,headers:headers(options.headers||{}),signal:c.signal});
@@ -17,21 +17,16 @@ async function api(path,options={},timeout=25000){
   if(!r.ok){const e=new Error(d.detail||d.message||`HTTP ${r.status}`);e.status=r.status;e.data=d;throw e}
   return d
  }catch(e){
-  if(e.name==="AbortError")throw new Error(APP.lang==="en"?"The request took too long. Please try again.":"La solicitud tardó demasiado. Intenta nuevamente.");
+  if(e.name==="AbortError")throw new Error(APP.lang==="en"?"The server took too long to respond.":"El servidor tardó demasiado en responder.");
   throw e
  }finally{clearTimeout(tm)}
 }
 function screens(){return["loading","home","payment","flight","item","baggage","cuba","guide","sources","teach","legal","admin"].map(id=>document.getElementById(id)).filter(Boolean)}
-function setView(name){screens().forEach(x=>x.classList.toggle("hidden",x.id!==name));document.body.dataset.view=name;window.scrollTo(0,0)}
+function setView(name){screens().forEach(x=>x.classList.toggle("hidden",x.id!==name));document.body.dataset.view=name}
 function home(){setView(active()?"home":"payment")}
-function requirePaid(){
- if(active())return true;
- setView("payment");
- msg(APP.lang==="en"?"Payment or administrator access is required.":"Se requiere acceso mediante pago o administrador.","warn");
- return false
-}
+function requirePaid(){if(active())return true;setView("payment");msg(APP.lang==="en"?"Payment or administrator access is required.":"Se requiere acceso mediante pago o administrador.","warn");return false}
 function lang(){return APP.lang==="en"?"en":"es"}
-function setLang(v){APP.lang=v==="en"?"en":"es";localStorage.setItem("qql_lang",APP.lang);translate();loadConfig();ensureAirlineField();renderPaymentInfo()}
+function setLang(v){APP.lang=v==="en"?"en":"es";localStorage.setItem("qql_lang",APP.lang);translate();ensureAirlineField();ensureFlightPracticeButton();ensureCubaPracticeButtons()}
 function toggleLang(){setLang(APP.lang==="es"?"en":"es")}
 function translate(){
  document.documentElement.lang=APP.lang;
@@ -39,20 +34,18 @@ function translate(){
  const b=$("#langBtn");if(b)b.textContent=APP.lang==="en"?"ES":"EN";
  const l=$("#loadingText");if(l)l.textContent=APP.lang==="en"?"Preparing your trip...":"Preparando tu viaje...";
  const s=$("#sessionStatus");if(s)s.textContent=active()?(APP.lang==="en"?"Access active":"Acceso activo"):(APP.lang==="en"?"Session not active":"Sesión no activa");
- renderPaymentInfo();
-}
-function renderPaymentInfo(){
- const p=$("#payment .card");if(!p)return;
- const h2=p.querySelector("h2"),ps=p.querySelectorAll("p"),notice=p.querySelector(".notice"),btn=$("#payBtn");
- if(h2)h2.textContent=APP.lang==="en"?"Activate your travel preparation":"Activa tu preparación";
- if(ps[0])ps[0].textContent=APP.lang==="en"?"Before paying, know exactly what you receive: a simple 15-minute guided session from May Roga LLC to organize your trip, understand your flight, practice airline procedures, review what you can carry, prepare Cuba procedures such as D’Viajeros and visa/eVisa, and reach official sources. It does not sell tickets or complete official procedures for you.":"Antes de pagar, conoce exactamente lo que recibes: una sesión guiada de 15 minutos de May Roga LLC para organizar tu viaje, entender tu vuelo, practicar procesos de la aerolínea, revisar lo que puedes llevar, preparar procesos de Cuba como D’Viajeros y visa/eVisa, y llegar a las fuentes oficiales. No vende boletos ni realiza por ti los trámites oficiales.";
- if(notice)notice.innerHTML=APP.lang==="en"?"<strong>What you gain:</strong> you practice the process before doing it for real, learn where to click and what information to prepare, and finish with clear next actions.":"<strong>Qué ganas:</strong> practicas el proceso antes de hacerlo de verdad, aprendes dónde entrar y qué información preparar, y terminas con próximos pasos claros.";
- if(btn)btn.textContent=APP.lang==="en"?"Continue to payment — $15.99":"Continuar al pago — $15.99";
+ const p=$("#payment .card");if(p){
+  const h=p.querySelector("h2"),ps=p.querySelectorAll("p"),n=p.querySelector(".notice"),bt=$("#payBtn");
+  if(h)h.textContent=APP.lang==="en"?"Activate your travel preparation":"Activa tu preparación";
+  if(ps[0])ps[0].textContent=APP.lang==="en"?"Before paying, know what you receive: a simple 15-minute guided session to organize your trip, understand your flight, practice airline procedures, review baggage, practice D’Viajeros and Cuba visa/eVisa procedures, and reach official sources.":"Antes de pagar, conoce lo que recibes: una sesión guiada de 15 minutos para organizar tu viaje, entender tu vuelo, practicar procesos de la aerolínea, revisar equipaje, practicar D’Viajeros y visa/eVisa de Cuba, y llegar a las fuentes oficiales.";
+  if(n)n.innerHTML=APP.lang==="en"?"<strong>What you gain:</strong> you practice before doing the real process and finish with clear next actions.":"<strong>Qué ganas:</strong> practicas antes de hacer el proceso real y terminas con próximos pasos claros.";
+  if(bt)bt.textContent=APP.lang==="en"?"Continue to payment — $15.99":"Continuar al pago — $15.99";
+ }
 }
 async function checkSession(){
  if(!active()){home();return false}
  try{
-  const d=await api("/api/v1/session",{method:"GET"});
+  const d=await api("/api/v1/session",{method:"GET"},7000);
   if(d.active===false){clearTokens();home();return false}
   APP.session=d;translate();home();return true
  }catch(e){
@@ -61,7 +54,7 @@ async function checkSession(){
  }
 }
 async function loadConfig(){
- try{APP.config=await api("/api/v1/config",{method:"GET"});renderConfig(APP.config)}catch(_){}
+ try{APP.config=await api("/api/v1/config",{method:"GET"},7000);renderConfig(APP.config)}catch(_){}
 }
 function renderConfig(d){
  if(!d)return;
@@ -69,22 +62,22 @@ function renderConfig(d){
 }
 async function createCheckout(){
  try{
-  const d=await api("/api/v1/create-checkout-session",{method:"POST",body:JSON.stringify({language:lang()})});
+  const d=await api("/api/v1/create-checkout-session",{method:"POST",body:JSON.stringify({language:lang()})},15000);
   const u=d.checkout_url||d.url;
-  if(u)location.href=u;
-  else msg(APP.lang==="en"?"Payment link ready to continue.":"El enlace de pago está listo para continuar.","error")
+  if(u)location.href=u;else msg(APP.lang==="en"?"The payment link was not received.":"No se recibió el enlace de pago.","error")
  }catch(e){msg(e.message||"No se pudo iniciar el pago.","error")}
 }
 async function verifyPayment(){
  const q=new URLSearchParams(location.search),sid=q.get("session_id")||q.get("checkout_session_id");
  if(!sid)return false;
  try{
-  const d=await api("/api/v1/verify-payment",{method:"POST",body:JSON.stringify({session_id:sid})});
+  const d=await api("/api/v1/verify-payment",{method:"POST",body:JSON.stringify({session_id:sid})},15000);
   const t=d.token||d.service_token;
   if(!t)throw new Error(APP.lang==="en"?"Access could not be activated.":"No se pudo activar el acceso.");
   APP.serviceToken=t;APP.adminToken="";saveTokens();
   history.replaceState({},document.title,location.pathname);
-  await checkSession();
+  APP.session={active:true};
+  setView("home");translate();
   msg(APP.lang==="en"?"Your 15-minute preparation session is active.":"Tu sesión de preparación de 15 minutos está activa.","success");
   return true
  }catch(e){msg(e.message||"No se pudo verificar el pago.","error");return false}
@@ -93,10 +86,10 @@ async function adminLogin(){
  const user=val("adminUser"),pass=val("adminPass");
  if(!user||!pass){msg(APP.lang==="en"?"Enter username and password.":"Escribe usuario y contraseña.","warn");return}
  try{
-  const d=await api("/api/v1/admin/login",{method:"POST",body:JSON.stringify({username:user,password:pass})});
+  const d=await api("/api/v1/admin/login",{method:"POST",body:JSON.stringify({username:user,password:pass})},15000);
   const t=d.token||d.admin_token;
   if(!t)throw new Error(APP.lang==="en"?"Administrator access could not be activated.":"No se pudo activar el acceso de administrador.");
-  APP.adminToken=t;APP.serviceToken="";saveTokens();await checkSession();
+  APP.adminToken=t;APP.serviceToken="";saveTokens();APP.session={active:true,admin:true};setView("home");translate();
   msg(APP.lang==="en"?"Administrator access is active.":"El acceso de administrador está activo.","success")
  }catch(e){msg(e.message||"No se pudo iniciar sesión.","error")}
 }
@@ -107,8 +100,7 @@ function ensureAirlineField(){
  const label=document.createElement("label");
  label.textContent=APP.lang==="en"?"Airline":"Aerolínea";
  const input=document.createElement("input");
- input.id="airline";input.maxLength=40;
- input.placeholder=APP.lang==="en"?"Example: American Airlines":"Ej.: American Airlines";
+ input.id="airline";input.maxLength=40;input.placeholder=APP.lang==="en"?"Example: American Airlines":"Ej.: American Airlines";
  label.appendChild(input);
  const passengers=$("#passengers")?.closest("label");
  if(passengers)form.insertBefore(label,passengers);else form.insertBefore(label,form.querySelector("button"));
@@ -120,17 +112,17 @@ function ensureFlightPracticeButton(){
  b.id="practiceAirlineBtn";b.type="button";b.className="primary";
  b.textContent=APP.lang==="en"?"Practice with my airline":"Practicar con mi aerolínea";
  form.appendChild(b);
- b.addEventListener("click",startAirlinePractice);
+ b.addEventListener("click",startAirlinePractice)
 }
 function ensureCubaPracticeButtons(){
- const b=$("#cuba")?.querySelector(".card");
- if(!b||$("#practiceCubaBtn"))return;
- const wrap=document.createElement("div");
- wrap.className="practice-actions";
- wrap.innerHTML=`<button id="practiceCubaBtn" class="primary" type="button">${APP.lang==="en"?"Practice D’Viajeros":"Practicar D’Viajeros"}</button><button id="practiceVisaBtn" class="primary" type="button">${APP.lang==="en"?"Practice Cuba visa/eVisa":"Practicar visa/eVisa de Cuba"}</button>`;
- b.insertBefore(wrap,$("#cubaResult"));
- $("#practiceCubaBtn").addEventListener("click",()=>startCubaPractice("dviajeros"));
- $("#practiceVisaBtn").addEventListener("click",()=>startCubaPractice("visa"));
+ const card=$("#cuba")?.querySelector(".card");
+ if(!card||$("#practiceCubaBtn"))return;
+ const wrap=document.createElement("div");wrap.className="practice-actions";
+ const a=document.createElement("button");a.id="practiceCubaBtn";a.className="primary";a.type="button";a.textContent=APP.lang==="en"?"Practice D’Viajeros":"Practicar D’Viajeros";
+ const v=document.createElement("button");v.id="practiceVisaBtn";v.className="primary";v.type="button";v.textContent=APP.lang==="en"?"Practice Cuba visa/eVisa":"Practicar visa/eVisa de Cuba";
+ wrap.append(a,v);card.insertBefore(wrap,$("#cubaResult"));
+ a.addEventListener("click",()=>startCubaPractice("dviajeros"));
+ v.addEventListener("click",()=>startCubaPractice("visa"))
 }
 function dataObject(){
  ensureAirlineField();
@@ -147,79 +139,53 @@ function dataObject(){
 async function flight(){
  if(!requirePaid())return;
  const data=dataObject();
- if(!data.origin||!data.destination){
-  msg(APP.lang==="en"?"Enter your origin and destination to continue.":"Escribe tu origen y destino para continuar.","warn");
-  return
- }
- try{
-  const d=await api("/api/v1/flight/understand",{method:"POST",body:JSON.stringify(data)});
-  renderFlight(d)
- }catch(e){msg(e.message||"No se pudo preparar la información del vuelo.","error")}
+ if(!data.origin||!data.destination){msg(APP.lang==="en"?"Enter your origin and destination to continue.":"Escribe tu origen y destino para continuar.","warn");return}
+ try{renderFlight(await api("/api/v1/flight/understand",{method:"POST",body:JSON.stringify(data)},15000))}
+ catch(e){msg(e.message||"No se pudo preparar la información del vuelo.","error")}
 }
 function sourceList(items){
  if(!Array.isArray(items)||!items.length)return"";
- return `<div class="source-list">${items.map(x=>{
-  const name=esc(x.name||"Fuente oficial"),url=esc(x.url||"#"),desc=x.description?`<p>${esc(x.description)}</p>`:"";
-  const alt=x.alternate_url?` <a href="${esc(x.alternate_url)}" target="_blank" rel="noopener noreferrer">${APP.lang==="en"?"Alternative":"Alternativa"}</a>`:"";
-  return `<div class="source-card"><strong>${name}</strong>${desc}${x.url?`<a href="${url}" target="_blank" rel="noopener noreferrer">${APP.lang==="en"?"Open source":"Abrir fuente"}</a>${alt}`:""}</div>`
- }).join("")}</div>`
+ return `<div class="source-list">${items.map(x=>{const n=esc(x.name||"Fuente oficial"),u=esc(x.url||"#"),d=x.description?`<p>${esc(x.description)}</p>`:"";return `<div class="source-card"><strong>${n}</strong>${d}${x.url?`<a href="${u}" target="_blank" rel="noopener noreferrer">${APP.lang==="en"?"Open source":"Abrir fuente"}</a>`:""}</div>`}).join("")}</div>`
 }
 function renderFlight(d){
  const b=$("#flightResult");if(!b)return;
- let h="";
- const airline=d.airline||val("airline"),origin=d.origin||val("origin"),destination=d.destination||val("destination"),date=d.departure_date||val("departureDate");
- if(origin||destination||date||airline){
-  h+=`<div class="next-action"><strong>${APP.lang==="en"?"Flight information":"Información del vuelo"}</strong>`;
-  if(origin)h+=`<p>${APP.lang==="en"?"Origin: ":"Origen: "}${esc(origin)}</p>`;
-  if(destination)h+=`<p>${APP.lang==="en"?"Destination: ":"Destino: "}${esc(destination)}</p>`;
-  if(date)h+=`<p>${APP.lang==="en"?"Date: ":"Fecha: "}${esc(date)}</p>`;
-  if(airline)h+=`<p>${APP.lang==="en"?"Airline: ":"Aerolínea: "}${esc(airline)}</p>`;
-  h+="</div>"
- }
+ let h="",a=d.airline||val("airline"),o=d.origin||val("origin"),des=d.destination||val("destination"),date=d.departure_date||val("departureDate");
+ if(o||des||date||a){h+=`<div class="next-action"><strong>${APP.lang==="en"?"Flight information":"Información del vuelo"}</strong>${o?`<p>Origen: ${esc(o)}</p>`:""}${des?`<p>Destino: ${esc(des)}</p>`:""}${date?`<p>Fecha: ${esc(date)}</p>`:""}${a?`<p>Aerolínea: ${esc(a)}</p>`:""}</div>`}
  if(d.understood)h+=`<p>${esc(typeof d.understood==="string"?d.understood:JSON.stringify(d.understood))}</p>`;
  if(Array.isArray(d.steps)&&d.steps.length)h+=`<h3>${APP.lang==="en"?"Next steps":"Próximos pasos"}</h3><ol>${d.steps.map(x=>`<li>${esc(typeof x==="string"?x:(x.text||x.title||x.description||JSON.stringify(x)))}</li>`).join("")}</ol>`;
- if(d.google_flights_url)h+=`<div class="next-action"><strong>${APP.lang==="en"?"Continue with flight availability":"Continúa con la disponibilidad del vuelo"}</strong><p>${APP.lang==="en"?"Open Google Flights to review current route options.":"Abre Google Flights para revisar las opciones actuales de la ruta."}</p><p><a href="${esc(d.google_flights_url)}" target="_blank" rel="noopener noreferrer">${APP.lang==="en"?"Open Google Flights":"Abrir Google Flights"}</a></p></div>`;
- const chars=d.charter_sources||[],airs=d.airline_sources||[],sources=d.sources||[];
- if(chars.length)h+=`<h3>${APP.lang==="en"?"Charter flight/travel providers":"Proveedores de vuelos chárter/servicios de viaje"}</h3>${sourceList(chars)}`;
- if(airs.length)h+=`<h3>${APP.lang==="en"?"Airline sources":"Fuentes de la aerolínea"}</h3>${sourceList(airs)}`;
- if(!chars.length&&!airs.length&&sources.length)h+=sourceList(sources);
- if(d.next_action)h+=`<p><strong>${esc(d.next_action)}</strong></p>`;
- h+=`<div class="next-action"><strong>${APP.lang==="en"?"You can practice before doing it for real.":"Puedes practicar antes de hacerlo de verdad."}</strong><p>${APP.lang==="en"?"Use “Practice with my airline” above. The simulation does not buy a ticket or send real information.":"Usa “Practicar con mi aerolínea” arriba. La simulación no compra boletos ni envía información real."}</p></div>`;
+ if(d.google_flights_url)h+=`<div class="next-action"><strong>${APP.lang==="en"?"Review current flight options":"Revisa las opciones actuales de vuelo"}</strong><p><a href="${esc(d.google_flights_url)}" target="_blank" rel="noopener noreferrer">Google Flights</a></p></div>`;
+ if((d.airline_sources||[]).length)h+=sourceList(d.airline_sources);
+ if((d.charter_sources||[]).length)h+=sourceList(d.charter_sources);
+ h+=`<div class="next-action"><strong>${APP.lang==="en"?"Practice before doing it for real":"Practica antes de hacerlo de verdad"}</strong><p>${APP.lang==="en"?"Use the Practice with my airline button. It does not purchase anything.":"Usa el botón Practicar con mi aerolínea. No realiza ninguna compra."}</p></div>`;
  b.innerHTML=h
 }
 async function charterSources(){
  if(!requirePaid())return;
  try{
-  const d=await api("/api/v1/flight/sources",{method:"POST",body:JSON.stringify({origin:val("origin"),destination:val("destination"),airline:val("airline"),language:lang()})});
+  const d=await api("/api/v1/flight/sources",{method:"POST",body:JSON.stringify({origin:val("origin"),destination:val("destination"),airline:val("airline"),language:lang()})},12000);
   renderSources(d.charter_sources||d.sources||[])
  }catch(e){
-  try{
-   const d=await api(`/api/v1/sources/charter?language=${encodeURIComponent(lang())}`,{method:"GET"});
-   renderSources(d.sources||d.charter_sources||[])
-  }catch(x){msg(x.message||e.message||"No se pudieron cargar las fuentes.","error")}
+  try{const d=await api(`/api/v1/sources/charter?language=${encodeURIComponent(lang())}`,{method:"GET"},8000);renderSources(d.sources||d.charter_sources||[])}
+  catch(x){msg(x.message||e.message||"No se pudieron cargar las fuentes.","error")}
  }
 }
 function renderSources(items){
  const b=$("#sourcesResult")||$("#flightResult");if(!b)return;
- b.innerHTML=Array.isArray(items)&&items.length?sourceList(items):`<div class="next-action"><strong>${APP.lang==="en"?"Official sources":"Fuentes oficiales"}</strong><p>${APP.lang==="en"?"Use the official source for your airline and route to verify current information.":"Usa la fuente oficial de tu aerolínea y ruta para verificar la información vigente."}</p></div>`
+ b.innerHTML=Array.isArray(items)&&items.length?sourceList(items):`<div class="next-action"><strong>${APP.lang==="en"?"Official sources":"Fuentes oficiales"}</strong><p>${APP.lang==="en"?"Open the official source for your airline and route.":"Abre la fuente oficial de tu aerolínea y ruta."}</p></div>`
 }
 async function officialSources(){
  if(!requirePaid())return;
- try{
-  const d=await api("/api/v1/sources/official",{method:"GET"});
-  renderSources(d.sources||d.official_sources||d.links||[])
- }catch(e){msg(e.message||"No se pudieron cargar las fuentes oficiales.","error")}
+ try{const d=await api("/api/v1/sources/official",{method:"GET"},10000);renderSources(d.sources||d.official_sources||d.links||[])}
+ catch(e){msg(e.message||"No se pudieron cargar las fuentes oficiales.","error")}
 }
 async function cubaGuide(){
  if(!requirePaid())return;
- try{
-  const d=await api(`/api/v1/cuba/official?language=${encodeURIComponent(lang())}`,{method:"GET"});
-  renderObject($("#cubaResult"),d)
- }catch(e){msg(e.message||"No se pudo cargar la preparación de Cuba.","error")}
+ try{renderObject($("#cubaResult"),await api(`/api/v1/cuba/official?language=${encodeURIComponent(lang())}`,{method:"GET"},10000))}
+ catch(e){msg(e.message||"No se pudo cargar la preparación de Cuba.","error")}
 }
 async function guide(){
  if(!requirePaid())return;
- try{renderGuide(await api("/api/v1/guide",{method:"POST",body:JSON.stringify({language:lang(),flight:dataObject()})}))}
+ try{renderGuide(await api("/api/v1/guide",{method:"POST",body:JSON.stringify({language:lang(),flight:dataObject()})},10000))}
  catch(e){msg(e.message||"No se pudo preparar la guía.","error")}
 }
 function renderGuide(d){
@@ -229,130 +195,95 @@ function renderGuide(d){
  if(Array.isArray(d.steps)&&d.steps.length)h+=`<ol>${d.steps.map(x=>`<li>${esc(typeof x==="string"?x:(x.text||x.title||x.description||JSON.stringify(x)))}</li>`).join("")}</ol>`;
  if(Array.isArray(d.cuba_steps)&&d.cuba_steps.length)h+=`<h3>${APP.lang==="en"?"Cuba preparation":"Preparación para Cuba"}</h3><ol>${d.cuba_steps.map(x=>`<li>${esc(typeof x==="string"?x:(x.text||x.title||x.description||JSON.stringify(x)))}</li>`).join("")}</ol>`;
  if(Array.isArray(d.official_sources)&&d.official_sources.length)h+=sourceList(d.official_sources);
- if(d.legal_notice)h+=`<p>${esc(typeof d.legal_notice==="string"?d.legal_notice:(d.legal_notice.full_notice||d.legal_notice.short_notice||""))}</p>`;
  b.innerHTML=h||`<div class="next-action"><strong>${APP.lang==="en"?"Continue your preparation":"Continúa tu preparación"}</strong></div>`
 }
 function renderObject(b,d){
  if(!b)return;
  if(typeof d==="string"){b.innerHTML=`<p>${esc(d)}</p>`;return}
  let h="";
- if(d.title)h+=`<h2>${esc(d.title)}</h2>`;
- if(d.intro)h+=`<p>${esc(d.intro)}</p>`;
- if(d.short_notice)h+=`<p>${esc(d.short_notice)}</p>`;
- if(d.status){
-  const l={prohibited:APP.lang==="en"?"Restricted/prohibited":"Restringido/prohibido",conditional:APP.lang==="en"?"Conditions apply":"Tiene condiciones",allowed:APP.lang==="en"?"May be allowed":"Puede estar permitido",unknown:APP.lang==="en"?"Needs verification":"Necesita verificación"};
-  h+=`<p><strong>${esc(l[d.status]||d.status)}</strong></p>`
- }
- ["message","reason","explanation"].forEach(k=>{if(d[k])h+=`<p>${esc(d[k])}</p>`});
- if(d.baggage_place)h+=`<p><strong>${APP.lang==="en"?"Baggage:":"Equipaje:"}</strong> ${esc(d.baggage_place)}</p>`;
+ ["title","intro","short_notice","message","reason","explanation"].forEach(k=>{if(d[k])h+=k==="title"?`<h2>${esc(d[k])}</h2>`:`<p>${esc(d[k])}</p>`});
+ if(d.status)h+=`<p><strong>${esc(d.status)}</strong></p>`;
+ if(d.baggage_place)h+=`<p><strong>Equipaje:</strong> ${esc(d.baggage_place)}</p>`;
  if(Array.isArray(d.conditions)&&d.conditions.length)h+=`<h3>${APP.lang==="en"?"Conditions":"Condiciones"}</h3><ul>${d.conditions.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
  if(Array.isArray(d.missing_information)&&d.missing_information.length)h+=`<h3>${APP.lang==="en"?"Still needed":"Información que falta"}</h3><ul>${d.missing_information.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
- if(d.source)h+=`<p><strong>${APP.lang==="en"?"Source:":"Fuente:"}</strong> ${esc(d.source)}</p>`;
  if(d.source_name)h+=`<p>${esc(d.source_name)}</p>`;
- if(d.verified===true)h+=`<p>${APP.lang==="en"?"Verified source information.":"Información de fuente verificada."}</p>`;
  if(d.official_link)h+=`<p><a href="${esc(d.official_link)}" target="_blank" rel="noopener noreferrer">${APP.lang==="en"?"Open official source":"Abrir fuente oficial"}</a></p>`;
- const s=d.sources||d.official_sources||d.links||[];
- if(Array.isArray(s)&&s.length)h+=sourceList(s);
+ const s=d.sources||d.official_sources||d.links||[];if(Array.isArray(s)&&s.length)h+=sourceList(s);
  if(d.next_action)h+=`<p><strong>${esc(d.next_action)}</strong></p>`;
- if(d.legal_notice)h+=`<p>${esc(typeof d.legal_notice==="string"?d.legal_notice:(d.legal_notice.full_notice||d.legal_notice.short_notice||""))}</p>`;
- b.innerHTML=h||`<div class="next-action"><strong>${APP.lang==="en"?"Continue":"Continúa"}</strong></div>`
+ b.innerHTML=h||`<div class="next-action">${APP.lang==="en"?"Continue":"Continúa"}</div>`
 }
 async function legal(){
  try{
-  const d=await api(`/api/v1/legal?language=${encodeURIComponent(lang())}`,{method:"GET"}),b=$("#legalResult");
+  const d=await api(`/api/v1/legal?language=${encodeURIComponent(lang())}`,{method:"GET"},8000),b=$("#legalResult");
   if(!b)return;
-  let h="";
-  ["short_notice","full_notice","user_guidance","source_notice"].forEach(k=>{if(d[k])h+=`<p>${esc(d[k])}</p>`});
-  b.innerHTML=h||`<p>${APP.lang==="en"?"Review the service information.":"Revisa la información del servicio."}</p>`
+  let h="";["short_notice","full_notice","user_guidance","source_notice"].forEach(k=>{if(d[k])h+=`<p>${esc(d[k])}</p>`});
+  b.innerHTML=h||`<p>${APP.lang==="en"?"Review the service information.":"Revisa la información del servicio."}`
  }catch(e){msg(e.message||"No se pudo cargar el aviso legal.","error")}
 }
 async function itemConsult(){
  if(!requirePaid())return;
  const item=val("itemName"),quantity=val("itemQty")||"1",description=val("itemDescription");
  if(!item){msg(APP.lang==="en"?"Enter the item to continue.":"Escribe el artículo para continuar.","warn");return}
- try{
-  const d=await api("/api/v1/consultar-articulo",{method:"POST",body:JSON.stringify({item,quantity,description,language:lang(),baggage_type:val("baggage_type"),airline:val("airline"),destination:val("destination"),origin:val("origin"),cabin:val("cabin"),fare:val("fare")})});
-  renderObject($("#itemResult"),d)
- }catch(e){msg(e.message||"No se pudo preparar la consulta del artículo.","error")}
+ try{renderObject($("#itemResult"),await api("/api/v1/consultar-articulo",{method:"POST",body:JSON.stringify({item,quantity,description,language:lang(),baggage_type:val("baggage_type"),airline:val("airline"),destination:val("destination"),origin:val("origin"),cabin:val("cabin"),fare:val("fare")})},15000))}
+ catch(e){msg(e.message||"No se pudo preparar la consulta del artículo.","error")}
 }
 async function teach(){
  if(!requirePaid())return;
- const term=val("term");
- if(!term){msg(APP.lang==="en"?"Enter a term to continue.":"Escribe un término para continuar.","warn");return}
- try{renderObject($("#teachResult"),await api("/api/v1/item/teach",{method:"POST",body:JSON.stringify({term,language:lang()})}))}
+ const term=val("term");if(!term){msg(APP.lang==="en"?"Enter a term to continue.":"Escribe un término para continuar.","warn");return}
+ try{renderObject($("#teachResult"),await api("/api/v1/item/teach",{method:"POST",body:JSON.stringify({term,language:lang()})},10000))}
  catch(e){msg(e.message||"No se pudo preparar la explicación.","error")}
 }
 function practiceBox(){
- let x=$("#qqlPractice");
- if(x)return x;
+ let x=$("#qqlPractice");if(x)return x;
  x=document.createElement("div");x.id="qqlPractice";x.className="card";
- document.body.appendChild(x);
- return x
+ const host=$("#flight")||$("#cuba")||document.body;
+ host.appendChild(x);return x
 }
 function closePractice(){const x=$("#qqlPractice");if(x)x.remove();APP.practice=null}
-function startAirlinePractice(){
- if(!requirePaid())return;
- const airline=val("airline")||"Mi aerolínea";
- APP.practice={type:"airline",airline,step:0,data:{}};
- renderPractice()
-}
-function startCubaPractice(type){
- if(!requirePaid())return;
- APP.practice={type:"cuba",mode:type,step:0,data:{}};
- renderPractice()
-}
-function practiceData(){
- const p=APP.practice||{};
+function startAirlinePractice(){if(!requirePaid())return;APP.practice={type:"airline",airline:val("airline")||"mi aerolínea",step:0};renderPractice()}
+function startCubaPractice(mode){if(!requirePaid())return;APP.practice={type:"cuba",mode,step:0};renderPractice()}
+function practiceSteps(){
+ const p=APP.practice;
  if(p.type==="airline")return[
-  APP.lang==="en"?`Welcome. We will practice ${p.airline} without buying anything.`:`Bienvenido. Practicaremos ${p.airline} sin comprar nada.`,
-  APP.lang==="en"?"Step 1: open the airline's official website or app. Look for the flight search option.":"Paso 1: abre el sitio o aplicación oficial de la aerolínea. Busca la opción para buscar vuelos.",
-  APP.lang==="en"?"Step 2: enter origin, destination and travel date.":"Paso 2: escribe origen, destino y fecha del viaje.",
-  APP.lang==="en"?"Step 3: review the flight options. Check date, time, airports and stops before selecting one.":"Paso 3: revisa las opciones. Comprueba fecha, hora, aeropuertos y escalas antes de seleccionar.",
-  APP.lang==="en"?"Step 4: select the flight. In this practice, nothing is purchased.":"Paso 4: selecciona el vuelo. En esta práctica no se compra nada.",
-  APP.lang==="en"?"Step 5: review passenger information. Use only fictitious information during practice.":"Paso 5: revisa la información del pasajero. En la práctica usa solamente información ficticia.",
-  APP.lang==="en"?"Step 6: review baggage and fare conditions shown by the airline.":"Paso 6: revisa el equipaje y las condiciones de la tarifa que muestra la aerolínea.",
-  APP.lang==="en"?"Step 7: stop before payment. For a real purchase, use only the airline's official site/app and verify the final information there.":"Paso 7: detente antes del pago. Para una compra real, usa solamente el sitio/aplicación oficial y verifica allí la información final."
- ][p.step]||"";
+  APP.lang==="en"?`We will practice ${p.airline}. Nothing is purchased.`:`Practicaremos ${p.airline}. No se compra nada.`,
+  APP.lang==="en"?"Open the airline's official website or app.":"Abre el sitio o aplicación oficial de la aerolínea.",
+  APP.lang==="en"?"Enter origin, destination and travel date.":"Escribe origen, destino y fecha del viaje.",
+  APP.lang==="en"?"Review flight options, airports, times and stops.":"Revisa vuelos, aeropuertos, horarios y escalas.",
+  APP.lang==="en"?"Select a flight for practice only.":"Selecciona un vuelo solamente para practicar.",
+  APP.lang==="en"?"Review passenger information using fictitious information.":"Revisa los datos del pasajero usando información ficticia.",
+  APP.lang==="en"?"Review baggage and fare conditions.":"Revisa equipaje y condiciones de la tarifa.",
+  APP.lang==="en"?"Stop before payment. The real process must be completed on the official airline site/app.":"Detente antes del pago. El proceso real debe hacerse en el sitio o aplicación oficial."
+ ];
  if(p.mode==="dviajeros")return[
-  APP.lang==="en"?"Practice: D’Viajeros. This is only a simulation; do not enter sensitive information.":"Práctica: D’Viajeros. Esto es solamente una simulación; no introduzcas información sensible.",
-  APP.lang==="en"?"Step 1: open the official D’Viajeros portal.":"Paso 1: abre el portal oficial de D’Viajeros.",
-  APP.lang==="en"?"Step 2: identify the traveler information the official form requests.":"Paso 2: identifica la información del viajero que solicita el formulario oficial.",
-  APP.lang==="en"?"Step 3: complete the official form directly on the official portal when required.":"Paso 3: completa el formulario oficial directamente en el portal oficial cuando corresponda.",
-  APP.lang==="en"?"Step 4: review your entries before submitting.":"Paso 4: revisa los datos antes de enviar.",
-  APP.lang==="en"?"Step 5: keep the official confirmation available for your trip.":"Paso 5: conserva disponible la confirmación oficial para tu viaje."
- ][p.step]||"";
+  APP.lang==="en"?"D’Viajeros practice. This is only a simulation.":"Práctica de D’Viajeros. Esto es solamente una simulación.",
+  APP.lang==="en"?"Open the official D’Viajeros portal.":"Abre el portal oficial de D’Viajeros.",
+  APP.lang==="en"?"Identify the information requested by the official form.":"Identifica la información que solicita el formulario oficial.",
+  APP.lang==="en"?"Practice the order of the fields without entering sensitive information.":"Practica el orden de los campos sin introducir información sensible.",
+  APP.lang==="en"?"Review the information before submitting the real form.":"Revisa la información antes de enviar el formulario real.",
+  APP.lang==="en"?"Complete the real process only at the official portal.":"Realiza el proceso real solamente en el portal oficial."
+ ];
  return[
-  APP.lang==="en"?"Practice: Cuba visa/eVisa. This is only a simulation.":"Práctica: visa/eVisa de Cuba. Esto es solamente una simulación.",
-  APP.lang==="en"?"Step 1: open the official Cuba visa/eVisa source that applies to your situation.":"Paso 1: abre la fuente oficial de visa/eVisa de Cuba que corresponda a tu situación.",
-  APP.lang==="en"?"Step 2: check the requirement for your nationality and trip.":"Paso 2: comprueba el requisito según tu nacionalidad y viaje.",
-  APP.lang==="en"?"Step 3: review the documents and information requested by the official process.":"Paso 3: revisa los documentos y la información que solicita el proceso oficial.",
-  APP.lang==="en"?"Step 4: complete the real process only on the official source.":"Paso 4: realiza el proceso real solamente en la fuente oficial.",
-  APP.lang==="en"?"Step 5: keep the official confirmation or document available.":"Paso 5: conserva disponible la confirmación o documento oficial."
- ][p.step]||""
-}
-function practiceTitle(){
- const p=APP.practice||{};
- if(p.type==="airline")return APP.lang==="en"?`Practice: ${p.airline}`:`Práctica: ${p.airline}`;
- return p.mode==="dviajeros"?(APP.lang==="en"?"Practice: D’Viajeros":"Práctica: D’Viajeros"):(APP.lang==="en"?"Practice: Cuba visa/eVisa":"Práctica: visa/eVisa de Cuba")
+  APP.lang==="en"?"Cuba visa/eVisa practice. This is only a simulation.":"Práctica de visa/eVisa de Cuba. Esto es solamente una simulación.",
+  APP.lang==="en"?"Open the official Cuba visa/eVisa source.":"Abre la fuente oficial de visa/eVisa de Cuba.",
+  APP.lang==="en"?"Check the requirement for your nationality.":"Comprueba el requisito según tu nacionalidad.",
+  APP.lang==="en"?"Review the documents and information requested.":"Revisa los documentos y la información solicitada.",
+  APP.lang==="en"?"Practice the order of the process without submitting anything.":"Practica el orden del proceso sin enviar nada.",
+  APP.lang==="en"?"Complete the real process only through the applicable official source.":"Realiza el proceso real solamente mediante la fuente oficial correspondiente."
+ ]
 }
 function renderPractice(){
  const p=APP.practice;if(!p)return;
- const steps=p.type==="airline"?8:(p.mode==="dviajeros"?6:6),text=practiceData(),b=practiceBox();
- b.innerHTML=`<div><button id="practiceClose" type="button">× ${APP.lang==="en"?"Close":"Cerrar"}</button><h2>${esc(practiceTitle())}</h2><div class="next-action"><strong>${APP.lang==="en"?`Practice step ${p.step+1} of ${steps}`:`Paso ${p.step+1} de ${steps}`}</strong><p>${esc(text)}</p></div><div class="practice-actions">${p.step>0?`<button id="practiceBack" class="primary" type="button">${APP.lang==="en"?"Back":"Atrás"}</button>`:""}${p.step<steps-1?`<button id="practiceNext" class="primary" type="button">${APP.lang==="en"?"Next step":"Siguiente paso"}</button>`:`<button id="practiceFinish" class="primary" type="button">${APP.lang==="en"?"Finish practice":"Terminar práctica"}</button>`}</div></div>`;
+ const steps=practiceSteps(),b=practiceBox(),title=p.type==="airline"?(APP.lang==="en"?`Practice: ${p.airline}`:`Práctica: ${p.airline}`):(p.mode==="dviajeros"?(APP.lang==="en"?"Practice: D’Viajeros":"Práctica: D’Viajeros"):(APP.lang==="en"?"Practice: Cuba visa/eVisa":"Práctica: visa/eVisa de Cuba"));
+ b.innerHTML=`<div><button id="practiceClose" type="button">× ${APP.lang==="en"?"Close":"Cerrar"}</button><h2>${esc(title)}</h2><div class="next-action"><strong>${APP.lang==="en"?`Step ${p.step+1} of ${steps.length}`:`Paso ${p.step+1} de ${steps.length}`}</strong><p>${esc(steps[p.step])}</p></div><div class="practice-actions">${p.step?`<button id="practiceBack" class="primary" type="button">${APP.lang==="en"?"Back":"Atrás"}</button>`:""}${p.step<steps.length-1?`<button id="practiceNext" class="primary" type="button">${APP.lang==="en"?"Next":"Siguiente"}</button>`:`<button id="practiceFinish" class="primary" type="button">${APP.lang==="en"?"Finish":"Terminar"}</button>`}</div></div>`;
  $("#practiceClose").onclick=closePractice;
- $("#practiceBack")?.addEventListener("click",()=>{if(APP.practice.step>0){APP.practice.step--;renderPractice()}});
- $("#practiceNext")?.addEventListener("click",()=>{APP.practice.step++;renderPractice()});
- $("#practiceFinish")?.addEventListener("click",finishPractice);
- b.scrollIntoView({behavior:"auto",block:"start"})
+ $("#practiceBack")?.addEventListener("click",()=>{p.step--;renderPractice()});
+ $("#practiceNext")?.addEventListener("click",()=>{p.step++;renderPractice()});
+ $("#practiceFinish")?.addEventListener("click",finishPractice)
 }
 function finishPractice(){
- const p=APP.practice;
- const b=$("#qqlPractice");if(!b)return;
- let source="";
- if(p.type==="airline")source=APP.lang==="en"?"For the real process, use the airline's official website/app and verify the final fare, baggage, passenger requirements and payment information there.":"Para el proceso real, usa el sitio/aplicación oficial de la aerolínea y verifica allí la tarifa final, equipaje, requisitos del pasajero y pago.";
- else if(p.mode==="dviajeros")source=APP.lang==="en"?"Official D’Viajeros: https://dviajeros.mitrans.gob.cu/":"D’Viajeros oficial: https://dviajeros.mitrans.gob.cu/";
- else source=APP.lang==="en"?"Official Cuba eVisa source: https://evisacuba.cu/":"Fuente oficial de eVisa Cuba: https://evisacuba.cu/";
- b.innerHTML=`<div><button id="practiceClose" type="button">× ${APP.lang==="en"?"Close":"Cerrar"}</button><h2>${APP.lang==="en"?"Practice completed":"Práctica completada"}</h2><div class="next-action"><strong>${APP.lang==="en"?"You are ready for the real process.":"Ya puedes pasar al proceso real."}</strong><p>${esc(source)}</p><p>${APP.lang==="en"?"The simulation did not send, save or purchase anything.":"La simulación no envió, guardó ni compró nada."}</p></div></div>`;
+ const p=APP.practice,b=$("#qqlPractice");if(!b)return;
+ const s=p.type==="airline"?(APP.lang==="en"?"For the real process, use the airline's official website/app.":"Para el proceso real, usa el sitio o aplicación oficial de la aerolínea."):p.mode==="dviajeros"?(APP.lang==="en"?"Official D’Viajeros: https://dviajeros.mitrans.gob.cu/":"D’Viajeros oficial: https://dviajeros.mitrans.gob.cu/"):(APP.lang==="en"?"Official Cuba eVisa: https://evisacuba.cu/":"eVisa Cuba oficial: https://evisacuba.cu/");
+ b.innerHTML=`<div><button id="practiceClose" type="button">× ${APP.lang==="en"?"Close":"Cerrar"}</button><h2>${APP.lang==="en"?"Practice completed":"Práctica completada"}</h2><div class="next-action"><strong>${APP.lang==="en"?"You are ready for the real process.":"Ya puedes pasar al proceso real."}</strong><p>${esc(s)}</p><p>${APP.lang==="en"?"No real information was submitted or purchased.":"No se envió información real ni se realizó ninguna compra."}</p></div></div>`;
  $("#practiceClose").onclick=closePractice
 }
 function bind(){
@@ -382,20 +313,27 @@ function bind(){
   else if(a==="logout")logout()
  })
 }
-async function init(){
+function init(){
  document.documentElement.lang=APP.lang;
  bind();
  translate();
  ensureAirlineField();
  ensureFlightPracticeButton();
  ensureCubaPracticeButtons();
- setView("loading");
- await loadConfig();
- const paid=active()?await checkSession():false;
- if(!paid)setView("payment");
- const verified=await verifyPayment();
- if(verified)await checkSession();
- else if(active())await checkSession();
+
+ /* LA INTERFAZ APARECE INMEDIATAMENTE */
+ if(active())setView("home");else setView("payment");
+
+ /* LAS OPERACIONES DE RED NO BLOQUEAN LA APP */
+ Promise.resolve().then(async()=>{
+  await loadConfig();
+  if(active())await checkSession();
+  const q=new URLSearchParams(location.search);
+  if(q.get("session_id")||q.get("checkout_session_id")){
+   const ok=await verifyPayment();
+   if(ok)await checkSession()
+  }
+ }).catch(()=>{})
 }
 window.APP=APP;
 window.createCheckout=createCheckout;
