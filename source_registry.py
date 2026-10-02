@@ -1,9 +1,9 @@
-# source_registry.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v8.0.0
-from dataclasses import dataclass,asdict
-from datetime import date
+# source_registry.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v8.0.1
+from dataclasses import asdict,dataclass
 from typing import Any,Dict,List,Optional
 from urllib.parse import quote_plus
 
+VERSION="8.0.1"
 VERIFICATION_DATE="2026-10-01"
 
 @dataclass
@@ -11,29 +11,31 @@ class Source:
     id:str
     name:str
     url:str
-    source_type:str="other"
-    country:Optional[str]=None
-    airline:Optional[str]=None
-    destination:Optional[str]=None
-    scope:Optional[str]=None
-    official:bool=False
+    source_type:str="official"
+    country:str=""
+    airline:str=""
+    destination:str=""
+    scope:str=""
+    official:bool=True
     verified:bool=False
-    verification_date:Optional[str]=None
-    notes:Optional[str]=None
+    verification_date:str=""
+    notes:str=""
     def to_dict(self)->Dict[str,Any]:
         return asdict(self)
 
 class SourceRegistry:
-    def __init__(self,sources:Optional[List[Source]]=None):
-        self._sources={}
-        for s in sources or self._default_sources(): self.add(s)
+    def __init__(self):
+        self._sources:Dict[str,Source]={}
+        self._load_defaults()
 
     def add(self,source:Source)->Source:
+        if not source.id:
+            raise ValueError("Source id is required")
         self._sources[source.id]=source
         return source
 
     def get(self,source_id:str)->Optional[Source]:
-        return self._sources.get(str(source_id).strip())
+        return self._sources.get(str(source_id or "").strip())
 
     def all(self)->List[Source]:
         return list(self._sources.values())
@@ -41,8 +43,8 @@ class SourceRegistry:
     def list_dicts(self)->List[Dict[str,Any]]:
         return [s.to_dict() for s in self.all()]
 
-    def to_dict(self)->List[Dict[str,Any]]:
-        return self.list_dicts()
+    def to_dict(self)->Dict[str,Any]:
+        return {"version":VERSION,"sources":self.list_dicts()}
 
     def verified(self)->List[Source]:
         return [s for s in self.all() if s.verified]
@@ -50,160 +52,173 @@ class SourceRegistry:
     def official(self)->List[Source]:
         return [s for s in self.all() if s.official]
 
-    def search(self,query:str="",country:Optional[str]=None,airline:Optional[str]=None,destination:Optional[str]=None,source_type:Optional[str]=None,official_only:bool=False,verified_only:bool=False)->List[Source]:
+    def search(self,query:str="",country:str="",airline:str="",destination:str="",source_type:str="")->List[Source]:
         q=self._norm(query)
+        c=self._norm(country)
+        a=self._norm(airline)
+        d=self._norm(destination)
+        t=self._norm(source_type)
         out=[]
         for s in self.all():
-            if official_only and not s.official: continue
-            if verified_only and not s.verified: continue
-            if country and self._norm(country) not in self._norm(s.country or ""): continue
-            if airline and self._norm(airline) not in self._norm(s.airline or ""): continue
-            if destination and not self._destination_match(s.destination,destination): continue
-            if source_type and self._norm(source_type)!=self._norm(s.source_type): continue
-            if q:
-                hay=" ".join([s.id,s.name,s.url,s.scope or "",s.notes or "",s.airline or "",s.destination or "",s.country or ""])
-                if q not in self._norm(hay): continue
+            hay=self._norm(" ".join([s.id,s.name,s.scope,s.notes,s.airline,s.destination,s.country]))
+            if q and q not in hay:
+                continue
+            if c and c not in self._norm(s.country):
+                continue
+            if a and a not in self._norm(s.airline):
+                continue
+            if d and not self._destination_match(s.destination,d):
+                continue
+            if t and t!=self._norm(s.source_type):
+                continue
             out.append(s)
         return out
 
-    def route_sources(self,origin:Optional[str]=None,destination:Optional[str]=None,airline:Optional[str]=None,include_search:bool=True)->List[Source]:
+    def route_sources(self,origin:str="",destination:str="",airline:str="",include_search:bool=True)->List[Source]:
         o=self._norm(origin)
         d=self._norm(destination)
         a=self._norm(airline)
-        exact=[]
-        broad=[]
+        out=[]
         for s in self.all():
-            if s.source_type=="search": continue
-            if a and s.airline and a not in self._norm(s.airline): continue
-            if a and not s.airline and s.source_type in ("airline","charter"): continue
-            smatch=self._route_match(s,o,d)
-            if smatch==2: exact.append(s)
-            elif smatch==1: broad.append(s)
-        out=self._unique(exact+broad)
-        if include_search:
-            for s in self.all():
-                if s.source_type=="search" and s not in out: out.append(s)
-        return out
+            if s.source_type=="search" and not include_search:
+                continue
+            if a and self._norm(s.airline) and not self._airline_match(s.airline,a):
+                continue
+            if o and not self._origin_match(s,o):
+                continue
+            if d and not self._destination_match(s.destination,d):
+                continue
+            out.append(s)
+        return self._unique(out)
 
-    def baggage_sources(self,airline:Optional[str]=None,origin:Optional[str]=None,destination:Optional[str]=None)->List[Source]:
+    def baggage_sources(self,origin:str="",destination:str="",airline:str="")->List[Source]:
         a=self._norm(airline)
         out=[]
-        if a:
-            for s in self.all():
-                if s.source_type in ("airline","charter") and s.airline and a in self._norm(s.airline):
-                    if s.scope and any(x in self._norm(s.scope) for x in ("equipaje","baggage","bag")): out.append(s)
         for s in self.all():
-            if s.id in {x.id for x in out}: continue
-            if s.id in ("tsa_what_can_i_bring","faa_packsafe","faa_batteries"):
-                out.append(s)
-        return out
+            if "baggage" not in self._norm(s.scope) and "equipaje" not in self._norm(s.scope):
+                continue
+            if a and self._norm(s.airline) and not self._airline_match(s.airline,a):
+                continue
+            if origin and s.country and self._norm(origin) not in self._norm(s.country) and self._norm(s.country) not in self._norm(origin):
+                if "united states" in self._norm(origin) and "united states" not in self._norm(s.country):
+                    continue
+            if destination and s.destination and not self._destination_match(s.destination,self._norm(destination)):
+                continue
+            out.append(s)
+        return self._unique(out)
 
     def official_for_airline(self,airline:str)->List[Source]:
         a=self._norm(airline)
-        return [s for s in self.all() if s.official and s.airline and a in self._norm(s.airline)]
+        if not a:
+            return []
+        return [s for s in self.all() if s.official and s.airline and self._airline_match(s.airline,a)]
 
     def source_for_id(self,source_id:str)->Optional[Dict[str,Any]]:
         s=self.get(source_id)
         return s.to_dict() if s else None
 
-    def _route_match(self,s:Source,origin:str,destination:str)->int:
-        d=self._norm(s.destination or "")
-        scope=self._norm(s.scope or "")
-        if not destination: return 0
-        dest_alias=self._destination_aliases(destination)
-        if d and any(x in d for x in dest_alias):
-            if not origin:return 2
-            if not s.scope:return 1
-            if any(x in scope for x in self._origin_aliases(origin)): return 2
-            if "estados unidos" in scope and self._is_us_origin(origin): return 2
-            return 1
-        if any(x in scope for x in dest_alias):
-            if not origin:return 1
-            if any(x in scope for x in self._origin_aliases(origin)): return 2
-            if "estados unidos" in scope and self._is_us_origin(origin): return 2
-            return 1
-        return 0
+    def _airline_match(self,value:str,target:str)->bool:
+        v=self._norm(value)
+        t=self._norm(target)
+        if not v or not t:
+            return False
+        aliases={
+            "american":["american airlines","american"],
+            "southwest":["southwest airlines","southwest"],
+            "delta":["delta air lines","delta airlines","delta"],
+            "cubazul":["cubazul","cuba azul"],
+            "xael":["xael"],
+        }
+        for key,vals in aliases.items():
+            if any(x in v for x in vals) and any(x in t for x in vals):
+                return True
+        return v==t or v in t or t in v
 
-    def _destination_match(self,value:Optional[str],destination:str)->bool:
-        if not value:return True
-        d=self._norm(value)
-        return any(x in d for x in self._destination_aliases(destination))
+    def _origin_match(self,source:Source,origin:str)->bool:
+        if not origin:
+            return True
+        text=self._norm(origin)
+        if not source.country:
+            return True
+        country=self._norm(source.country)
+        if country in text or text in country:
+            return True
+        aliases=self._origin_aliases(text)
+        return any(x in country or country in x for x in aliases)
+
+    def _destination_match(self,destination:str,target:str)->bool:
+        if not destination or not target:
+            return True
+        d=self._norm(destination)
+        t=self._norm(target)
+        if d in t or t in d:
+            return True
+        da=self._destination_aliases(d)
+        ta=self._destination_aliases(t)
+        return bool(set(da)&set(ta))
 
     def _origin_aliases(self,value:str)->List[str]:
-        n=self._norm(value)
-        aliases=[n]
-        maps={
-            "miami":["miami","mia"],
-            "miami international":["miami","mia"],
-            "fort lauderdale":["fort lauderdale","fll"],
-            "tampa":["tampa","tpa"],
-            "orlando":["orlando","mco"],
-            "atlanta":["atlanta","atl"],
-            "new york":["new york","jfk","ewr","lga"],
-            "houston":["houston","iah","hou"],
-            "los angeles":["los angeles","lax"],
-            "new orleans":["new orleans","msy"],
-            "baltimore":["baltimore","bwi"],
-        }
-        for k,v in maps.items():
-            if n==k or n in v: aliases+=v
-        return list(dict.fromkeys(aliases))
+        v=self._norm(value)
+        out=[v] if v else []
+        if v in {"us","usa","u s","united states","united states of america","estados unidos","eeuu"}:
+            out+=["united states","usa","us","estados unidos"]
+        if v in {"miami","mia","miami florida","miami fl"}:
+            out+=["miami","mia","florida","united states"]
+        if v in {"fort lauderdale","fll","fort lauderdale florida","fort lauderdale fl"}:
+            out+=["fort lauderdale","fll","florida","united states"]
+        return self._unique_strings(out)
 
     def _destination_aliases(self,value:str)->List[str]:
-        n=self._norm(value)
-        maps={
-            "cuba":["cuba"],
-            "la habana":["la habana","la habana","havana","hav"],
-            "havana":["havana","la habana","hav"],
-            "santiago de cuba":["santiago de cuba","santiago","scu"],
-            "varadero":["varadero","vra"],
-            "camaguey":["camaguey","camagüey","cmw"],
-            "mexico":["mexico","méxico"],
-            "guatemala":["guatemala"],
-            "honduras":["honduras"],
-            "el salvador":["el salvador"],
-            "republica dominicana":["republica dominicana","república dominicana","dominican republic"],
-        }
-        for k,v in maps.items():
-            if n==k or n in v:return v
-        return [n]
+        v=self._norm(value)
+        out=[v] if v else []
+        cuba={"cuba","havana","habana","hav","varadero","vra","camaguey","cmw","santiago de cuba","scu"}
+        if v in cuba or any(x in v for x in cuba):
+            out+=list(cuba)
+        if v in {"havana","habana","hav"}:
+            out+=["cuba","havana","habana","hav"]
+        return self._unique_strings(out)
 
     def _is_us_origin(self,value:str)->bool:
-        n=self._norm(value)
-        return any(x in n for x in ("mia","fll","tpa","mco","atl","jfk","ewr","lga","iah","hou","lax","msy","bwi","orlando","miami","tampa","atlanta","new york","houston","los angeles","new orleans","baltimore","estados unidos","united states"))
+        return bool(set(self._origin_aliases(value))&{"united states","usa","us","estados unidos","miami","mia","fort lauderdale","fll"})
 
     def _destination_is_cuba(self,value:str)->bool:
-        return any(x in self._norm(value) for x in ("cuba","havana","la habana","hav","santiago de cuba","scu","varadero","vra","camaguey","cmw"))
+        return bool(set(self._destination_aliases(value))&{"cuba","havana","habana","hav","varadero","vra","camaguey","cmw","santiago de cuba","scu"})
 
     def _unique(self,items:List[Source])->List[Source]:
-        seen=set();out=[]
-        for s in items:
-            if s.id not in seen:
-                seen.add(s.id);out.append(s)
+        seen=set()
+        out=[]
+        for item in items:
+            if item.id not in seen:
+                seen.add(item.id)
+                out.append(item)
+        return out
+
+    def _unique_strings(self,items:List[str])->List[str]:
+        seen=set()
+        out=[]
+        for item in items:
+            n=self._norm(item)
+            if n and n not in seen:
+                seen.add(n)
+                out.append(n)
         return out
 
     def _norm(self,value:Any)->str:
-        import unicodedata
-        s=unicodedata.normalize("NFKD",str(value or "")).encode("ascii","ignore").decode("ascii").lower()
-        return " ".join(s.split())
+        return " ".join(str(value or "").strip().lower().replace("_"," ").split())
 
-    def _default_sources(self)->List[Source]:
-        return [
-            Source("aa_mia_havana","American Airlines — Miami → Havana","https://www.aa.com/en-us/flights-from-miami-to-havana","airline","United States","American Airlines","Havana","Vuelos Miami–La Habana",True,True,VERIFICATION_DATE,"Página oficial de American; las tarifas cambian y algunas opciones pueden incluir conexiones."),
-            Source("aa_us_cuba","American Airlines — United States → Cuba","https://www.aa.com/en-us/flights-from-united-states-to-cuba","airline","United States","American Airlines","Cuba","Vuelos desde Estados Unidos a Cuba",True,True,VERIFICATION_DATE,"Fuente oficial para consultar opciones actuales."),
-            Source("aa_cuba","American Airlines — Cuba","https://www.aa.com/en-us/flights-to-cuba","airline","United States","American Airlines","Cuba","Vuelos a Cuba",True,True,VERIFICATION_DATE,"Fuente oficial; no se interpreta como disponibilidad garantizada."),
-            Source("southwest_havana","Southwest Airlines — Havana","https://www.southwest.com/en/flights/flights-to-havana","airline","United States","Southwest Airlines","Havana","Vuelos a La Habana; página oficial de Southwest",True,True,VERIFICATION_DATE,"La ruta y disponibilidad dependen de fecha y aeropuerto de origen."),
-            Source("delta_latam_caribbean","Delta Air Lines — Caribbean/Latin America","https://www.delta.com/us/en/flight-deals/flights-to-latin-america","airline","United States","Delta Air Lines","Caribbean/Latin America","Información y búsqueda de destinos del Caribe y Latinoamérica",True,True,VERIFICATION_DATE,"No se presenta como confirmación de una ruta concreta."),
-            Source("cubazul","Cubazul Air Charter","https://www.cubazulaircharter.com/","charter","United States","Cubazul Air Charter","Cuba","Operador charter; consultar ruta y fecha directamente",True,True,VERIFICATION_DATE,"No se selecciona automáticamente como aerolínea del usuario."),
-            Source("xael","XAEL Charter","https://www.xaelcharter.com/","charter","United States","XAEL","Cuba","Fuente del operador; disponibilidad debe confirmarse directamente",True,False,None,"Se mantiene como fuente de operador, nunca como vuelo o aerolínea seleccionada sin elección del usuario."),
-            Source("google_flights","Google Flights","https://www.google.com/travel/flights","search",None,None,None,"Herramienta para localizar opciones de vuelos",False,True,VERIFICATION_DATE,"Herramienta de búsqueda; no es autoridad de reglas de equipaje."),
-            Source("tsa_what_can_i_bring","TSA — What Can I Bring","https://www.tsa.gov/travel/security-screening/whatcanibring/all-list","government","United States",None,None,"Reglas y orientación de seguridad TSA para artículos en el punto de control",True,True,VERIFICATION_DATE,"La TSA puede decidir sobre el control de seguridad; la aerolínea puede imponer reglas adicionales."),
-            Source("faa_packsafe","FAA — PackSafe","https://www.faa.gov/hazmat/packsafe","government","United States",None,None,"Materiales peligrosos y artículos relacionados con vuelos",True,True,VERIFICATION_DATE,"Aplicar junto con reglas específicas de aerolínea y viaje internacional."),
-            Source("faa_batteries","FAA — Airline Passengers and Batteries","https://www.faa.gov/hazmat/packsafe/airline-passengers-and-batteries","government","United States",None,None,"Baterías, power banks y dispositivos electrónicos",True,True,VERIFICATION_DATE,"Las aerolíneas e itinerarios internacionales pueden tener condiciones adicionales."),
-            Source("faa_baggage_batteries","FAA — Baggage Equipped with Lithium Batteries","https://www.faa.gov/hazmat/packsafe/baggage-with-lithium-batteries","government","United States",None,None,"Equipaje con baterías de litio",True,True,VERIFICATION_DATE,"Fuente oficial FAA."),
-            Source("dviajeros","D'Viajeros Cuba","https://dviajeros.mitrans.gob.cu/","government","Cuba",None,"Cuba","Formulario y proceso oficial D'Viajeros",True,False,None,"Debe verificarse nuevamente antes de presentarlo como regla vigente."),
-            Source("evisa_cuba","eVisa Cuba","https://evisacuba.cu/","government","Cuba",None,"Cuba","Información oficial relacionada con visa electrónica",True,False,None,"Debe verificarse nuevamente antes de presentar requisitos concretos."),
-        ]
+    def _load_defaults(self):
+        self.add(Source("american_airlines","American Airlines","https://www.aa.com/","airline","United States","American Airlines","","Flights and baggage information",True,True,VERIFICATION_DATE,"Official airline website. Confirm conditions for the actual itinerary."))
+        self.add(Source("southwest_airlines","Southwest Airlines","https://www.southwest.com/","airline","United States","Southwest Airlines","","Flights and baggage information",True,True,VERIFICATION_DATE,"Official airline website. Confirm conditions for the actual itinerary."))
+        self.add(Source("delta_air_lines","Delta Air Lines","https://www.delta.com/","airline","United States","Delta Air Lines","","Flights and baggage information",True,True,VERIFICATION_DATE,"Official airline website. Confirm conditions for the actual itinerary."))
+        self.add(Source("cubazul","Cubazul","https://cubazulairlines.com/","airline","United States","Cubazul","Cuba","Airline information",True,True,VERIFICATION_DATE,"Official airline source when available. Confirm current route and conditions directly."))
+        self.add(Source("xael","XAEL","https://www.xaelairlines.com/","airline","United States","XAEL","Cuba","Airline information",True,False,"","Source listed for discovery; current conditions require direct confirmation."))
+        self.add(Source("google_flights","Google Flights","https://www.google.com/travel/flights","search","","","","Flight search and itinerary discovery",False,False,"","Search/discovery source. It is not the airline and does not replace airline confirmation."))
+        self.add(Source("tsa","TSA","https://www.tsa.gov/travel/security-screening/whatcanibring/all","security","United States","","","Airport security and permitted/prohibited items",True,True,VERIFICATION_DATE,"Security screening source for travel from the United States. Destination import rules may differ."))
+        self.add(Source("faa_packsafe","FAA PackSafe","https://www.faa.gov/hazmat/packsafe","baggage","United States","","","Hazardous materials and baggage safety",True,True,VERIFICATION_DATE,"FAA guidance for hazardous materials and air transportation."))
+        self.add(Source("faa_batteries","FAA Batteries","https://www.faa.gov/hazmat/resources/lithium_batteries","baggage","United States","","","Lithium batteries and battery safety",True,True,VERIFICATION_DATE,"FAA battery guidance. Confirm airline-specific requirements too."))
+        self.add(Source("faa_lithium_baggage","FAA Lithium Batteries","https://www.faa.gov/hazmat/packsafe/lithium-batteries","baggage","United States","","","Lithium batteries in baggage",True,True,VERIFICATION_DATE,"FAA guidance for lithium batteries."))
+        self.add(Source("dviajeros","D'Viajeros","https://dviajeros.mitrans.gob.cu/","government","Cuba","","Cuba","Cuban traveler information and required travel declaration",True,False,"","Official Cuban government domain; current requirements must be confirmed directly."))
+        self.add(Source("evisa_cuba","eVisa Cuba","https://evisacuba.cu/","government","Cuba","","Cuba","Cuban electronic visa information",True,False,"","Official Cuban eVisa source; eligibility and current requirements must be confirmed directly."))
 
 REGISTRY=SourceRegistry()
 source_registry=REGISTRY
@@ -211,25 +226,22 @@ source_registry=REGISTRY
 def get_source(source_id:str)->Optional[Source]:
     return REGISTRY.get(source_id)
 
-def all_sources()->List[Source]:
-    return REGISTRY.all()
+def get_sources()->List[Dict[str,Any]]:
+    return REGISTRY.list_dicts()
 
-def search_sources(query:str="",**kwargs)->List[Source]:
-    return REGISTRY.search(query,**kwargs)
+def search_sources(query:str="",**kwargs)->List[Dict[str,Any]]:
+    return [s.to_dict() for s in REGISTRY.search(query,**kwargs)]
 
-def route_sources(origin:Optional[str]=None,destination:Optional[str]=None,airline:Optional[str]=None,include_search:bool=True)->List[Source]:
-    return REGISTRY.route_sources(origin,destination,airline,include_search)
+def route_sources(origin:str="",destination:str="",airline:str="",include_search:bool=True)->List[Dict[str,Any]]:
+    return [s.to_dict() for s in REGISTRY.route_sources(origin,destination,airline,include_search)]
 
-def baggage_sources(airline:Optional[str]=None,origin:Optional[str]=None,destination:Optional[str]=None)->List[Source]:
-    return REGISTRY.baggage_sources(airline,origin,destination)
+def baggage_sources(origin:str="",destination:str="",airline:str="")->List[Dict[str,Any]]:
+    return [s.to_dict() for s in REGISTRY.baggage_sources(origin,destination,airline)]
 
-def google_flights_url(origin:Optional[str]=None,destination:Optional[str]=None,departure_date:Optional[str]=None,return_date:Optional[str]=None)->str:
-    parts=[]
-    if origin:parts.append(str(origin).strip())
-    if destination:parts.append(str(destination).strip())
-    q=" to ".join(parts) if parts else ""
-    if departure_date:q+=f" {departure_date}"
-    if return_date:q+=f" {return_date}"
-    return "https://www.google.com/travel/flights?q="+quote_plus(q or "flights")
-
-__all__=["Source","SourceRegistry","REGISTRY","source_registry","get_source","all_sources","search_sources","route_sources","baggage_sources","google_flights_url"]
+def google_flights_url(origin:str="",destination:str="",departure_date:str="",return_date:str="")->str:
+    query=f"{origin or ''} to {destination or ''}".strip()
+    if departure_date:
+        query+=f" {departure_date}"
+    if return_date:
+        query+=f" {return_date}"
+    return "https://www.google.com/travel/flights?q="+quote_plus(query.strip())
