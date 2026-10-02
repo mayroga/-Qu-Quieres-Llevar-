@@ -1,10 +1,9 @@
-# schemas.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v8.0.2
+# schemas.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v8.1.0
 from datetime import date
 from typing import Any,Dict,List,Optional,Literal
 from pydantic import BaseModel,ConfigDict,Field,field_validator
 
-VERSION="8.0.2"
-
+VERSION="8.1.0"
 Language=Literal["es","en"]
 
 class StrictModel(BaseModel):
@@ -18,6 +17,8 @@ class FlightSearchRequest(StrictModel):
     airline:str=""
     cabin:str=""
     fare:str=""
+    passengers:int=1
+    stops:Optional[int]=None
     language:Language="es"
 
     @field_validator("origin","destination","airline","cabin","fare",mode="before")
@@ -32,12 +33,27 @@ class FlightSearchRequest(StrictModel):
             return None
         return v
 
+    @field_validator("passengers",mode="before")
+    @classmethod
+    def clean_passengers(cls,v):
+        try:return max(1,int(v))
+        except:return 1
+
+    @field_validator("stops",mode="before")
+    @classmethod
+    def clean_stops(cls,v):
+        if v in (None,"","null","None"):return None
+        try:return max(0,int(v))
+        except:return None
+
 class FlightContext(StrictModel):
     origin:str=""
     destination:str=""
     airline:str=""
     cabin:str=""
     fare:str=""
+    passengers:int=1
+    stops:Optional[int]=None
     baggage:Dict[str,Any]=Field(default_factory=dict)
     baggage_summary:str=""
     language:Language="es"
@@ -52,8 +68,12 @@ class FlightSearchResponse(StrictModel):
     airline:str=""
     cabin:str=""
     fare:str=""
+    passengers:int=1
+    stops:Optional[int]=None
     results:List[Dict[str,Any]]=Field(default_factory=list)
     sources:List[Dict[str,Any]]=Field(default_factory=list)
+    charter_sources:List[Dict[str,Any]]=Field(default_factory=list)
+    airline_sources:List[Dict[str,Any]]=Field(default_factory=list)
     google_flights_url:str=""
     messages:List[str]=Field(default_factory=list)
     errors:List[str]=Field(default_factory=list)
@@ -65,26 +85,44 @@ class FlightUnderstandResponse(StrictModel):
     version:str=VERSION
     origin:str=""
     destination:str=""
+    departure_date:str=""
+    return_date:str=""
     airline:str=""
     cabin:str=""
     fare:str=""
+    passengers:int=1
+    stops:Optional[int]=None
     baggage:Dict[str,Any]=Field(default_factory=dict)
     baggage_summary:str=""
+    is_cuba_route:bool=False
+    understood:Dict[str,Any]=Field(default_factory=dict)
     message:str=""
     important:List[str]=Field(default_factory=list)
+    steps:List[Dict[str,Any]]=Field(default_factory=list)
     sources:List[Dict[str,Any]]=Field(default_factory=list)
+    charter_sources:List[Dict[str,Any]]=Field(default_factory=list)
+    airline_sources:List[Dict[str,Any]]=Field(default_factory=list)
+    google_flights_url:str=""
     legal_notice:str=""
     next_action:str=""
 
 class FlightSourcesResponse(StrictModel):
     success:bool=False
     version:str=VERSION
+    origin:str=""
+    destination:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
     official_sources:List[Dict[str,Any]]=Field(default_factory=list)
+    charter_sources:List[Dict[str,Any]]=Field(default_factory=list)
+    airline_sources:List[Dict[str,Any]]=Field(default_factory=list)
+    is_cuba_route:bool=False
     legal_notice:str=""
+    next_action:str=""
 
 class ItemCheckRequest(StrictModel):
     item:str=""
+    quantity:float=1
+    description:str=""
     baggage_type:str=""
     airline:str=""
     destination:str=""
@@ -94,23 +132,25 @@ class ItemCheckRequest(StrictModel):
     language:Language="es"
 
     @field_validator(
-        "item",
-        "baggage_type",
-        "airline",
-        "destination",
-        "origin",
-        "cabin",
-        "fare",
-        mode="before"
+        "item","description","baggage_type","airline","destination",
+        "origin","cabin","fare",mode="before"
     )
     @classmethod
     def clean_item_fields(cls,v):
         return "" if v is None else str(v).strip()
 
+    @field_validator("quantity",mode="before")
+    @classmethod
+    def clean_quantity(cls,v):
+        try:return max(0,float(v))
+        except:return 1
+
 class ItemCheckResponse(StrictModel):
     success:bool=False
     version:str=VERSION
     item:str=""
+    quantity:float=1
+    description:str=""
     category:str=""
     visual_status:str=""
     rule_status:str=""
@@ -139,8 +179,11 @@ class TeachTermResponse(StrictModel):
     success:bool=False
     version:str=VERSION
     term:str=""
+    title:str=""
     explanation:str=""
     category:str=""
+    status:str=""
+    source:str=""
     next_action:str=""
     legal_notice:str=""
 
@@ -216,6 +259,7 @@ class PaymentVerifyResponse(StrictModel):
     success:bool=False
     paid:bool=False
     token:str=""
+    service_token:str=""
     expires_in:int=0
     expires_at:Optional[str]=None
     session_minutes:int=15
