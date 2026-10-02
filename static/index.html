@@ -1,234 +1,45 @@
-<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>¿QUÉ QUIERES LLEVAR? | May Roga LLC</title>
-<meta name="description" content="Preparación y acompañamiento independiente para viajar, entender vuelos, equipaje, aerolíneas, D’Viajeros, visa y procesos de viaje.">
-<link rel="stylesheet" href="/static/styles.css">
-</head>
-<body>
-<header class="top">
-<div><strong>¿QUÉ QUIERES LLEVAR?</strong><small>May Roga LLC</small></div>
-<div class="top-actions">
-<button id="langBtn" type="button">EN</button>
-<button id="adminBtn" type="button" data-action="admin">ADMIN</button>
-</div>
-</header>
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>¿QUÉ QUIERES LLEVAR? | May Roga LLC</title><meta name="description" content="Preparación, orientación y práctica de viaje de May Roga LLC."><link rel="stylesheet" href="/static/styles.css"></head><body><header class="top"><div><strong>¿QUÉ QUIERES LLEVAR?</strong><small>May Roga LLC</small></div><div class="top-actions"><button id="langBtn" type="button">EN</button><button id="adminBtn" type="button">ADMIN</button></div></header><main id="app">
 
-<main id="app">
+<section id="loading" class="screen"><div class="card"><h1>¿QUÉ QUIERES LLEVAR?</h1><p id="loadingText">Preparando tu viaje...</p></div></section>
 
-<section id="loading" class="screen">
-<div class="card">
-<h1>¿QUÉ QUIERES LLEVAR?</h1>
-<p id="loadingText">Preparando tu viaje...</p>
-</div>
-</section>
-
-<section id="home" class="screen hidden">
-<div class="hero card">
-<p class="eyebrow">MAY ROGA LLC</p>
-<h1 data-i18n="title">¿Qué quieres llevar?</h1>
-<p data-i18n="subtitle">Te acompañamos paso a paso para entender tu viaje, tu vuelo, tu aerolínea, tu equipaje y los procesos que necesitas realizar.</p>
-<div class="status" id="sessionStatus">Sesión no activa</div>
-<button id="startBtn" class="primary" type="button" data-action="payment" data-i18n="start">Empezar</button>
-</div>
+<section id="home" class="screen hidden"><div class="hero card"><p class="eyebrow">MAY ROGA LLC</p><h1 data-es="¿Qué quieres llevar?" data-en="What do you want to take?">¿Qué quieres llevar?</h1><p data-es="Te acompañamos paso a paso para entender tu viaje, tu vuelo, tu aerolínea, tu equipaje y los procesos que necesitas practicar." data-en="We guide you step by step through your trip, flight, airline, baggage and the processes you need to practice.">Te acompañamos paso a paso para entender tu viaje, tu vuelo, tu aerolínea, tu equipaje y los procesos que necesitas practicar.</p><div class="status" id="sessionStatus">Sesión no activa</div><button id="startBtn" class="primary" type="button">Empezar</button></div>
 
 <div class="grid">
-<button class="box" data-action="flight"><b>✈️</b><span data-i18n="flight">Mi vuelo</span><small data-i18n="flightSmall">Entiende tu itinerario y tu aerolínea</small></button>
-<button class="box" data-action="item"><b>🧳</b><span data-i18n="item">¿Qué llevo?</span><small data-i18n="itemSmall">Aprende dónde y cómo llevar cada artículo</small></button>
-<button class="box" data-action="baggage"><b>🎒</b><span data-i18n="baggage">Equipaje</span><small data-i18n="baggageSmall">Aprende a preparar tus maletas</small></button>
-<button class="box" data-action="airline"><b>🛫</b><span data-i18n="airline">Mi aerolínea</span><small data-i18n="airlineSmall">Aprende a usar su proceso paso a paso</small></button>
-<button class="box" data-action="simulation"><b>🖥️</b><span data-i18n="simulation">Practicar</span><small data-i18n="simulationSmall">Simula procesos antes de hacerlos</small></button>
-<button class="box" data-action="cuba"><b>🇨🇺</b><span data-i18n="cuba">Cuba</span><small data-i18n="cubaSmall">Visa, D’Viajeros y preparación</small></button>
-<button class="box" data-action="guide"><b>📋</b><span data-i18n="guide">Guía</span><small data-i18n="guideSmall">Organiza tu viaje paso a paso</small></button>
-<button class="box" data-action="sources"><b>🔎</b><span data-i18n="sources">Fuentes oficiales</span><small data-i18n="sourcesSmall">Encuentra dónde confirmar</small></button>
-<button class="box" data-action="teach"><b>💡</b><span data-i18n="teach">Aprender</span><small data-i18n="teachSmall">Entiende palabras y procesos</small></button>
-<button class="box" data-action="legal"><b>⚖️</b><span data-i18n="legal">Aviso legal</span><small data-i18n="legalSmall">Conoce el servicio</small></button>
-</div>
-</section>
+<button class="box" data-action="flight"><b>✈️</b><span data-es="Mi vuelo" data-en="My flight">Mi vuelo</span><small data-es="Entiende tu vuelo y tu aerolínea" data-en="Understand your flight and airline">Entiende tu vuelo y tu aerolínea</small></button>
+<button class="box" data-action="item"><b>🧳</b><span data-es="¿Qué llevo?" data-en="What do I take?">¿Qué llevo?</span><small data-es="Revisa un artículo antes de viajar" data-en="Check an item before traveling">Revisa un artículo antes de viajar</small></button>
+<button class="box" data-action="baggage"><b>🎒</b><span data-es="Equipaje" data-en="Baggage">Equipaje</span><small data-es="Aprende a preparar tus maletas" data-en="Learn how to prepare your bags">Aprende a preparar tus maletas</small></button>
+<button class="box" data-action="airline"><b>🛫</b><span data-es="Aprende tu aerolínea" data-en="Learn your airline">Aprende tu aerolínea</span><small data-es="Practica cómo buscar y reservar" data-en="Practice how to search and book">Practica cómo buscar y reservar</small></button>
+<button class="box" data-action="cuba"><b>🇨🇺</b><span data-es="Cuba" data-en="Cuba">Cuba</span><small data-es="Visa, D’Viajeros y preparación" data-en="Visa, D’Viajeros and preparation">Visa, D’Viajeros y preparación</small></button>
+<button class="box" data-action="guide"><b>📋</b><span data-es="Guía" data-en="Guide">Guía</span><small data-es="Acompañamiento paso a paso" data-en="Step-by-step guidance">Acompañamiento paso a paso</small></button>
+<button class="box" data-action="sources"><b>🔎</b><span data-es="Fuentes oficiales" data-en="Official sources">Fuentes oficiales</span><small data-es="Ve directamente a la fuente" data-en="Go directly to the source">Ve directamente a la fuente</small></button>
+<button class="box" data-action="teach"><b>💡</b><span data-es="Enseñanza y práctica" data-en="Teaching and practice">Enseñanza y práctica</span><small data-es="Practica antes de hacerlo de verdad" data-en="Practice before doing it for real">Practica antes de hacerlo de verdad</small></button>
+<button class="box" data-action="legal"><b>⚖️</b><span data-es="Aviso legal" data-en="Legal notice">Aviso legal</span><small data-es="Quién presta el servicio" data-en="Who provides the service">Quién presta el servicio</small></button>
+</div></section>
 
-<section id="payment" class="screen hidden">
-<div class="card">
-<button class="back" data-action="home">← Volver</button>
-<h2 data-i18n="paymentTitle">Antes de empezar, conoce el servicio</h2>
-<p data-i18n="paymentIntro">¿QUÉ QUIERES LLEVAR? está diseñado para acompañarte cuando quieres viajar pero no sabes exactamente qué hacer, dónde hacerlo o cómo entender lo que ves en una página de una aerolínea, gobierno o proveedor.</p>
+<section id="payment" class="screen hidden"><div class="card"><button class="back" data-action="home">← <span data-es="Volver" data-en="Back">Volver</span></button><h2 data-es="Antes de pagar: ¿qué vas a recibir?" data-en="Before paying: what will you receive?">Antes de pagar: ¿qué vas a recibir?</h2><p data-es="¿QUÉ QUIERES LLEVAR? es un servicio de orientación y preparación de May Roga LLC. Te ayuda a entender tu viaje y practicar los procesos antes de hacerlos en una página real." data-en="¿QUÉ QUIERES LLEVAR? is an orientation and travel-preparation service from May Roga LLC. It helps you understand your trip and practice processes before doing them on a real website.">¿QUÉ QUIERES LLEVAR? es un servicio de orientación y preparación de May Roga LLC. Te ayuda a entender tu viaje y practicar los procesos antes de hacerlos en una página real.</p><div class="notice"><h3 data-es="¿Qué resuelve?" data-en="What does it solve?">¿Qué resuelve?</h3><ul><li data-es="Te explica qué debes hacer y en qué orden." data-en="It explains what you need to do and in what order.">Te explica qué debes hacer y en qué orden.</li><li data-es="Te ayuda a entender vuelos, aerolíneas y equipaje." data-en="It helps you understand flights, airlines and baggage.">Te ayuda a entender vuelos, aerolíneas y equipaje.</li><li data-es="Te permite practicar una reserva antes de hacerla." data-en="It lets you practice a booking before doing it.">Te permite practicar una reserva antes de hacerla.</li><li data-es="Te permite practicar D’Viajeros y el proceso de visa/eVisa para Cuba." data-en="It lets you practice D’Viajeros and the Cuba visa/eVisa process.">Te permite practicar D’Viajeros y el proceso de visa/eVisa para Cuba.</li><li data-es="Te acompaña con lenguaje sencillo, visible y fácil de entender." data-en="It guides you with simple, visible and easy-to-understand language.">Te acompaña con lenguaje sencillo, visible y fácil de entender.</li></ul></div><div class="notice"><h3 data-es="¿Qué ganas?" data-en="What do you gain?">¿Qué ganas?</h3><p data-es="Más comprensión, más práctica y más seguridad para hacer por ti mismo los procesos oficiales." data-en="More understanding, more practice and more confidence to complete official processes yourself.">Más comprensión, más práctica y más seguridad para hacer por ti mismo los procesos oficiales.</p></div><p data-es="Pago único de $15.99 para una sesión de 15 minutos." data-en="One-time payment of $15.99 for a 15-minute session.">Pago único de $15.99 para una sesión de 15 minutos.</p><button id="payBtn" class="primary" type="button" data-es="Continuar al pago" data-en="Continue to payment">Continuar al pago</button><p id="payMsg" class="message"></p></div></section>
 
-<div class="info-grid">
-<div class="info-card"><b>¿Qué hace?</b><p>Te explica la información con palabras sencillas, organiza los pasos y te acompaña mientras aprendes.</p></div>
-<div class="info-card"><b>¿Qué resuelve?</b><p>Te ayuda a entender vuelos, aerolíneas, equipaje, artículos, visa, D’Viajeros y otros procesos de preparación.</p></div>
-<div class="info-card"><b>¿Por qué usarlo?</b><p>Para practicar primero y llegar al proceso real con más claridad, menos miedo y mayor seguridad.</p></div>
-<div class="info-card"><b>¿Qué ganas?</b><p>Aprendes qué hacer, dónde buscar, qué información necesitas y cómo avanzar paso a paso.</p></div>
-</div>
+<section id="flight" class="screen hidden"><div class="card"><button class="back" data-action="home">← <span data-es="Volver" data-en="Back">Volver</span></button><h2>✈️ <span data-es="Mi vuelo" data-en="My flight">Mi vuelo</span></h2><div class="form"><label data-es="Origen" data-en="Origin">Origen<input id="origin" maxlength="20" placeholder="MIA"></label><label data-es="Destino" data-en="Destination">Destino<input id="destination" maxlength="20" placeholder="HAV"></label><label data-es="Fecha" data-en="Date">Fecha<input id="departureDate" type="date"></label><label data-es="Aerolínea" data-en="Airline">Aerolínea<select id="airline"><option value="">Selecciona tu aerolínea</option><option>American Airlines</option><option>Delta Air Lines</option><option>United Airlines</option><option>JetBlue</option><option>Southwest Airlines</option><option>Spirit Airlines</option><option>Frontier Airlines</option><option>Alaska Airlines</option><option>Other / Otra</option></select></label><label data-es="Pasajeros" data-en="Passengers">Pasajeros<input id="passengers" type="number" min="1" max="20" value="1"></label><button id="flightBtn" class="primary" type="button" data-es="Buscar / entender" data-en="Search / understand">Buscar / entender</button></div><div id="flightResult" class="result"></div></div></section>
 
-<h3 data-i18n="simulationTitle">Aprendes practicando</h3>
-<p data-i18n="simulationText">La aplicación puede mostrar simulaciones educativas inspiradas en el tipo de proceso que encontrarás en una aerolínea, D’Viajeros, visa u otro servicio. La simulación te enseña antes de entrar al sitio real.</p>
+<section id="item" class="screen hidden"><div class="card"><button class="back" data-action="home">← <span data-es="Volver" data-en="Back">Volver</span></button><h2>🧳 <span data-es="¿Qué llevo?" data-en="What do I take?">¿Qué llevo?</span></h2><div class="form"><label data-es="Artículo" data-en="Item">Artículo<input id="itemName" placeholder="Ej.: power bank"></label><label data-es="Cantidad" data-en="Quantity">Cantidad<input id="itemQty" type="number" min="1" value="1"></label><label data-es="Descripción" data-en="Description">Descripción<textarea id="itemDescription" rows="3" placeholder="Cuéntanos qué es"></textarea></label><button id="itemBtn" class="primary" type="button" data-es="Consultar" data-en="Check">Consultar</button></div><div id="itemResult" class="result"></div></div></section>
 
-<div class="notice" data-i18n="paymentNotice">Es un servicio independiente de May Roga LLC. El pago es único: $15.99 por una sesión de 15 minutos.</div>
+<section id="baggage" class="screen hidden"><div class="card"><button class="back" data-action="home">← <span data-es="Volver" data-en="Back">Volver</span></button><h2>🎒 <span data-es="Equipaje" data-en="Baggage">Equipaje</span></h2><p data-es="Primero aprendemos qué tipo de equipaje tienes y después practicamos cómo prepararlo. Para un artículo concreto puedes consultarlo aquí." data-en="First we learn what type of baggage you have, then we practice how to prepare it. You can check a specific item here.">Primero aprendemos qué tipo de equipaje tienes y después practicamos cómo prepararlo. Para un artículo concreto puedes consultarlo aquí.</p><button class="primary" data-action="item" data-es="Consultar un artículo" data-en="Check an item">Consultar un artículo</button><div id="baggageResult" class="result"></div></div></section>
 
-<button id="payBtn" class="primary" type="button" data-action="pay" data-i18n="pay">Continuar al pago</button>
-<p id="payMsg" class="message"></p>
-</div>
-</section>
+<section id="airline" class="screen hidden"><div class="card"><button class="back" data-action="home">← <span data-es="Volver" data-en="Back">Volver</span></button><h2>🛫 <span data-es="Aprende tu aerolínea" data-en="Learn your airline">Aprende tu aerolínea</span></h2><p data-es="Aquí practicas el proceso de una reserva sin miedo. La pantalla de práctica cambia según la aerolínea seleccionada y enseña paso a paso dónde buscar, qué escribir y qué revisar." data-en="Here you practice the booking process without fear. The practice screen changes according to the selected airline and teaches step by step where to look, what to enter and what to review.">Aquí practicas el proceso de una reserva sin miedo. La pantalla de práctica cambia según la aerolínea seleccionada y enseña paso a paso dónde buscar, qué escribir y qué revisar.</p><div class="form"><label data-es="Elige tu aerolínea" data-en="Choose your airline">Elige tu aerolínea<select id="practiceAirline"><option value="">Selecciona</option><option>American Airlines</option><option>Delta Air Lines</option><option>United Airlines</option><option>JetBlue</option><option>Southwest Airlines</option><option>Spirit Airlines</option><option>Frontier Airlines</option><option>Alaska Airlines</option></select></label><button id="airlinePracticeBtn" class="primary" type="button" data-es="Comenzar práctica" data-en="Start practice">Comenzar práctica</button></div><div id="airlinePracticeResult" class="result"></div></div></section>
 
-<section id="flight" class="screen hidden">
-<div class="card">
-<button class="back" data-action="home">← Volver</button>
-<h2>✈️ <span data-i18n="flight">Mi vuelo</span></h2>
-<div class="form">
-<label>Origen<input id="origin" maxlength="20" placeholder="MIA"></label>
-<label>Destino<input id="destination" maxlength="20" placeholder="HAV"></label>
-<label>Fecha<input id="departureDate" type="date"></label>
-<label>Aerolínea<input id="airline" maxlength="80" placeholder="Ej.: American Airlines"></label>
-<label>Pasajeros<input id="passengers" type="number" min="1" max="20" value="1"></label>
-<label>Cabina<input id="cabin" placeholder="Ej.: Economy"></label>
-<label>Tarifa<input id="fare" placeholder="Si la conoces"></label>
-<button id="flightBtn" class="primary" type="button" data-action="search-flight">Buscar / entender</button>
-</div>
-<div id="flightResult" class="result"></div>
-</div>
-</section>
+<section id="cuba" class="screen hidden"><div class="card"><button class="back" data-action="home">← <span data-es="Volver" data-en="Back">Volver</span></button><h2>🇨🇺 Cuba</h2><p data-es="Practica antes de entrar en los sitios oficiales: requisitos de viaje, visa/eVisa y D’Viajeros." data-en="Practice before entering official websites: travel requirements, visa/eVisa and D’Viajeros.">Practica antes de entrar en los sitios oficiales: requisitos de viaje, visa/eVisa y D’Viajeros.</p><div class="grid"><button class="box" data-action="dviajeros"><b>📝</b><span>D’Viajeros</span><small data-es="Practica el formulario paso a paso" data-en="Practice the form step by step">Practica el formulario paso a paso</small></button><button class="box" data-action="visa"><b>🛂</b><span data-es="Visa / eVisa Cuba" data-en="Cuba Visa / eVisa">Visa / eVisa Cuba</span><small data-es="Practica antes del proceso real" data-en="Practice before the real process">Practica antes del proceso real</small></button><button class="box" data-action="cuba-guide"><b>📋</b><span data-es="Requisitos" data-en="Requirements">Requisitos</span><small data-es="Revisa fuentes oficiales" data-en="Review official sources">Revisa fuentes oficiales</small></button></div><div id="cubaResult" class="result"></div></div></section>
 
-<section id="airline" class="screen hidden">
-<div class="card">
-<button class="back" data-action="home">← Volver</button>
-<h2>🛫 <span data-i18n="airline">Mi aerolínea</span></h2>
-<p>Aprende a reconocer y recorrer los pasos habituales de una aerolínea antes de realizar el proceso real.</p>
-<div class="form">
-<label>Aerolínea<input id="airlineName" placeholder="Ej.: American Airlines"></label>
-<label>¿Qué quieres aprender?
-<select id="airlineProcess">
-<option value="booking">Comprar / reservar un vuelo</option>
-<option value="checkin">Hacer check-in</option>
-<option value="baggage">Agregar o revisar equipaje</option>
-<option value="manage">Administrar una reserva</option>
-<option value="boarding">Entender el pase de abordar</option>
-</select>
-</label>
-<button class="primary" data-action="simulation">Comenzar simulación</button>
-</div>
-<div id="simulationResult" class="result"></div>
-</div>
-</section>
+<section id="dviajeros" class="screen hidden"><div class="card"><button class="back" data-action="cuba">← <span data-es="Volver" data-en="Back">Volver</span></button><h2>📝 D’Viajeros — práctica</h2><p data-es="Esta es una simulación de enseñanza. No es el formulario oficial y no envía información al gobierno." data-en="This is a teaching simulation. It is not the official form and does not send information to the government.">Esta es una simulación de enseñanza. No es el formulario oficial y no envía información al gobierno.</p><div class="form"><label>Nombre<input id="dvName"></label><label>Apellido<input id="dvLast"></label><label>Pasaporte<input id="dvPassport"></label><label>Nacionalidad<input id="dvNationality"></label><label>Dirección de alojamiento<input id="dvStay"></label><button id="dvReviewBtn" class="primary" type="button" data-es="Revisar mi práctica" data-en="Review my practice">Revisar mi práctica</button></div><div id="dviajerosResult" class="result"></div></div></section>
 
-<section id="simulation" class="screen hidden">
-<div class="card">
-<button class="back" data-action="home">← Volver</button>
-<h2>🖥️ <span data-i18n="simulation">Practicar antes de hacerlo</span></h2>
-<p>La práctica te enseña dónde mirar, qué significa cada parte y cuál es el siguiente paso.</p>
-<div class="form">
-<label>Aerolínea<input id="simulationAirline" placeholder="Ej.: American Airlines"></label>
-<label>Proceso
-<select id="simulationProcess">
-<option value="booking">Booking / reservar</option>
-<option value="checkin">Check-in</option>
-<option value="baggage">Equipaje</option>
-<option value="manage">Administrar reserva</option>
-<option value="boarding">Pase de abordar</option>
-<option value="dviajeros">D’Viajeros</option>
-<option value="visa">Visa / eVisa</option>
-</select>
-</label>
-<button class="primary" data-action="run-simulation">Practicar ahora</button>
-</div>
-<div id="simulationResult" class="result"></div>
-</div>
-</section>
+<section id="visa" class="screen hidden"><div class="card"><button class="back" data-action="cuba">← <span data-es="Volver" data-en="Back">Volver</span></button><h2>🛂 Visa / eVisa Cuba — práctica</h2><p data-es="Practica cómo organizar la información antes de utilizar el sitio oficial. Esta simulación no solicita ni procesa el pago oficial." data-en="Practice organizing your information before using the official website. This simulation does not request or process the official payment.">Practica cómo organizar la información antes de utilizar el sitio oficial. Esta simulación no solicita ni procesa el pago oficial.</p><div class="form"><label data-es="Nacionalidad" data-en="Nationality">Nacionalidad<input id="visaNationality"></label><label data-es="Tipo de pasaporte" data-en="Passport type">Tipo de pasaporte<input id="visaPassport"></label><label data-es="Fecha aproximada de viaje" data-en="Approximate travel date">Fecha aproximada de viaje<input id="visaDate" type="date"></label><button id="visaReviewBtn" class="primary" type="button" data-es="Revisar mi práctica" data-en="Review my practice">Revisar mi práctica</button></div><div id="visaResult" class="result"></div></div></section>
 
-<section id="item" class="screen hidden">
-<div class="card">
-<button class="back" data-action="home">← Volver</button>
-<h2>🧳 <span data-i18n="item">¿Qué llevo?</span></h2>
-<div class="form">
-<label>Artículo<input id="itemName" placeholder="Ej.: power bank"></label>
-<label>Cantidad<input id="itemQty" type="number" min="1" value="1"></label>
-<label>Descripción<textarea id="itemDescription" rows="3" placeholder="Cuéntanos qué es"></textarea></label>
-<label>Aerolínea<input id="itemAirline" placeholder="Ej.: American Airlines"></label>
-<button id="itemBtn" class="primary" type="button" data-action="consult-item">Consultar</button>
-</div>
-<div id="itemResult" class="result"></div>
-</div>
-</section>
+<section id="guide" class="screen hidden"><div class="card"><button class="back" data-action="home">← <span data-es="Volver" data-en="Back">Volver</span></button><h2>📋 <span data-es="Guía" data-en="Guide">Guía</span></h2><div id="guideResult" class="result"></div></div></section>
 
-<section id="baggage" class="screen hidden">
-<div class="card">
-<button class="back" data-action="home">← Volver</button>
-<h2>🎒 <span data-i18n="baggage">Equipaje</span></h2>
-<p>Aprende la diferencia entre tus tipos de equipaje, cómo prepararlos y qué información debes confirmar con tu aerolínea.</p>
-<button class="primary" data-action="item">Consultar un artículo</button>
-<button class="secondary" data-action="simulation">Practicar equipaje</button>
-<div id="baggageResult" class="result"></div>
-</div>
-</section>
+<section id="sources" class="screen hidden"><div class="card"><button class="back" data-action="home">← <span data-es="Volver" data-en="Back">Volver</span></button><h2>🔎 <span data-es="Fuentes oficiales" data-en="Official sources">Fuentes oficiales</span></h2><div id="sourcesResult" class="result"></div></div></section>
 
-<section id="cuba" class="screen hidden">
-<div class="card">
-<button class="back" data-action="home">← Volver</button>
-<h2>🇨🇺 Cuba</h2>
-<p>Aprende paso a paso los procesos relacionados con tu viaje a Cuba.</p>
-<div class="info-grid">
-<button class="box" data-action="cuba-guide"><b>📋</b><span>Preparar entrada</span><small>Pasos principales</small></button>
-<button class="box" data-action="simulation-dviajeros"><b>🧾</b><span>D’Viajeros</span><small>Practicar el proceso</small></button>
-<button class="box" data-action="simulation-visa"><b>🛂</b><span>Visa / eVisa</span><small>Aprender el proceso</small></button>
-<button class="box" data-action="sources"><b>🔎</b><span>Fuentes oficiales</span><small>Confirmar directamente</small></button>
-</div>
-<div id="cubaResult" class="result"></div>
-<div id="cubaGuideResult" class="result"></div>
-</div>
-</section>
+<section id="teach" class="screen hidden"><div class="card"><button class="back" data-action="home">← <span data-es="Volver" data-en="Back">Volver</span></button><h2>💡 <span data-es="Enseñanza y práctica" data-en="Teaching and practice">Enseñanza y práctica</span></h2><p data-es="La enseñanza está pensada para que una persona que tiene poco conocimiento de tecnología pueda practicar primero y hacer el proceso real después, con menos miedo y más seguridad." data-en="The teaching area is designed so someone with little technology experience can practice first and complete the real process later, with less fear and more confidence.">La enseñanza está pensada para que una persona que tiene poco conocimiento de tecnología pueda practicar primero y hacer el proceso real después, con menos miedo y más seguridad.</p><div class="grid"><button class="box" data-action="airline"><b>🛫</b><span data-es="Aerolínea" data-en="Airline">Aerolínea</span><small data-es="Practica una reserva" data-en="Practice a booking">Practica una reserva</small></button><button class="box" data-action="dviajeros"><b>📝</b><span>D’Viajeros</span><small data-es="Practica el formulario" data-en="Practice the form">Practica el formulario</small></button><button class="box" data-action="visa"><b>🛂</b><span>Visa / eVisa</span><small data-es="Practica el proceso" data-en="Practice the process">Practica el proceso</small></button></div><div class="notice"><strong data-es="La práctica no sustituye el sitio oficial." data-en="Practice does not replace the official website.">La práctica no sustituye el sitio oficial.</strong></div></div></section>
 
-<section id="guide" class="screen hidden">
-<div class="card">
-<button class="back" data-action="home">← Volver</button>
-<h2>📋 <span data-i18n="guide">Guía</span></h2>
-<div id="guideResult" class="result"></div>
-</div>
-</section>
+<section id="legal" class="screen hidden"><div class="card"><button class="back" data-action="home">← <span data-es="Volver" data-en="Back">Volver</span></button><h2>⚖️ <span data-es="Aviso legal" data-en="Legal notice">Aviso legal</span></h2><div id="legalResult" class="result"></div></div></section>
 
-<section id="sources" class="screen hidden">
-<div class="card">
-<button class="back" data-action="home">← Volver</button>
-<h2>🔎 <span data-i18n="sources">Fuentes oficiales</span></h2>
-<div id="sourcesResult" class="result"></div>
-</div>
-</section>
+<section id="admin" class="screen hidden"><div class="card"><button class="back" data-action="home">← <span data-es="Volver" data-en="Back">Volver</span></button><h2>ADMIN</h2><div class="form"><label data-es="Usuario" data-en="Username">Usuario<input id="adminUser" autocomplete="username"></label><label data-es="Contraseña" data-en="Password">Contraseña<input id="adminPass" type="password" autocomplete="current-password"></label><button id="adminLoginBtn" class="primary" type="button" data-es="Entrar" data-en="Login">Entrar</button></div><p id="adminMsg" class="message"></p></div></section>
 
-<section id="teach" class="screen hidden">
-<div class="card">
-<button class="back" data-action="home">← Volver</button>
-<h2>💡 <span data-i18n="teach">Aprender</span></h2>
-<div class="form">
-<label>Término o proceso<input id="term" placeholder="Ej.: check-in, D’Viajeros, equipaje de mano"></label>
-<button id="teachBtn" class="primary" type="button" data-action="teach-item">Explicar</button>
-</div>
-<div id="teachResult" class="result"></div>
-</div>
-</section>
-
-<section id="legal" class="screen hidden">
-<div class="card">
-<button class="back" data-action="home">← Volver</button>
-<h2>⚖️ <span data-i18n="legal">Aviso legal</span></h2>
-<div id="legalResult" class="result"></div>
-</div>
-</section>
-
-<section id="admin" class="screen hidden">
-<div class="card">
-<button class="back" data-action="home">← Volver</button>
-<h2>ADMIN</h2>
-<div class="form">
-<label>Usuario<input id="adminUser" autocomplete="username"></label>
-<label>Contraseña<input id="adminPass" type="password" autocomplete="current-password"></label>
-<button id="adminLoginBtn" class="primary" type="button" data-action="admin-login">Entrar</button>
-</div>
-<p id="adminMsg" class="message"></p>
-</div>
-</section>
-
-</main>
-
-<footer><span>May Roga LLC</span><span>© 2026</span></footer>
-<script src="/static/app.js" defer></script>
-</body>
-</html>
+</main><footer><span>May Roga LLC</span><span>© 2026</span></footer><script src="/static/app.js" defer></script></body></html>
