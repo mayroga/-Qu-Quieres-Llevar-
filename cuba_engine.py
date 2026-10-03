@@ -1,348 +1,200 @@
 # cuba_engine.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v12.1.0
 from __future__ import annotations
-import json,re
-from copy import deepcopy
-from pathlib import Path
-from typing import Any,Dict,List
+from dataclasses import dataclass,asdict
+from typing import Any,Dict,List,Optional
 
 VERSION="12.1.0"
-APP_NAME="¿QUÉ QUIERES LLEVAR?"
-BASE_DIR=Path(__file__).resolve().parent
-DATA_DIR=BASE_DIR/"data"
-VISA_FILE=DATA_DIR/"cuba_visa.json"
-DVIJEROS_FILE=DATA_DIR/"dviajeros.json"
+COUNTRY="Cuba"
 
 OFFICIAL_VISA_URL="https://evisacuba.cu/"
 OFFICIAL_DVIAJEROS_URL="https://dviajeros.mitrans.gob.cu/"
-OFFICIAL_MINREX_URL="https://cubaminrex.cu/"
-OFFICIAL_ADUANA_URL="https://www.aduana.gob.cu/"
+OFFICIAL_CUSTOMS_URL="https://www.aduana.gob.cu/"
 OFFICIAL_MITRANS_URL="https://www.mitrans.gob.cu/"
+OFFICIAL_MINREX_URL="https://cubaminrex.cu/"
 
-CHARTER_SOURCES=[
- {"id":"xael_charters","name":"Xael Charters","url":"https://www.xaelcharter.com/","category":"charter","country":"United States","description":"Operador/agencia de vuelos charter relacionados con Cuba. Confirma directamente disponibilidad, ruta, equipaje, fechas y condiciones del boleto.","official":True},
- {"id":"aerocuba","name":"Aerocuba","url":"https://www.aerocuba.com/","category":"charter","country":"United States","description":"Fuente de vuelos y servicios relacionados con Cuba. Confirma directamente ruta, disponibilidad, equipaje y condiciones aplicables.","official":True},
- {"id":"cubazul_air_charter","name":"Cubazul Air Charter","url":"https://cubazulaircharter.com/","category":"charter","country":"United States","description":"Fuente de servicios de vuelos charter relacionados con Cuba. Confirma directamente rutas, boleto, equipaje y condiciones aplicables.","official":True},
- {"id":"cuballama_viajes","name":"Cuballama Viajes","url":"https://www.cuballama.com/viajes/vuelos/charters","category":"charter","country":"United States","description":"Sección de vuelos charter de Cuballama Viajes. Confirma directamente disponibilidad, ruta, boleto y condiciones.","official":True}
-]
+@dataclass(frozen=True)
+class CubaSource:
+    id:str
+    name:str
+    url:str
+    purpose:str
+    official:bool=True
 
 OFFICIAL_SOURCES=[
- {"id":"cuba_minrex","name":"Ministerio de Relaciones Exteriores de Cuba","url":OFFICIAL_MINREX_URL,"category":"government","country":"Cuba","description":"Información oficial relacionada con asuntos consulares, documentación y requisitos aplicables.","official":True},
- {"id":"cuba_aduana","name":"Aduana General de la República de Cuba","url":OFFICIAL_ADUANA_URL,"category":"customs","country":"Cuba","description":"Información oficial sobre aduanas, equipaje, mercancías, importación y restricciones.","official":True},
- {"id":"cuba_mitrans","name":"Ministerio de Transporte de Cuba","url":OFFICIAL_MITRANS_URL,"category":"transport","country":"Cuba","description":"Información oficial relacionada con transporte y procesos vinculados al viaje.","official":True},
- {"id":"cuba_visa","name":"Visa / eVisa Cuba","url":OFFICIAL_VISA_URL,"category":"visa","country":"Cuba","description":"Portal oficial indicado para información y proceso de visa/eVisa cubana.","official":True},
- {"id":"dviajeros","name":"D’Viajeros","url":OFFICIAL_DVIAJEROS_URL,"category":"entry","country":"Cuba","description":"Portal oficial para el proceso D’Viajeros y la información requerida al viajero.","official":True}
+    CubaSource("visa","eVisa Cuba",OFFICIAL_VISA_URL,"Visa y eVisa de Cuba"),
+    CubaSource("dviajeros","D’Viajeros",OFFICIAL_DVIAJEROS_URL,"Formulario oficial de entrada"),
+    CubaSource("customs","Aduana de Cuba",OFFICIAL_CUSTOMS_URL,"Equipaje, mercancías y aduana"),
+    CubaSource("mitrans","MITRANS",OFFICIAL_MITRANS_URL,"Transporte"),
+    CubaSource("minrex","MINREX",OFFICIAL_MINREX_URL,"Información consular y de entrada")
 ]
 
-def _text(v:Any)->str:
- return str(v or "").strip()
+CHARTER_SOURCES=[
+    {"id":"xael_charter","name":"Xael Charters","url":"https://www.xaelcharter.com/","baggage_hand":"Generalmente 1 pieza incluida; por ejemplo hasta 35 lb según temporada","baggage_checked":"Tarifas por libra que pueden comenzar alrededor de $1 o $2/lb según la maleta; el límite por bulto suele rondar 70 lb","notice":"Referencia orientativa. Confirmar boleto y condiciones actuales con el operador."},
+    {"id":"aerocuba","name":"Aerocuba","url":"https://www.aerocuba.com/","baggage_hand":"1 pieza de mano permitida; pueden existir franquicias promocionales de hasta 35 lb","baggage_checked":"Cobro por peso o por libra; pueden existir tarifas desde $1/lb según ruta y pieza","notice":"Referencia orientativa. Confirmar boleto y condiciones actuales con el operador."},
+    {"id":"cubazul","name":"Cubazul Air Charter","url":"https://cubazulaircharter.com/","baggage_hand":"Incluido según los términos del boleto adquirido","baggage_checked":"Maletas de hasta 70 lb; piezas adicionales pueden tener tarifas escalonadas por libra","notice":"Referencia orientativa. Confirmar boleto y condiciones actuales con el operador."},
+    {"id":"cuballama_charters","name":"Cuballama Viajes — Vuelos chárter","url":"https://www.cuballama.com/viajes/vuelos/charters","baggage_hand":"Depende del boleto y operador correspondiente","baggage_checked":"Depende de la ruta, operador y condiciones de la reserva","notice":"Verificar directamente las condiciones de la reserva."}
+]
+
+COMMERCIAL_BAGGAGE=[
+    {"id":"aa","airline":"American Airlines","url":"https://www.aa.com/web/i18n/travel-info/baggage/checked-baggage-policy.html?locale=es_US","hand":"1 maleta de mano y 1 artículo personal","checked":"Para Cuba existe una restricción general de hasta 2 maletas facturadas; pueden aplicar límites de hasta 70 lb por pieza según la ruta y condiciones del boleto","notice":"Verificar peso, tarifa, temporada y excepciones en American Airlines."},
+    {"id":"delta","airline":"Delta Air Lines","url":"https://es.delta.com/us/es/baggage/checked-baggage/embargoes-restrictions","hand":"1 pieza de mano y 1 artículo personal","checked":"Puede haber límites específicos para La Habana y restricciones de temporada/capacidad; el peso depende de tarifa y clase","notice":"Verificar la fecha de compra, ruta, tarifa y temporada en Delta."},
+    {"id":"southwest","airline":"Southwest Airlines","url":"https://support.southwest.com/helpcenter/article/baggage-embargo-for-checked-bags","hand":"1 equipaje de mano y 1 artículo personal","checked":"Para Cuba pueden existir restricciones específicas y permanentes; se indica un máximo de 2 maletas y límites de 50 lb/23 kg y 62 pulgadas lineales según la política","notice":"Verificar la política oficial antes de acudir al aeropuerto."},
+    {"id":"aeromexico","airline":"Aeroméxico","url":"https://www.aeromexico.com/en-us/travel-information/baggage/carry-on-baggage","hand":"1 equipaje de mano y 1 artículo personal; el peso combinado depende de la tarifa","checked":"La franquicia depende de la familia tarifaria, ruta y boleto; pueden existir piezas de 23 kg o 32 kg según condiciones","notice":"Verificar exactamente la franquicia del boleto adquirido."}
+]
 
 def _norm(v:Any)->str:
- return re.sub(r"\s+"," ",_text(v).lower()).strip()
+    return str(v or "").strip().lower()
 
-def _bool(v:Any)->bool:
- if isinstance(v,bool):return v
- return _norm(v) in {"1","true","yes","y","si","sí","on"}
-
-def _data(request:Any=None,**kwargs)->Dict[str,Any]:
- if request is not None:
-  if hasattr(request,"model_dump"):
-   try:return request.model_dump()
-   except Exception:pass
-  if isinstance(request,dict):return dict(request)
- return dict(kwargs)
-
-def _load_json(path:Path)->Dict[str,Any]:
- try:
-  if not path.exists():return {}
-  with path.open("r",encoding="utf-8") as f:
-   value=json.load(f)
-  return value if isinstance(value,dict) else {}
- except Exception:
-  return {}
-
-def _missing(data:Dict[str,Any],fields:List[str])->List[str]:
- out=[]
- for field in fields:
-  value=data.get(field)
-  if value is None or (isinstance(value,str) and not value.strip()):
-   out.append(field)
- return out
-
-def _status(missing:List[str])->str:
- return "INCOMPLETE" if missing else "READY"
-
-def _language(language:str)->str:
- return "en" if _norm(language) in {"en","english","inglés","ingles"} else "es"
-
-def _source(source:Dict[str,Any],language:str="es")->Dict[str,Any]:
- d=deepcopy(source)
- if _language(language)=="en":
-  names={
-   "dviajeros":"D’Viajeros",
-   "cuba_visa":"Cuba Visa / eVisa",
-   "cuba_minrex":"Ministry of Foreign Affairs of Cuba",
-   "cuba_aduana":"General Customs of the Republic of Cuba",
-   "cuba_mitrans":"Ministry of Transportation of Cuba"
-  }
-  descriptions={
-   "dviajeros":"Official portal for the D’Viajeros process.",
-   "cuba_visa":"Official portal indicated for Cuba visa/eVisa information and process.",
-   "cuba_minrex":"Official information related to consular matters and requirements.",
-   "cuba_aduana":"Official information about customs, baggage, goods and restrictions.",
-   "cuba_mitrans":"Official information related to transportation.",
-  }
-  if d.get("id") in names:d["name"]=names[d["id"]]
-  if d.get("id") in descriptions:d["description"]=descriptions[d["id"]]
- return d
-
-def get_charter_sources(language:str="es")->List[Dict[str,Any]]:
- return [_source(x,language) for x in CHARTER_SOURCES]
-
-def get_official_sources(language:str="es")->List[Dict[str,Any]]:
- return [_source(x,language) for x in OFFICIAL_SOURCES]
-
-def charter_sources(language:str="es")->List[Dict[str,Any]]:
- return get_charter_sources(language)
-
-def official_sources(language:str="es")->List[Dict[str,Any]]:
- return get_official_sources(language)
-
-def get_visa_data()->Dict[str,Any]:
- return _load_json(VISA_FILE)
-
-def get_dviajeros_data()->Dict[str,Any]:
- return _load_json(DVIJEROS_FILE)
-
-def is_cuba_route(origin:str="",destination:str="")->bool:
- text=_norm(f"{origin} {destination}")
- aliases=("cuba","havana","habana","varadero","camaguey","camagüey","holguin","holguín","santiago de cuba","santa clara","cayo coco","cayo largo")
- return any(x in text for x in aliases)
-
-def cuba_sources(language:str="es")->List[Dict[str,Any]]:
- return get_official_sources(language)
-
-def evaluate_visa(request:Any=None,**kwargs)->Dict[str,Any]:
- data=_data(request,**kwargs)
- nationality=_text(data.get("nationality"))
- residence=_text(data.get("country_of_residence") or data.get("residence_country"))
- passport_country=_text(data.get("passport_country"))
- purpose=_text(data.get("purpose") or data.get("travel_purpose"))
- entry_type=_text(data.get("entry_type") or data.get("flight_type"))
- has_passport=_bool(data.get("has_passport"))
- if not has_passport:
-  has_passport=bool(_text(data.get("passport_number")) or data.get("has_cuban_passport") is True or data.get("has_other_passport") is True)
- passport_valid=_bool(data.get("passport_valid"))
- if not passport_valid:
-  passport_valid=bool(_text(data.get("passport_valid_until")))
- dual=_bool(data.get("dual_nationality") or data.get("dual_citizen"))
- cuban=_bool(data.get("cuban_nationality"))
- missing=_missing(data,["nationality","country_of_residence","passport_country","purpose"])
- checks=[
-  {"id":"passport","status":"READY" if has_passport else "INCOMPLETE","message":"Pasaporte informado." if has_passport else "Confirma qué pasaporte corresponde a tu viaje."},
-  {"id":"passport_validity","status":"READY" if passport_valid else "INCOMPLETE","message":"Vigencia indicada." if passport_valid else "Confirma la vigencia del pasaporte aplicable a tu caso."}
- ]
- if dual or cuban:
-  checks.append({"id":"nationality","status":"REVIEW","message":"La nacionalidad cubana o la doble nacionalidad puede cambiar qué documento o condición corresponde. Confirma directamente con la fuente oficial cubana aplicable."})
- if entry_type:
-  checks.append({"id":"entry_type","status":"READY","message":f"Tipo de viaje indicado: {entry_type}."})
- if purpose:
-  checks.append({"id":"purpose","status":"READY","message":f"Motivo del viaje indicado: {purpose}."})
- status=_status(missing)
- if not has_passport or not passport_valid:status="INCOMPLETE"
- return {
-  "module":"visa",
-  "status":status,
-  "missing_fields":missing,
-  "nationality":nationality,
-  "country_of_residence":residence,
-  "passport_country":passport_country,
-  "travel_purpose":purpose,
-  "purpose":purpose,
-  "entry_type":entry_type,
-  "dual_nationality":dual,
-  "cuban_nationality":cuban,
-  "checks":checks,
-  "official_portal":OFFICIAL_VISA_URL,
-  "official_submission_completed":False,
-  "official_document_issued":False,
-  "official_qr_generated":False,
-  "source_data_loaded":bool(get_visa_data()),
-  "sources":get_official_sources("es")
- }
-
-def evaluate_dviajeros(request:Any=None,**kwargs)->Dict[str,Any]:
- data=_data(request,**kwargs)
- aliases={
-  "first_name":["first_name","given_names"],
-  "last_name":["last_name","surnames"],
-  "nationality":["nationality"],
-  "date_of_birth":["date_of_birth","birth_date"],
-  "passport_country":["passport_country"],
-  "arrival_date":["arrival_date"],
-  "airline":["airline"],
-  "accommodation":["accommodation","address_destination"],
-  "purpose_of_trip":["purpose_of_trip","purpose"]
- }
- normalized={}
- for target,names in aliases.items():
-  normalized[target]=""
-  for name in names:
-   if _text(data.get(name)):
-    normalized[target]=_text(data.get(name))
-    break
- missing=[k for k,v in normalized.items() if not v]
- modules=[
-  {"id":"traveler","title":"Datos del viajero","status":"INCOMPLETE" if any(x in missing for x in ["first_name","last_name","nationality","date_of_birth"]) else "READY"},
-  {"id":"passport","title":"Pasaporte","status":"INCOMPLETE" if "passport_country" in missing else "READY"},
-  {"id":"arrival","title":"Llegada","status":"INCOMPLETE" if any(x in missing for x in ["arrival_date","airline"]) else "READY"},
-  {"id":"accommodation","title":"Hospedaje","status":"INCOMPLETE" if "accommodation" in missing else "READY"},
-  {"id":"purpose","title":"Motivo del viaje","status":"INCOMPLETE" if "purpose_of_trip" in missing else "READY"},
-  {"id":"review","title":"Revisión","status":"INCOMPLETE" if missing else "READY"}
- ]
- return {
-  "module":"dviajeros",
-  "status":_status(missing),
-  "missing_fields":missing,
-  "normalized":normalized,
-  "modules":modules,
-  "submission_status":"READY_FOR_OFFICIAL_FORM" if not missing else "INCOMPLETE",
-  "official_portal":OFFICIAL_DVIAJEROS_URL,
-  "official_submission_completed":False,
-  "official_qr_generated":False,
-  "source_data_loaded":bool(get_dviajeros_data()),
-  "sources":get_official_sources("es")
- }
-
-def visa_information(language:str="es")->Dict[str,Any]:
- en=_language(language)=="en"
- return {
-  "module":"visa",
-  "name":"Cuba Visa / eVisa" if en else "Visa cubana / eVisa",
-  "official_portal":OFFICIAL_VISA_URL,
-  "data":get_visa_data(),
-  "sources":get_official_sources(language)
- }
-
-def dviajeros_information(language:str="es")->Dict[str,Any]:
- en=_language(language)=="en"
- return {
-  "module":"dviajeros",
-  "name":"D’Viajeros",
-  "official_portal":OFFICIAL_DVIAJEROS_URL,
-  "data":get_dviajeros_data(),
-  "sources":get_official_sources(language)
- }
+def _source(x:CubaSource)->Dict[str,Any]:
+    return asdict(x)
 
 def official_information(language:str="es")->Dict[str,Any]:
- return {
-  "language":_language(language),
-  "visa":OFFICIAL_VISA_URL,
-  "dviajeros":OFFICIAL_DVIAJEROS_URL,
-  "minrex":OFFICIAL_MINREX_URL,
-  "aduana":OFFICIAL_ADUANA_URL,
-  "mitrans":OFFICIAL_MITRANS_URL,
-  "sources":get_official_sources(language),
-  "charter_sources":get_charter_sources(language)
- }
+    es=language!="en"
+    return {
+        "title":"Preparación oficial para Cuba" if es else "Official Cuba preparation",
+        "notice":"La aplicación explica y practica; la confirmación final siempre se hace en el sitio oficial." if es else "The app explains and lets you practice; final confirmation is always made on the official website.",
+        "sources":[_source(x) for x in OFFICIAL_SOURCES],
+        "steps":[
+            {"step":1,"title":"Visa","action":"Revisa si necesitas visa o eVisa según tu nacionalidad y viaje.","url":OFFICIAL_VISA_URL},
+            {"step":2,"title":"D’Viajeros","action":"Practica y luego completa el formulario oficial antes del viaje.","url":OFFICIAL_DVIAJEROS_URL},
+            {"step":3,"title":"Equipaje y aduana","action":"Revisa qué puedes introducir y las cantidades permitidas.","url":OFFICIAL_CUSTOMS_URL},
+            {"step":4,"title":"Confirma","action":"Comprueba nuevamente la información oficial antes de viajar.","url":OFFICIAL_MINREX_URL}
+        ]
+    }
 
-def simulation_steps(mode:str="visa",language:str="es")->List[str]:
- en=_language(language)=="en"
- mode=_norm(mode)
- if mode in {"dviajeros","d'viajeros","dviajero"}:
-  return [
-   "D’Viajeros practice. This is only a simulation." if en else "Práctica de D’Viajeros. Esto es solamente una simulación.",
-   "Open the official D’Viajeros portal." if en else "Abre el portal oficial de D’Viajeros.",
-   "Identify the information requested by the official form." if en else "Identifica la información que solicita el formulario oficial.",
-   "Practice the order of the fields without entering sensitive information." if en else "Practica el orden de los campos sin introducir información sensible.",
-   "Review the information before submitting the real form." if en else "Revisa la información antes de enviar el formulario real.",
-   "Complete the real process only at the official portal." if en else "Realiza el proceso real solamente en el portal oficial."
-  ]
- return [
-  "Cuba visa/eVisa practice. This is only a simulation." if en else "Práctica de visa/eVisa de Cuba. Esto es solamente una simulación.",
-  "Open the official Cuba visa/eVisa source." if en else "Abre la fuente oficial de visa/eVisa de Cuba.",
-  "Check the requirement for your nationality." if en else "Comprueba el requisito según tu nacionalidad.",
-  "Review the documents and information requested." if en else "Revisa los documentos y la información solicitada.",
-  "Practice the order of the process without submitting anything." if en else "Practica el orden del proceso sin enviar nada.",
-  "Complete the real process only through the applicable official source." if en else "Realiza el proceso real solamente mediante la fuente oficial correspondiente."
- ]
+def get_charter_sources(language:str="es")->List[Dict[str,Any]]:
+    if language=="en":
+        return [{**x,"notice":"Reference information only. Confirm the current ticket and baggage conditions with the operator."} for x in CHARTER_SOURCES]
+    return [dict(x) for x in CHARTER_SOURCES]
 
-def simulation(mode:str="visa",language:str="es")->Dict[str,Any]:
- en=_language(language)=="en"
- is_dv=_norm(mode) in {"dviajeros","d'viajeros","dviajero"}
- return {
-  "simulation":True,
-  "official_submission":False,
-  "official_document_issued":False,
-  "official_qr_generated":False,
-  "mode":"dviajeros" if is_dv else "visa",
-  "title":"D’Viajeros" if is_dv else ("Cuba Visa / eVisa" if en else "Visa/eVisa de Cuba"),
-  "notice":"PRACTICE SIMULATION — NOT THE OFFICIAL SITE." if en else "SIMULACIÓN DE PRÁCTICA — NO ES EL SITIO OFICIAL.",
-  "steps":simulation_steps("dviajeros" if is_dv else "visa",language),
-  "official_url":OFFICIAL_DVIAJEROS_URL if is_dv else OFFICIAL_VISA_URL,
-  "sources":get_official_sources(language)
- }
+def get_commercial_baggage(language:str="es")->List[Dict[str,Any]]:
+    if language=="en":
+        return [{**x,"notice":"Verify the exact baggage allowance on the official airline website before travel."} for x in COMMERCIAL_BAGGAGE]
+    return [dict(x) for x in COMMERCIAL_BAGGAGE]
+
+def baggage_guide(language:str="es")->Dict[str,Any]:
+    es=language!="en"
+    return {
+        "title":"Guía de Equipaje para Vuelos a Cuba" if es else "Cuba Flight Baggage Guide",
+        "charters":get_charter_sources(language),
+        "commercial":get_commercial_baggage(language),
+        "recommendations":[
+            "Pesa cada maleta antes de ir al aeropuerto de salida en Florida, especialmente Miami o Tampa.",
+            "No asumas que una franquicia de un operador sirve para otro operador.",
+            "Revisa las normas vigentes de la Aduana de Cuba sobre electrodomésticos, medicamentos autorizados y límites de misceláneas.",
+            "Lleva contigo la información del boleto y revisa el sitio oficial de la aerolínea u operador antes de salir."
+        ] if es else [
+            "Weigh every bag before going to the Florida departure airport, especially Miami or Tampa.",
+            "Do not assume one operator's baggage allowance applies to another operator.",
+            "Review current Cuban Customs rules for appliances, authorized medicines and miscellaneous-item limits.",
+            "Keep your ticket information and check the airline or operator official website before departure."
+        ],
+        "official_customs":OFFICIAL_CUSTOMS_URL,
+        "official_mitrans":OFFICIAL_MITRANS_URL
+    }
+
+def evaluate_visa(data:Dict[str,Any],language:str="es")->Dict[str,Any]:
+    d=dict(data or {})
+    nationality=d.get("nationality") or d.get("passport_country") or d.get("country")
+    purpose=d.get("travel_purpose") or d.get("purpose") or d.get("purpose_of_trip")
+    entry_type=d.get("entry_type") or "air"
+    has_passport=bool(d.get("has_passport",d.get("passport")))
+    passport_valid=bool(d.get("passport_valid",d.get("valid_passport")))
+    dual=bool(d.get("dual_nationality",d.get("dual_citizen",d.get("cuban_nationality"))))
+    if language=="en":
+        title="Cuba visa preparation"
+        steps=["Identify your nationality and travel purpose.","Confirm the passport you will use.","If you have Cuban nationality or dual nationality, review the official Cuban requirements.","Check the official Cuba visa/eVisa site.","Do not treat this practice as an official application."]
+    else:
+        title="Preparación de visa para Cuba"
+        steps=["Identifica tu nacionalidad y motivo del viaje.","Confirma el pasaporte que vas a utilizar.","Si tienes nacionalidad cubana o doble nacionalidad, revisa los requisitos oficiales de Cuba.","Consulta el sitio oficial de visa/eVisa.","Esta práctica no es una solicitud oficial."]
+    status="review"
+    message="La aplicación no determina por sí sola si una persona necesita visa. La nacionalidad, el pasaporte, el motivo del viaje y la situación de nacionalidad cubana pueden cambiar el resultado."
+    return {"title":title,"status":status,"message":message,"nationality":nationality,"purpose":purpose,"entry_type":entry_type,"has_passport":has_passport,"passport_valid":passport_valid,"dual_nationality":dual,"steps":steps,"official_url":OFFICIAL_VISA_URL,"official_source":"eVisa Cuba"}
+
+def evaluate_dviajeros(data:Dict[str,Any],language:str="es")->Dict[str,Any]:
+    d=dict(data or {})
+    fields=[
+        ("given_names","first_name"),
+        ("surnames","last_name"),
+        ("nationality","nationality"),
+        ("birth_date","date_of_birth"),
+        ("passport_country","passport_country"),
+        ("arrival_date","arrival_date"),
+        ("airline","airline"),
+        ("accommodation","accommodation"),
+        ("purpose_of_trip","purpose_of_trip")
+    ]
+    collected={}
+    for a,b in fields:collected[a]=d.get(a) or d.get(b) or ""
+    missing=[k for k,v in collected.items() if not str(v).strip()]
+    if language=="en":
+        title="D’Viajeros practice"
+        next_action="Complete the missing practice fields, then use the official D’Viajeros website."
+        notice="This is only a May Roga LLC practice. It does not submit the official form."
+    else:
+        title="Práctica de D’Viajeros"
+        next_action="Completa los datos que faltan y después utiliza el sitio oficial de D’Viajeros."
+        notice="Esta es solamente una práctica de May Roga LLC. No envía el formulario oficial."
+    return {"title":title,"fields":collected,"missing":missing,"completed":not missing,"notice":notice,"next_action":next_action,"official_url":OFFICIAL_DVIAJEROS_URL,"qr":False}
+
+def simulation(mode:str="booking",language:str="es")->Dict[str,Any]:
+    en=language=="en"
+    if mode=="visa":
+        titles=["Identificar nacionalidad","Revisar pasaporte","Revisar necesidad de visa","Ir al sitio oficial","Practicar la información de la solicitud"]
+    elif mode=="dviajeros":
+        titles=["Datos personales","Pasaporte","Vuelo","Alojamiento","Motivo del viaje","Revisar antes de continuar"]
+    else:
+        titles=["Datos del pasajero","Ruta","Vuelo","Equipaje","Revisión","Confirmación simulada"]
+    return {
+        "simulation":True,
+        "official_submission":False,
+        "mode":mode,
+        "notice":"SIMULACIÓN: no se envía información a Cuba ni a una aerolínea." if not en else "SIMULATION: no information is submitted to Cuba or an airline.",
+        "steps":[{"step":i+1,"title":t,"completed":False} for i,t in enumerate(titles)],
+        "official_url":OFFICIAL_DVIAJEROS_URL if mode=="dviajeros" else OFFICIAL_VISA_URL if mode=="visa" else ""
+    }
 
 def public_config(language:str="es")->Dict[str,Any]:
- return {
-  "app":{"name":APP_NAME,"version":VERSION},
-  "cuba":{
-   "visa_url":OFFICIAL_VISA_URL,
-   "dviajeros_url":OFFICIAL_DVIAJEROS_URL,
-   "minrex_url":OFFICIAL_MINREX_URL,
-   "aduana_url":OFFICIAL_ADUANA_URL,
-   "mitrans_url":OFFICIAL_MITRANS_URL,
-   "official_sources":get_official_sources(language),
-   "charter_sources":get_charter_sources(language)
-  },
-  "simulation":{"enabled":True,"official_submission":False}
- }
+    return {
+        "version":VERSION,
+        "country":COUNTRY,
+        "language":language,
+        "official_sources":official_information(language)["sources"],
+        "charter_sources":get_charter_sources(language),
+        "commercial_baggage":get_commercial_baggage(language),
+        "baggage_guide":baggage_guide(language),
+        "visa_url":OFFICIAL_VISA_URL,
+        "dviajeros_url":OFFICIAL_DVIAJEROS_URL,
+        "customs_url":OFFICIAL_CUSTOMS_URL,
+        "mitrans_url":OFFICIAL_MITRANS_URL,
+        "minrex_url":OFFICIAL_MINREX_URL
+    }
 
-def disclaimer(language:str="es")->Dict[str,str]:
- if _language(language)=="en":
-  return {"text":"¿QUÉ QUIERES LLEVAR? is an independent preparation and orientation service from May Roga LLC. It is not the Government of Cuba, an airline, airport, customs authority, immigration authority or consulate. Simulations do not submit official forms, make payments, issue visas or generate official QR codes. Requirements can change and must be confirmed through the applicable official source."}
- return {"text":"¿QUÉ QUIERES LLEVAR? es un servicio independiente de preparación y orientación de May Roga LLC. No es el Gobierno de Cuba, una aerolínea, aeropuerto, autoridad aduanera, autoridad migratoria ni consulado. Las simulaciones no envían formularios oficiales, no realizan pagos, no emiten visas ni generan códigos QR oficiales. Los requisitos pueden cambiar y deben confirmarse mediante la fuente oficial correspondiente."}
+def disclaimer(language:str="es")->str:
+    if language=="en":
+        return "¿QUÉ QUIERES LLEVAR? is an independent May Roga LLC preparation and orientation service. It is not an airline, government, airport, customs authority, immigration authority, consulate or travel agency. Simulations are not official submissions. Rules can change. Always confirm current requirements with the responsible official source."
+    return "¿QUÉ QUIERES LLEVAR? es un servicio independiente de preparación y orientación de May Roga LLC. No es una aerolínea, gobierno, aeropuerto, autoridad aduanera, autoridad migratoria, consulado ni agencia de viajes. Las simulaciones no son envíos oficiales. Las reglas pueden cambiar. Confirma siempre los requisitos vigentes con la fuente oficial correspondiente."
 
+def is_cuba_route(origin:str="",destination:str="")->bool:
+    text=_norm(origin)+" "+_norm(destination)
+    return any(x in text for x in ["cuba","havana","habana","holguin","varadero","santiago de cuba","camaguey","cayo coco","cayo largo","santa clara","matanzas","cub"])
+    
 class CubaEngine:
- def __init__(self):
-  self.version=VERSION
-  self.app_name=APP_NAME
- def evaluate_visa(self,request:Any)->Dict[str,Any]:
-  return evaluate_visa(request)
- def evaluate_dviajeros(self,request:Any)->Dict[str,Any]:
-  return evaluate_dviajeros(request)
- def get_visa_data(self)->Dict[str,Any]:
-  return get_visa_data()
- def get_dviajeros_data(self)->Dict[str,Any]:
-  return get_dviajeros_data()
- def get_charter_sources(self,language:str="es")->List[Dict[str,Any]]:
-  return get_charter_sources(language)
- def get_official_sources(self,language:str="es")->List[Dict[str,Any]]:
-  return get_official_sources(language)
- def official_information(self,language:str="es")->Dict[str,Any]:
-  return official_information(language)
- def visa_information(self,language:str="es")->Dict[str,Any]:
-  return visa_information(language)
- def dviajeros_information(self,language:str="es")->Dict[str,Any]:
-  return dviajeros_information(language)
- def simulation(self,mode:str="visa",language:str="es")->Dict[str,Any]:
-  return simulation(mode,language)
- def public_config(self,language:str="es")->Dict[str,Any]:
-  return public_config(language)
- def disclaimer(self,language:str="es")->Dict[str,str]:
-  return disclaimer(language)
- def is_cuba_route(self,origin:str="",destination:str="")->bool:
-  return is_cuba_route(origin,destination)
+    version=VERSION
+    official_sources=OFFICIAL_SOURCES
+    charter_sources=CHARTER_SOURCES
+    commercial_baggage=COMMERCIAL_BAGGAGE
+    def public_config(self,language="es"):return public_config(language)
+    def disclaimer(self,language="es"):return disclaimer(language)
+    def official_information(self,language="es"):return official_information(language)
+    def get_charter_sources(self,language="es"):return get_charter_sources(language)
+    def get_commercial_baggage(self,language="es"):return get_commercial_baggage(language)
+    def baggage_guide(self,language="es"):return baggage_guide(language)
+    def evaluate_visa(self,data,language="es"):return evaluate_visa(data,language)
+    def evaluate_dviajeros(self,data,language="es"):return evaluate_dviajeros(data,language)
+    def simulation(self,mode="booking",language="es"):return simulation(mode,language)
+    def is_cuba_route(self,origin="",destination=""):return is_cuba_route(origin,destination)
 
 engine=CubaEngine()
-cuba_engine=engine
 
-__all__=[
- "VERSION","APP_NAME","OFFICIAL_VISA_URL","OFFICIAL_DVIAJEROS_URL",
- "OFFICIAL_MINREX_URL","OFFICIAL_ADUANA_URL","OFFICIAL_MITRANS_URL",
- "CHARTER_SOURCES","OFFICIAL_SOURCES","get_charter_sources",
- "get_official_sources","charter_sources","official_sources",
- "get_visa_data","get_dviajeros_data","is_cuba_route","cuba_sources",
- "evaluate_visa","evaluate_dviajeros","visa_information",
- "dviajeros_information","official_information","simulation_steps",
- "simulation","public_config","disclaimer","CubaEngine","engine","cuba_engine"
-]
+__all__=["VERSION","COUNTRY","OFFICIAL_VISA_URL","OFFICIAL_DVIAJEROS_URL","OFFICIAL_CUSTOMS_URL","OFFICIAL_MITRANS_URL","OFFICIAL_MINREX_URL","CubaSource","OFFICIAL_SOURCES","CHARTER_SOURCES","COMMERCIAL_BAGGAGE","get_charter_sources","get_commercial_baggage","baggage_guide","official_information","evaluate_visa","evaluate_dviajeros","simulation","public_config","disclaimer","is_cuba_route","CubaEngine","engine"]
