@@ -1,893 +1,385 @@
-# main.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v12.2.0
+# main.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v13.0.0
 from __future__ import annotations
-import base64
-import io
-import json
-import os
-import re
-import urllib.error
-import urllib.request
-from datetime import datetime,timezone
+import io,json,os,re
 from pathlib import Path
-from typing import Any,Dict,Optional
-
-from fastapi import FastAPI,HTTPException,Request,UploadFile,File
-from fastapi.responses import FileResponse,JSONResponse,Response
+from typing import Any,Dict
+from fastapi import FastAPI,HTTPException,Request
+from fastapi.responses import FileResponse,JSONResponse,StreamingResponse
 from fastapi.staticfiles import StaticFiles
-from reportlab.lib.pagesizes import letter
+from fastapi.middleware.cors import CORSMiddleware
+from reportlab.lib.pagesizes import LETTER
 from reportlab.lib.styles import getSampleStyleSheet,ParagraphStyle
 from reportlab.lib.enums import TA_CENTER
-from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,PageBreak,Preformatted
-from reportlab.lib.units import inch
+from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,Table,TableStyle
+from reportlab.lib import colors
+from schemas import *
+import cuba_engine as engine
 
-from cuba_engine import engine as cuba_engine
-from source_registry import SOURCES,AIRLINES,get_sources,get_airlines,official_url
-
+VERSION="13.0.0"
 APP_NAME="¿QUÉ QUIERES LLEVAR?"
-APP_VERSION="12.2.0"
-COMPANY="May Roga LLC"
 BASE_DIR=Path(__file__).resolve().parent
 STATIC_DIR=BASE_DIR/"static"
-GEMINI_API_KEY=os.getenv("GEMINI_API_KEY","").strip()
-GEMINI_MODEL=os.getenv("GEMINI_MODEL","gemini-2.5-flash").strip()
-GEMINI_URL=f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
-MAX_BODY=5_000_000
 
-app=FastAPI(title=APP_NAME,version=APP_VERSION)
+app=FastAPI(title=APP_NAME,version=VERSION,docs_url="/docs",redoc_url="/redoc")
+app.add_middleware(CORSMiddleware,allow_origins=["*"],allow_credentials=False,allow_methods=["*"],allow_headers=["*"])
 if STATIC_DIR.exists():
     app.mount("/static",StaticFiles(directory=str(STATIC_DIR)),name="static")
 
-def now_iso()->str:
-    return datetime.now(timezone.utc).isoformat()
+def model_dict(x:Any)->Dict[str,Any]:
+    if hasattr(x,"model_dump"):return x.model_dump(exclude_none=False)
+    if hasattr(x,"dict"):return x.dict()
+    if isinstance(x,dict):return x
+    return {}
 
-def clean(v:Any)->str:
-    return str(v or "").strip()
-
-async def read_json(request:Request)->Dict[str,Any]:
+def source_list(topic:str="",query:str="",country:str="",airline:str="")->list:
     try:
-        raw=await request.body()
-        if len(raw)>MAX_BODY:
-            raise HTTPException(413,"La información enviada es demasiado grande.")
-        if not raw:
-            return {}
-        data=json.loads(raw.decode("utf-8"))
-        return data if isinstance(data,dict) else {}
-    except HTTPException:
-        raise
-    except Exception:
-        return {}
-
-def source_dict(s:Any)->Dict[str,Any]:
-    if hasattr(s,"__dataclass_fields__"):
-        try:
-            from dataclasses import asdict
-            return asdict(s)
-        except Exception:
-            pass
-    if isinstance(s,dict):
-        return dict(s)
-    out={}
-    for k in ("id","name","publisher","url","type","topics","what_it_covers","limitations","verified","country","category"):
-        if hasattr(s,k):
-            out[k]=getattr(s,k)
-    return out
-
-def all_source_dicts()->list:
-    return [source_dict(x) for x in SOURCES]
-
-def airline_dicts()->list:
-    try:
-        return [source_dict(x) for x in get_airlines()]
-    except Exception:
-        return [source_dict(x) for x in AIRLINES]
-
-def find_source_by_id(source_id:str)->Optional[Dict[str,Any]]:
-    sid=clean(source_id)
-    if not sid:
-        return None
-    for s in SOURCES:
-        d=source_dict(s)
-        if clean(d.get("id"))==sid:
-            return d
-    return None
-
-def official_sources_for(text:str="")->list:
-    q=clean(text).lower()
-    result=[]
-    for s in SOURCES:
-        d=source_dict(s)
-        if d.get("category") not in ("official","airline"):
-            continue
-        if not q:
-            result.append(d)
-            continue
-        blob=" ".join(str(d.get(k,"")) for k in ("id","name","publisher","topics","what_it_covers","country")).lower()
-        if any(x in blob for x in q.split() if len(x)>1):
-            result.append(d)
-    return result
-
-def cuba_sources()->list:
-    try:
-        return cuba_engine.official_information()
+        import source_registry as sr
+        return sr.get_sources(topic or "official",query,country,airline)
     except Exception:
         return []
 
-def charter_sources()->list:
-    try:
-        return cuba_engine.get_charter_sources()
-    except Exception:
-        return []
+def call_engine(names:list,data:Dict[str,Any],*args)->Any:
+    for name in names:
+        fn=getattr(engine,name,None)
+        if callable(fn):
+            try:
+                return fn(*args,data) if args else fn(data)
+            except TypeError:
+                try:return fn(data)
+                except Exception:pass
+            except Exception as e:
+                raise HTTPException(status_code=500,detail=str(e))
+    raise HTTPException(status_code=404,detail="Función no disponible.")
 
-def baggage_sources()->list:
-    try:
-        return cuba_engine.get_commercial_baggage()
-    except Exception:
-        return []
+def normalize_result(result:Any)->Dict[str,Any]:
+    d=model_dict(result)
+    if "version" not in d:d["version"]=VERSION
+    if "sources" not in d or not d.get("sources"):
+        d["sources"]=source_list("official")
+    return d
 
-def cuba_config()->Dict[str,Any]:
-    try:
-        return cuba_engine.public_config()
-    except Exception:
-        return {
-            "official_sources":cuba_sources(),
-            "charters":charter_sources(),
-            "commercial_baggage":baggage_sources()
-        }
+@app.get("/",response_class=FileResponse)
+async def home():
+    p=STATIC_DIR/"index.html"
+    if not p.exists():raise HTTPException(status_code=404,detail="index.html no encontrado")
+    return FileResponse(str(p))
 
-def is_cuba(data:Dict[str,Any])->bool:
-    text=json.dumps(data,ensure_ascii=False).lower()
-    return any(x in text for x in ("cuba","cuban","habana","havana","holguin","varadero","santiago de cuba","camaguey"))
-
-def safe_url(url:str)->str:
-    u=clean(url)
-    return u if u.startswith(("https://","http://")) else ""
-
-def airline_links()->list:
-    result=[]
-    for a in airline_dicts():
-        u=safe_url(a.get("url",""))
-        if u:
-            result.append({
-                "id":a.get("id",""),
-                "name":a.get("name",""),
-                "url":u,
-                "publisher":a.get("publisher",""),
-                "country":a.get("country","")
-            })
-    return result
-
-def gemini_request(prompt:str)->Dict[str,Any]:
-    if not GEMINI_API_KEY:
-        return {"ok":False,"reason":"GEMINI_API_KEY no configurada."}
-    body={
-        "contents":[{"parts":[{"text":prompt}]}],
-        "generationConfig":{
-            "temperature":0.1,
-            "maxOutputTokens":1200,
-            "responseMimeType":"application/json"
-        }
-    }
-    req=urllib.request.Request(
-        GEMINI_URL+"?key="+GEMINI_API_KEY,
-        data=json.dumps(body).encode("utf-8"),
-        headers={"Content-Type":"application/json"},
-        method="POST"
-    )
-    try:
-        with urllib.request.urlopen(req,timeout=35) as r:
-            data=json.loads(r.read().decode("utf-8"))
-        text=""
-        for c in data.get("candidates",[]):
-            for p in c.get("content",{}).get("parts",[]):
-                if p.get("text"):
-                    text+=p["text"]
-        if not text:
-            return {"ok":False,"reason":"Gemini no devolvió contenido."}
-        text=text.strip()
-        if text.startswith("```"):
-            text=re.sub(r"^```(?:json)?","",text).strip()
-            text=re.sub(r"```$","",text).strip()
-        try:
-            obj=json.loads(text)
-            return {"ok":True,"data":obj if isinstance(obj,dict) else {"answer":text}}
-        except Exception:
-            return {"ok":True,"data":{"answer":text}}
-    except urllib.error.HTTPError as e:
-        return {"ok":False,"reason":f"Error HTTP de Gemini: {e.code}"}
-    except Exception as e:
-        return {"ok":False,"reason":f"No fue posible consultar Gemini: {e}"}
-
-def item_prompt(question:str,data:Dict[str,Any],language:str)->str:
-    official=official_sources_for("TSA baggage batteries food customs Cuba")
-    urls=[x.get("url") for x in official if x.get("url")]
-    if is_cuba(data):
-        for x in cuba_sources():
-            if isinstance(x,dict) and x.get("url"):
-                urls.append(x["url"])
-    urls=list(dict.fromkeys(urls))
-    return f"""
-You are the item-permission assistant inside "{APP_NAME}" by May Roga LLC.
-Your ONLY task is to help interpret whether a specific physical item may be carried in carry-on baggage or checked baggage.
-Do not answer general travel questions.
-Do not invent airline rules, airport rules, customs rules, visa rules, fees, allowances, or availability.
-Do not claim legal certainty.
-If the information is uncertain, say that clearly and direct the traveler to the appropriate official source.
-Use plain language.
-Language: {language or "es"}.
-Question: {question}
-Traveler context: {json.dumps(data,ensure_ascii=False)}
-Relevant official sources:
-{json.dumps(urls,ensure_ascii=False)}
-Return JSON with:
-status,answer,reason,carry_on,checked_bag,needs_confirmation,official_source,official_url,next_action.
-Allowed status values: "allowed","not_allowed","conditional","unknown".
-carry_on and checked_bag must be true,false,or null.
-"""
-
-def local_item_fallback(question:str,data:Dict[str,Any],language:str)->Dict[str,Any]:
-    q=question.lower()
-    source=official_sources_for("baggage batteries food")
-    src=source[0] if source else {}
-    if any(x in q for x in ("gasolina","gasoline","petroleo","petroleum")):
-        answer="Este artículo requiere revisión de las reglas oficiales de materiales peligrosos. No lo presentes como permitido sin verificar."
-        status="unknown"
-    elif any(x in q for x in ("bateria","battery","power bank","litio","lithium")):
-        answer="Las baterías tienen reglas específicas según su tipo y capacidad. Verifica la regla oficial antes de viajar."
-        status="conditional"
-    elif any(x in q for x in ("comida","food","carne","meat","jamon","ham","yogurt","agua","water","uvas","grapes","guayaba","guava","semillas","seeds")):
-        answer="Los alimentos pueden estar sujetos a reglas distintas de seguridad aérea y de entrada al país. Verifica ambas fuentes oficiales."
-        status="conditional"
-    else:
-        answer="No tengo una confirmación suficientemente segura para este artículo. Consulta la fuente oficial antes de llevarlo."
-        status="unknown"
-    return {
-        "status":status,
-        "answer":answer,
-        "reason":"La regla puede depender del tipo exacto del artículo, cantidad, empaque, equipaje y destino.",
-        "carry_on":None,
-        "checked_bag":None,
-        "needs_confirmation":True,
-        "official_source":src.get("name","Fuente oficial"),
-        "official_url":safe_url(src.get("url","")),
-        "next_action":"Abre la fuente oficial y verifica el artículo antes de empacarlo."
-    }
-
-def build_pdf(state:Dict[str,Any],language:str="es")->bytes:
-    buf=io.BytesIO()
-    doc=SimpleDocTemplate(
-        buf,
-        pagesize=letter,
-        rightMargin=.55*inch,
-        leftMargin=.55*inch,
-        topMargin=.55*inch,
-        bottomMargin=.55*inch
-    )
-    styles=getSampleStyleSheet()
-    title=ParagraphStyle(
-        "AppTitle",
-        parent=styles["Title"],
-        alignment=TA_CENTER,
-        fontSize=17,
-        leading=21,
-        spaceAfter=12
-    )
-    h=ParagraphStyle(
-        "Section",
-        parent=styles["Heading2"],
-        fontSize=12,
-        leading=15,
-        spaceBefore=10,
-        spaceAfter=5
-    )
-    body=ParagraphStyle(
-        "Body",
-        parent=styles["BodyText"],
-        fontSize=9,
-        leading=12,
-        spaceAfter=4
-    )
-    small=ParagraphStyle(
-        "Small",
-        parent=styles["BodyText"],
-        fontSize=7,
-        leading=9
-    )
-    story=[]
-    story.append(Paragraph(APP_NAME,title))
-    story.append(Paragraph("Mi resumen de preparación",h))
-    story.append(Paragraph(f"May Roga LLC · versión {APP_VERSION}",body))
-    story.append(Paragraph(f"Generado: {now_iso()}",body))
-    story.append(Spacer(1,8))
-    story.append(Paragraph(
-        "<b>IMPORTANTE / IMPORTANT:</b> Este documento es una guía personal de preparación. "
-        "NO es una visa, permiso de entrada, reserva, boleto, autorización de equipaje, decisión de aduana "
-        "ni documento emitido por una aerolínea, gobierno, aeropuerto, consulado o autoridad.",
-        body
-    ))
-    story.append(Paragraph(
-        "Los datos contenidos aquí fueron proporcionados por el usuario y se incluyen para recuperar su preparación. "
-        "May Roga LLC no utiliza este PDF como almacenamiento permanente del usuario.",
-        body
-    ))
-    story.append(Spacer(1,8))
-
-    def add_section(title_text:str,value:Any):
-        story.append(Paragraph(title_text,h))
-        if isinstance(value,(dict,list)):
-            txt=json.dumps(value,ensure_ascii=False,indent=2)
-        else:
-            txt=str(value)
-        txt=txt.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
-        for part in txt.splitlines() or [""]:
-            story.append(Paragraph(part.replace(" ","&nbsp;"),small))
-
-    preferred=[
-        ("Viaje / Trip",state.get("trip")),
-        ("Vuelo / Flight",state.get("flight")),
-        ("Aerolínea / Airline",state.get("airline")),
-        ("Reserva de práctica / Booking Practice",state.get("booking")),
-        ("Conexiones / Connections",state.get("connections")),
-        ("Equipaje / Baggage",state.get("baggage")),
-        ("Artículos consultados / Items",state.get("items")),
-        ("Cuba",state.get("cuba")),
-        ("Visa / eVisa",state.get("visa")),
-        ("D'Viajeros",state.get("dviajeros")),
-        ("Documentos / Documents",state.get("documents")),
-        ("Prácticas / Practice Progress",state.get("practice")),
-        ("Diagnóstico / Preparation Status",state.get("diagnosis")),
-        ("Datos adicionales / Additional Data",state.get("data"))
-    ]
-    used=False
-    for title_text,value in preferred:
-        if value not in (None,"",{},[]):
-            add_section(title_text,value)
-            used=True
-    if not used:
-        add_section("Estado / State",state)
-
-    story.append(PageBreak())
-    story.append(Paragraph("Fuentes oficiales de referencia",h))
-    for s in all_source_dicts():
-        if s.get("url"):
-            name=s.get("name") or s.get("publisher") or s.get("id")
-            story.append(Paragraph(
-                f"{name}: {safe_url(s.get('url',''))}",
-                small
-            ))
-    for s in cuba_sources():
-        if isinstance(s,dict) and s.get("url"):
-            story.append(Paragraph(
-                f"{s.get('name','Cuba')}: {safe_url(s.get('url',''))}",
-                small
-            ))
-
-    payload=json.dumps(state,ensure_ascii=True,separators=(",",":")).encode("utf-8")
-    encoded=base64.b64encode(payload).decode("ascii")
-    story.append(Spacer(1,10))
-    story.append(Paragraph("Marcador de recuperación de la aplicación",h))
-    story.append(Paragraph(
-        "Este marcador permite que la aplicación recupere los datos generados por ella misma cuando el usuario vuelva a importar este PDF.",
-        small
-    ))
-    story.append(Preformatted(
-        "APP_STATE_JSON_BEGIN\n"+encoded+"\nAPP_STATE_JSON_END",
-        ParagraphStyle("Machine",fontName="Courier",fontSize=3.5,leading=4)
-    ))
-    doc.build(story)
-    return buf.getvalue()
-
-def extract_state_from_pdf(raw:bytes)->Dict[str,Any]:
-    text=""
-    errors=[]
-    try:
-        from pypdf import PdfReader
-        reader=PdfReader(io.BytesIO(raw))
-        text="\n".join((p.extract_text() or "") for p in reader.pages)
-    except Exception as e:
-        errors.append(str(e))
-        try:
-            from PyPDF2 import PdfReader
-            reader=PdfReader(io.BytesIO(raw))
-            text="\n".join((p.extract_text() or "") for p in reader.pages)
-        except Exception as e2:
-            errors.append(str(e2))
-    match=re.search(r"APP_STATE_JSON_BEGIN\s*(.*?)\s*APP_STATE_JSON_END",text,re.S)
-    if not match:
-        raise ValueError("Este PDF no contiene datos de recuperación generados por la aplicación.")
-    encoded=re.sub(r"\s+","",match.group(1))
-    try:
-        decoded=base64.b64decode(encoded,validate=True)
-        state=json.loads(decoded.decode("utf-8"))
-    except Exception as e:
-        raise ValueError(f"No se pudo recuperar el estado del PDF: {e}")
-    if not isinstance(state,dict):
-        raise ValueError("El contenido recuperado no tiene un estado válido.")
-    return state
-
-@app.get("/")
-async def root():
-    index=STATIC_DIR/"index.html"
-    if not index.exists():
-        return JSONResponse({
-            "app":APP_NAME,
-            "version":APP_VERSION,
-            "message":"Archivo static/index.html no encontrado."
-        },status_code=200)
-    return FileResponse(str(index))
-
-@app.get("/api/v1/health")
+@app.get("/health",response_model=HealthResponse)
 async def health():
-    return {
-        "ok":True,
-        "app":APP_NAME,
-        "version":APP_VERSION,
-        "free":True,
-        "login_required":False,
-        "payment_required":False,
-        "server_storage":False,
-        "timestamp":now_iso()
-    }
+    return {"status":"ok","version":VERSION,"app":APP_NAME,"ready":True,"free":True,"login_required":False,"payment_required":False,"server_storage":False,"gemini_item_assistant":bool(os.getenv("GEMINI_API_KEY"))}
 
-@app.get("/api/v1/config")
+@app.get("/api/config",response_model=ConfigResponse)
 async def config():
     return {
-        "ok":True,
+        "status":"ok",
         "app":APP_NAME,
-        "version":APP_VERSION,
-        "company":COMPANY,
-        "language_default":"es",
-        "languages":["es","en"],
+        "version":VERSION,
+        "language":"es",
         "free":True,
         "login_required":False,
         "payment_required":False,
+        "stripe_enabled":False,
         "server_storage":False,
-        "gemini_item_only":bool(GEMINI_API_KEY),
-        "airlines":airline_links(),
-        "official_sources":all_source_dicts(),
-        "cuba":cuba_config(),
-        "charters":charter_sources(),
-        "commercial_baggage":baggage_sources()
+        "features":{
+            "flight":True,
+            "booking_simulation":True,
+            "baggage":True,
+            "item_advisor":True,
+            "gemini_item_assistant":bool(os.getenv("GEMINI_API_KEY")),
+            "cuba":True,
+            "documents":True,
+            "practice":True,
+            "dviajeros":True,
+            "visa":True,
+            "sources":True,
+            "airlines":True,
+            "charters":True,
+            "guide":True,
+            "pdf":True,
+            "pdf_import":True,
+            "local_delete":True,
+            "english":True
+        },
+        "official_sources":source_list("official")
     }
 
-@app.post("/api/v1/session")
-async def session(request:Request):
-    data=await read_json(request)
-    return {
-        "ok":True,
-        "local_only":True,
-        "server_storage":False,
-        "login_required":False,
-        "payment_required":False,
-        "language":clean(data.get("language")) or "es",
-        "message":"La aplicación funciona sin cuenta ni contraseña. El progreso personal permanece en el dispositivo."
+@app.post("/api/flight",response_model=FlightResponse)
+async def flight(req:FlightRequest):
+    return normalize_result(engine.analyze_flight(model_dict(req)))
+
+@app.post("/api/booking",response_model=BookingResponse)
+async def booking(req:BookingRequest):
+    return normalize_result(engine.booking_simulation(model_dict(req)))
+
+@app.post("/api/connection",response_model=GenericResponse)
+async def connection(req:ConnectionRequest):
+    return normalize_result(engine.connection_analysis(model_dict(req)))
+
+@app.post("/api/baggage",response_model=BaggageResponse)
+async def baggage(req:BaggageRequest):
+    return normalize_result(engine.baggage_rules(model_dict(req)))
+
+@app.post("/api/item",response_model=ItemResponse)
+async def item(req:ItemRequest):
+    return normalize_result(engine.item_analysis(model_dict(req)))
+
+@app.post("/api/cuba",response_model=CubaResponse)
+async def cuba(req:CubaRequest):
+    return normalize_result(engine.cuba_check(model_dict(req)))
+
+@app.post("/api/cuba/entry",response_model=CubaResponse)
+async def cuba_entry(req:CubaEntryRequest):
+    return normalize_result(engine.cuba_check(model_dict(req)))
+
+@app.post("/api/documents",response_model=DocumentResponse)
+async def documents(req:DocumentRequest):
+    return normalize_result(engine.document_analysis(model_dict(req)))
+
+@app.post("/api/practice",response_model=PracticeResponse)
+async def practice(req:PracticeRequest):
+    d=model_dict(req)
+    state=dict(d.get("data") or {})
+    state.update({k:v for k,v in d.items() if k not in ("data",)})
+    return normalize_result(engine.practice_scenario(d.get("scenario","airport"),state))
+
+@app.post("/api/dviajeros",response_model=SimulationResponse)
+async def dviajeros(req:DViajeroRequest):
+    return normalize_result(engine.dviajeros_simulation(model_dict(req)))
+
+@app.post("/api/visa",response_model=SimulationResponse)
+async def visa(req:VisaRequest):
+    return normalize_result(engine.visa_simulation(model_dict(req)))
+
+@app.get("/api/sources",response_model=SourceResponse)
+async def sources_get(topic:str="official",query:str="",country:str="",airline:str=""):
+    return {"status":"ok","topic":topic,"sources":source_list(topic,query,country,airline),"next_action":"Abre la fuente oficial correspondiente y verifica la información actual."}
+
+@app.post("/api/sources",response_model=SourceResponse)
+async def sources_post(req:SourceRequest):
+    d=model_dict(req)
+    return {"status":"ok","topic":d.get("topic","official"),"sources":source_list(d.get("topic","official"),d.get("query",""),d.get("country",""),d.get("airline","")),"next_action":"Abre la fuente oficial correspondiente y verifica la información actual."}
+
+@app.post("/api/airlines",response_model=AirlineResponse)
+async def airlines(req:AirlineRequest):
+    q=model_dict(req).get("name") or model_dict(req).get("airline") or ""
+    try:
+        import source_registry as sr
+        al=sr.get_airlines(q)
+        ch=sr.get_charters(q)
+    except Exception:
+        al=[]
+        ch=[]
+    return {"status":"ok","airlines":al,"charters":ch,"next_action":"Selecciona la aerolínea u operador y abre su sitio oficial antes de realizar una operación real."}
+
+@app.get("/api/charters")
+async def charters(query:str=""):
+    try:
+        import source_registry as sr
+        return {"status":"ok","charters":sr.get_charters(query)}
+    except Exception:
+        return {"status":"ok","charters":[]}
+
+@app.get("/api/airlines")
+async def airlines_get(query:str=""):
+    try:
+        import source_registry as sr
+        return {"status":"ok","airlines":sr.get_airlines(query),"charters":sr.get_charters(query)}
+    except Exception:
+        return {"status":"ok","airlines":[],"charters":[]}
+
+@app.post("/api/solve",response_model=GenericResponse)
+async def solve(req:SolveRequest):
+    d=model_dict(req)
+    q=d.get("question","")
+    data=d.get("data") or {}
+    try:
+        r=engine.solve(q,data)
+    except Exception:
+        r=engine.answer(q,data)
+    return normalize_result(r)
+
+@app.post("/api/guide",response_model=GuideResponse)
+async def guide(req:GuideRequest):
+    return normalize_result(engine.build_guide(model_dict(req)))
+
+def _safe(v:Any)->str:
+    s=str(v if v is not None else "")
+    s=re.sub(r"<[^>]+>","",s)
+    return s.replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
+
+def _pdf_lines(data:Dict[str,Any],lang:str="es")->list:
+    labels={
+        "es":{
+            "title":"¿QUÉ QUIERES LLEVAR?",
+            "subtitle":"Guía personal de preparación",
+            "notice":"DOCUMENTO DE PREPARACIÓN — NO ES UN DOCUMENTO OFICIAL.",
+            "trip":"Mi viaje",
+            "flight":"Mi vuelo",
+            "identity":"Identidad y documentos",
+            "cuba":"Cuba",
+            "baggage":"Equipaje",
+            "items":"Artículos",
+            "pending":"Pendientes",
+            "next":"Siguiente acción",
+            "sources":"Fuentes"
+        },
+        "en":{
+            "title":"WHAT DO YOU WANT TO BRING?",
+            "subtitle":"Personal preparation guide",
+            "notice":"PREPARATION DOCUMENT — NOT AN OFFICIAL DOCUMENT.",
+            "trip":"My trip",
+            "flight":"My flight",
+            "identity":"Identity and documents",
+            "cuba":"Cuba",
+            "baggage":"Baggage",
+            "items":"Items",
+            "pending":"Pending",
+            "next":"Next action",
+            "sources":"Sources"
+        }
     }
+    l=labels.get(lang,labels["es"])
+    story=[
+        Paragraph(_safe(l["title"]),ParagraphStyle("TitleQ",fontSize=20,leading=24,alignment=TA_CENTER)),
+        Spacer(1,8),
+        Paragraph(_safe(l["subtitle"]),ParagraphStyle("SubQ",fontSize=12,leading=16,alignment=TA_CENTER)),
+        Spacer(1,10),
+        Paragraph(_safe(l["notice"]),ParagraphStyle("NoticeQ",fontSize=9,leading=12,alignment=TA_CENTER)),
+        Spacer(1,18)
+    ]
+    def section(title,rows):
+        story.append(Paragraph(_safe(title),ParagraphStyle("H",fontSize=13,leading=16,spaceBefore=8,spaceAfter=6)))
+        if rows:
+            t=Table([[ _safe(str(a)),_safe(str(b))] for a,b in rows],colWidths=[155,350])
+            t.setStyle(TableStyle([("GRID",(0,0),(-1,-1),.3,colors.grey),("VALIGN",(0,0),(-1,-1),"TOP"),("FONTNAME",(0,0),(-1,-1),"Helvetica"),("FONTSIZE",(0,0),(-1,-1),9),("BACKGROUND",(0,0),(0,-1),colors.whitesmoke),("LEFTPADDING",(0,0),(-1,-1),6),("RIGHTPADDING",(0,0),(-1,-1),6),("TOPPADDING",(0,0),(-1,-1),5),("BOTTOMPADDING",(0,0),(-1,-1),5)]))
+            story.append(t)
+    section(l["trip"],[
+        ("Origen",data.get("origin","")),
+        ("Destino",data.get("destination","")),
+        ("Aerolínea",data.get("airline","")),
+        ("Número de vuelo",data.get("flight_number","")),
+        ("Salida",data.get("departure") or data.get("departure_date","")),
+        ("Regreso",data.get("return_date","")),
+        ("Pasajeros",data.get("passengers",""))
+    ])
+    section(l["identity"],[
+        ("Nacionalidad",data.get("nationality","")),
+        ("País del pasaporte",data.get("passport_country","")),
+        ("País de residencia",data.get("country_of_residence","")),
+        ("Vigencia del pasaporte",data.get("passport_valid_until","")),
+        ("Nacionalidad cubana",data.get("cuban_nationality","")),
+        ("Doble nacionalidad",data.get("dual_citizen",""))
+    ])
+    section(l["cuba"],[
+        ("Motivo",data.get("purpose","")),
+        ("Llegada",data.get("arrival_date","")),
+        ("Salida",data.get("departure_date","")),
+        ("D’Viajeros",data.get("dviajeros_done","")),
+        ("Visa/eVisa",data.get("visa_checked","")),
+        ("Aduana",data.get("customs_checked","")),
+        ("Documentos",data.get("documents_checked",""))
+    ])
+    b=data.get("baggage") or {}
+    section(l["baggage"],[(str(k),v) for k,v in b.items()])
+    items=data.get("items") or []
+    if items:
+        rows=[]
+        for i,x in enumerate(items,1):
+            if isinstance(x,dict):
+                rows.append((f"Artículo {i}",", ".join(f"{k}: {v}" for k,v in x.items())))
+            else:rows.append((f"Artículo {i}",x))
+        section(l["items"],rows)
+    pending=data.get("pending") or data.get("current_pending") or []
+    if isinstance(pending,str):pending=[pending]
+    section(l["pending"],[("Pendiente",x) for x in pending] or [("Estado","No hay pendientes registrados")])
+    section(l["next"],[("Acción",data.get("next_action","Revisar fuentes oficiales antes del viaje."))])
+    try:
+        import source_registry as sr
+        sources=sr.official_sources()
+    except Exception:
+        sources=[]
+    if sources:
+        rows=[(x.get("name",""),x.get("url","")) for x in sources[:20]]
+        section(l["sources"],rows)
+    story.extend([
+        Spacer(1,15),
+        Paragraph("May Roga LLC — servicio independiente de preparación y orientación. No es gobierno, aerolínea, aeropuerto, aduana, inmigración, consulado ni agencia de viajes.",ParagraphStyle("Foot",fontSize=8,leading=11)),
+        Paragraph("Los requisitos pueden cambiar. Verifica siempre la información final con las autoridades, aerolínea u operador oficial correspondiente.",ParagraphStyle("Foot2",fontSize=8,leading=11))
+    ])
+    return story
 
-@app.get("/api/v1/airlines")
-async def airlines():
-    return {"ok":True,"airlines":airline_links()}
+@app.post("/api/pdf")
+async def pdf(req:PDFRequest):
+    d=model_dict(req)
+    data=d.get("data") or {}
+    lang=d.get("lang") or "es"
+    buf=io.BytesIO()
+    doc=SimpleDocTemplate(buf,pagesize=LETTER,rightMargin=35,leftMargin=35,topMargin=35,bottomMargin=35,title=APP_NAME,author="May Roga LLC")
+    doc.build(_pdf_lines(data,lang))
+    buf.seek(0)
+    return StreamingResponse(buf,media_type="application/pdf",headers={"Content-Disposition":"attachment; filename=mi-guia-que-quieres-llevar.pdf"})
 
-@app.get("/api/v1/sources")
-async def sources(topic:str="",query:str=""):
-    q=clean(query or topic)
-    return {"ok":True,"sources":official_sources_for(q)}
+@app.post("/api/pdf/import")
+async def pdf_import(req:PDFImportRequest):
+    d=model_dict(req)
+    recovery=d.get("recovery_data") or {}
+    if recovery:
+        return {"status":"ok","recovered":True,"data":recovery,"next_action":"Continúa con tu preparación."}
+    text=d.get("text","")
+    if not text:
+        return {"status":"incomplete","recovered":False,"data":{},"message":"Este endpoint necesita los datos recuperados del documento para reconstruir la preparación.","next_action":"Selecciona un archivo compatible con datos de recuperación."}
+    result={}
+    patterns={
+        "origin":r"Origen\s*[:\-]\s*(.+)",
+        "destination":r"Destino\s*[:\-]\s*(.+)",
+        "airline":r"Aerolínea\s*[:\-]\s*(.+)",
+        "flight_number":r"Número de vuelo\s*[:\-]\s*(.+)",
+        "nationality":r"Nacionalidad\s*[:\-]\s*(.+)",
+        "passport_country":r"País del pasaporte\s*[:\-]\s*(.+)",
+        "country_of_residence":r"País de residencia\s*[:\-]\s*(.+)",
+        "purpose":r"Motivo\s*[:\-]\s*(.+)",
+        "arrival_date":r"Llegada\s*[:\-]\s*(.+)",
+        "departure_date":r"Salida\s*[:\-]\s*(.+)"
+    }
+    for k,p in patterns.items():
+        m=re.search(p,text,re.I)
+        if m:result[k]=m.group(1).strip()
+    return {"status":"ok" if result else "incomplete","recovered":bool(result),"data":result,"next_action":"Revisa los datos recuperados y continúa con la práctica." if result else "No se encontraron datos recuperables."}
 
-@app.get("/api/v1/official")
-async def official(topic:str="",query:str=""):
-    return {"ok":True,"sources":official_sources_for(clean(query or topic))}
+@app.post("/api/export")
+async def export_trip(req:TripExportRequest):
+    d=model_dict(req)
+    return {"status":"ok","format":"local-recovery-data","server_storage":False,"data":d.get("data",{}),"next_action":"Puedes conservar estos datos localmente para continuar después."}
 
-@app.get("/api/v1/legal")
+@app.delete("/api/local-data")
+async def delete_local_data(req:DeleteLocalRequest):
+    if not req.confirm:
+        return {"status":"confirmation_required","message":"La aplicación no puede borrar el almacenamiento del navegador desde el servidor. Confirma y utiliza el botón de borrar datos de la aplicación.","server_storage":False}
+    return {"status":"ok","server_storage":False,"message":"El servidor no conserva los datos locales del cliente.","next_action":"El almacenamiento local debe eliminarse desde el navegador/dispositivo."}
+
+@app.get("/api/legal",response_model=LegalResponse)
 async def legal():
     return {
-        "ok":True,
-        "company":COMPANY,
-        "app":APP_NAME,
-        "notice_es":(
-            "May Roga LLC ofrece preparación y orientación independiente. "
-            "No es gobierno, aerolínea, aeropuerto, aduana, inmigración, consulado, agencia de viajes, "
-            "procesador de pagos ni autoridad que tome decisiones oficiales."
-        ),
-        "notice_en":(
-            "May Roga LLC provides independent preparation and guidance. "
-            "It is not a government agency, airline, airport, customs authority, immigration authority, "
-            "consulate, travel agency, payment processor, or official decision-maker."
-        ),
-        "free":True,
-        "payment_required":False,
-        "login_required":False,
-        "server_storage":False
+        "status":"ok",
+        "title":"Aviso legal",
+        "message":"¿QUÉ QUIERES LLEVAR? es una herramienta independiente de preparación y orientación de May Roga LLC.",
+        "points":[
+            "No es gobierno ni una autoridad oficial.",
+            "No es aerolínea, aeropuerto, aduana, inmigración ni consulado.",
+            "No es agencia de viajes ni operador charter.",
+            "No reserva ni compra vuelos.",
+            "No procesa pagos.",
+            "No presenta solicitudes oficiales.",
+            "Las prácticas de visa y D’Viajeros son simulaciones.",
+            "Las decisiones finales corresponden a las autoridades y proveedores oficiales.",
+            "El usuario debe verificar la información vigente antes de viajar."
+        ]
     }
 
-@app.get("/api/v1/cuba/guide")
-async def cuba_guide():
-    return {
-        "ok":True,
-        "guide":cuba_config(),
-        "notice":cuba_engine.disclaimer()
-    }
-
-@app.get("/api/v1/cuba/config")
-async def cuba_configuration():
-    return {
-        "ok":True,
-        "config":cuba_config(),
-        "notice":cuba_engine.disclaimer()
-    }
-
-@app.post("/api/v1/cuba/visa")
-async def cuba_visa(request:Request):
-    data=await read_json(request)
-    try:
-        result=cuba_engine.evaluate_visa(data)
-    except Exception as e:
-        raise HTTPException(400,str(e))
-    return {"ok":True,"result":result,"official_sources":cuba_sources()}
-
-@app.post("/api/v1/cuba/dviajeros")
-async def cuba_dviajeros(request:Request):
-    data=await read_json(request)
-    try:
-        result=cuba_engine.evaluate_dviajeros(data)
-    except Exception as e:
-        raise HTTPException(400,str(e))
-    return {"ok":True,"result":result,"official_sources":cuba_sources()}
-
-@app.post("/api/v1/cuba/simulation")
-async def cuba_simulation(request:Request):
-    data=await read_json(request)
-    mode=clean(data.get("mode") or data.get("scenario") or "dviajeros")
-    try:
-        result=cuba_engine.simulation(mode)
-    except Exception as e:
-        raise HTTPException(400,str(e))
-    return {
-        "ok":True,
-        "simulation":result,
-        "official_submission":False,
-        "notice":"Esto es una práctica. No envía información a Cuba ni crea un trámite real.",
-        "official_sources":cuba_sources()
-    }
-
-@app.post("/api/v1/practice")
-async def practice(request:Request):
-    data=await read_json(request)
-    scenario=clean(data.get("scenario") or data.get("mode") or "general")
-    step=data.get("step",0)
-    try:
-        step=int(step)
-    except Exception:
-        step=0
-    steps=[
-        {"step":0,"title":"Preparar","instruction":"Reúne la información que ya tienes antes de continuar.","next":"Continuar"},
-        {"step":1,"title":"Revisar","instruction":"Comprueba los datos conocidos y completa únicamente lo que falte.","next":"Continuar"},
-        {"step":2,"title":"Practicar","instruction":"Realiza la simulación paso a paso. No se enviará información real.","next":"Continuar"},
-        {"step":3,"title":"Confirmar","instruction":"Revisa el resultado de la práctica y anota la próxima acción.","next":"Finalizar"}
-    ]
-    current=steps[min(max(step,0),len(steps)-1)]
-    return {
-        "ok":True,
-        "mode":"simulation",
-        "scenario":scenario,
-        "official_submission":False,
-        "notice":"Esta práctica no envía formularios ni realiza reservas reales.",
-        "completed":current["step"]>=3,
-        "pending":current["step"]<3,
-        "progress":current["step"],
-        "current_step":current,
-        "steps":steps,
-        "simulation_id":clean(data.get("simulation_id")) or f"local-{scenario}",
-        "sources":cuba_sources() if is_cuba(data) else official_sources_for(scenario)
-    }
-
-@app.post("/api/v1/flight/search-external")
-async def flight_search_external(request:Request):
-    data=await read_json(request)
-    origin=clean(data.get("origin") or data.get("from"))
-    destination=clean(data.get("destination") or data.get("to"))
-    date=clean(data.get("date"))
-    q=" ".join(x for x in (origin,destination,date) if x)
-    links=[]
-    if q:
-        links.append({
-            "name":"Google Flights",
-            "url":"https://www.google.com/travel/flights?q="+urllib.parse.quote_plus(q) if False else "https://www.google.com/travel/flights"
-        })
-    airline_name=clean(data.get("airline"))
-    for a in airline_links():
-        if airline_name and airline_name.lower() not in a["name"].lower():
-            continue
-        links.append(a)
-    return {
-        "ok":True,
-        "search":data,
-        "results":[],
-        "official_links":links,
-        "notice":"La aplicación no inventa disponibilidad ni precios. Usa los enlaces oficiales para realizar la búsqueda real."
-    }
-
-@app.post("/api/v1/flight")
-async def flight(request:Request):
-    data=await read_json(request)
-    airline=clean(data.get("airline"))
-    matches=[]
-    if airline:
-        for a in airline_links():
-            if airline.lower() in a["name"].lower() or airline.lower() in a["id"].lower():
-                matches.append(a)
-    return {
-        "ok":True,
-        "request":data,
-        "airline":airline,
-        "airlines":matches or airline_links(),
-        "notice":"La información de vuelos reales debe verificarse directamente con la aerolínea o fuente oficial.",
-        "next_action":"Elige la aerolínea y abre su sitio oficial para consultar vuelos actuales."
-    }
-
-@app.post("/api/v1/booking")
-async def booking(request:Request):
-    data=await read_json(request)
-    airline=clean(data.get("airline"))
-    fields=[
-        "origen","destino","fecha","pasajeros","equipaje","asiento",
-        "información del pasajero","revisión final"
-    ]
-    return {
-        "ok":True,
-        "mode":"simulation",
-        "simulation":True,
-        "real_booking":False,
-        "payment":False,
-        "official_submission":False,
-        "airline":airline,
-        "fields":fields,
-        "steps":[
-            "Seleccionar vuelo",
-            "Revisar datos del viaje",
-            "Elegir equipaje",
-            "Revisar datos del pasajero",
-            "Revisar el precio mostrado por la aerolínea",
-            "Finalizar la práctica"
-        ],
-        "notice":"Esta práctica se parece al proceso real, pero nunca compra un boleto ni envía una reserva.",
-        "next_action":"Cuando termines la práctica, abre el sitio oficial de la aerolínea para hacer la operación real."
-    }
-
-@app.post("/api/v1/connection")
-async def connection(request:Request):
-    data=await read_json(request)
-    return {
-        "ok":True,
-        "request":data,
-        "simulation":True,
-        "steps":[
-            "Identificar aeropuerto de llegada",
-            "Identificar siguiente vuelo",
-            "Revisar terminal y tiempo disponible",
-            "Comprobar documentos y equipaje",
-            "Confirmar instrucciones con las fuentes oficiales"
-        ],
-        "notice":"Los tiempos, terminales y requisitos reales deben verificarse para el vuelo concreto."
-    }
-
-@app.post("/api/v1/baggage")
-async def baggage(request:Request):
-    data=await read_json(request)
-    airline=clean(data.get("airline"))
-    result=[]
-    for s in baggage_sources():
-        d=s if isinstance(s,dict) else source_dict(s)
-        if not airline or airline.lower() in json.dumps(d,ensure_ascii=False).lower():
-            result.append(d)
-    if not result:
-        result=baggage_sources()
-    return {
-        "ok":True,
-        "airline":airline,
-        "guidance":result,
-        "notice":"Las dimensiones, peso y restricciones pueden cambiar. Verifica siempre la regla oficial de la aerolínea y, cuando corresponda, la autoridad de seguridad o aduana."
-    }
-
-@app.post("/api/v1/item")
-async def item(request:Request):
-    data=await read_json(request)
-    question=clean(data.get("question") or data.get("item") or data.get("text"))
-    language=clean(data.get("language")) or "es"
-    if not question:
-        return {
-            "ok":False,
-            "status":"missing",
-            "answer":"Escribe el nombre del artículo que quieres consultar.",
-            "next_action":"Ejemplo: ¿Puedo llevar agua en mi equipaje?"
-        }
-    prompt=item_prompt(question,data,language)
-    result=gemini_request(prompt)
-    if result.get("ok"):
-        answer=result.get("data",{})
-        if isinstance(answer,dict):
-            answer.setdefault("needs_confirmation",True)
-            answer.setdefault("next_action","Verifica la fuente oficial antes de empacar.")
-            return {"ok":True,"item":question,"ai_assisted":True,"result":answer}
-    return {
-        "ok":True,
-        "item":question,
-        "ai_assisted":False,
-        "result":local_item_fallback(question,data,language),
-        "gemini_reason":result.get("reason","")
-    }
-
-@app.post("/api/v1/consultar-articulo")
-async def consultar_articulo(request:Request):
-    return await item(request)
-
-@app.post("/api/v1/item/teach")
-async def item_teach(request:Request):
-    data=await read_json(request)
-    term=clean(data.get("term") or data.get("item") or data.get("question"))
-    language=clean(data.get("language")) or "es"
-    common={
-        "carry-on":("Equipaje de mano","La pieza que llevas contigo en la cabina."),
-        "personal item":("Artículo personal","Una pieza pequeña que normalmente va debajo del asiento, según las reglas de la aerolínea."),
-        "checked baggage":("Equipaje facturado","La maleta que entregas a la aerolínea para viajar en la bodega."),
-        "connection":("Conexión","Cuando tu viaje incluye más de un vuelo para llegar al destino."),
-        "visa":("Visa","Un documento o autorización que puede ser necesaria según el país, nacionalidad y propósito del viaje."),
-        "d'viajeros":("D'Viajeros","Formulario oficial relacionado con el viaje a Cuba.")
-    }
-    key=term.lower()
-    title,definition=common.get(key,(term,"Este término debe entenderse según el contexto específico del viaje y la fuente oficial correspondiente."))
-    return {
-        "ok":True,
-        "language":language,
-        "term":term,
-        "title":title,
-        "definition":definition,
-        "next_action":"Continúa con el siguiente paso de tu preparación."
-    }
-
-@app.post("/api/v1/documents")
-async def documents(request:Request):
-    data=await read_json(request)
-    return {
-        "ok":True,
-        "request":data,
-        "documents":[
-            "Pasaporte o documento de viaje aplicable",
-            "Documentos requeridos por el destino",
-            "Información de vuelo",
-            "Documentos de entrada cuando correspondan",
-            "Documentación adicional indicada por las autoridades oficiales"
-        ],
-        "notice":"La lista final depende de la nacionalidad, destino, tránsito y motivo del viaje. Verifica cada requisito con la fuente oficial."
-    }
-
-@app.post("/api/v1/guide")
-async def guide(request:Request):
-    data=await read_json(request)
-    missing=[]
-    for key,label in (
-        ("origin","origen"),
-        ("destination","destino"),
-        ("date","fecha"),
-        ("airline","aerolínea")
-    ):
-        if not clean(data.get(key)):
-            missing.append(label)
-    if is_cuba(data):
-        next_action="Revisa primero los requisitos oficiales de entrada a Cuba, D’Viajeros, visa/eVisa y documentación."
-    elif missing:
-        next_action=f"Completa primero: {', '.join(missing)}."
-    else:
-        next_action="Continúa con la práctica de vuelo, equipaje y documentos."
-    return {
-        "ok":True,
-        "diagnosis":{
-            "type":"preparation_status",
-            "known":data,
-            "missing":missing,
-            "next_action":next_action,
-            "official_decision":False
-        },
-        "notice":"Esto es una evaluación de preparación, no una decisión oficial de inmigración, visa, aduana o aerolínea."
-    }
-
-@app.post("/api/v1/solve")
-async def solve(request:Request):
-    data=await read_json(request)
-    question=clean(data.get("question"))
-    if not question:
-        return {
-            "ok":False,
-            "answer":"Escribe una pregunta concreta sobre un artículo que quieres llevar.",
-            "next_action":"Usa la consulta de artículo para revisar equipaje."
-        }
-    return await item(request)
-
-@app.post("/api/v1/pdf")
-async def pdf(request:Request):
-    data=await read_json(request)
-    state=data.get("state")
-    if not isinstance(state,dict):
-        state=data
-    language=clean(data.get("language")) or "es"
-    pdf=build_pdf(state,language)
-    return Response(
-        content=pdf,
-        media_type="application/pdf",
-        headers={
-            "Content-Disposition":'attachment; filename="mi_resumen_que_quieres_llevar.pdf"',
-            "Cache-Control":"no-store"
-        }
-    )
-
-@app.post("/api/v1/pdf/export")
-async def pdf_export(request:Request):
-    return await pdf(request)
-
-@app.post("/api/v1/pdf/import")
-async def pdf_import(file:UploadFile=File(...)):
-    raw=await file.read()
-    if len(raw)>MAX_BODY:
-        raise HTTPException(413,"El PDF es demasiado grande.")
-    if not raw.startswith(b"%PDF"):
-        raise HTTPException(400,"El archivo enviado no parece ser un PDF válido.")
-    try:
-        state=extract_state_from_pdf(raw)
-    except Exception as e:
-        raise HTTPException(
-            400,
-            "No se pudo recuperar este PDF. Importa el PDF generado por ¿QUÉ QUIERES LLEVAR?."
-        )
-    return {
-        "ok":True,
-        "recovered":True,
-        "local_only":True,
-        "server_storage":False,
-        "filename":file.filename or "",
-        "state":state,
-        "next_action":"Revisa los datos recuperados y cambia solamente lo que haya cambiado."
-    }
-
-@app.post("/api/v1/data/delete")
-async def data_delete():
-    return {
-        "ok":True,
-        "clear_local":True,
-        "server_storage":False,
-        "message":"La aplicación no guarda permanentemente los datos del cliente en el servidor. Borra el estado local de este dispositivo para eliminarlo de la aplicación.",
-        "next_action":"Confirma la eliminación en la aplicación y limpia su almacenamiento local."
-    }
-
-@app.post("/api/v1/local-data/delete")
-async def local_data_delete():
-    return await data_delete()
-
-@app.get("/api/v1/cuba/sources")
-async def cuba_sources_endpoint():
-    return {
-        "ok":True,
-        "official_sources":cuba_sources(),
-        "charters":charter_sources(),
-        "commercial_baggage":baggage_sources()
-    }
-
-@app.exception_handler(404)
-async def not_found(request:Request,exc:Exception):
-    return JSONResponse(
-        status_code=404,
-        content={
-            "ok":False,
-            "error":"Ruta no encontrada.",
-            "path":request.url.path,
-            "app":APP_NAME
-        }
-    )
+@app.get("/api/ping")
+async def ping():
+    return {"status":"ok","version":VERSION,"app":APP_NAME,"free":True,"login_required":False,"payment_required":False}
 
 @app.exception_handler(Exception)
-async def generic_error(request:Request,exc:Exception):
-    return JSONResponse(
-        status_code=500,
-        content={
-            "ok":False,
-            "error":"Ocurrió un error interno.",
-            "detail":str(exc),
-            "app":APP_NAME
-        }
-    )
+async def unhandled(request:Request,exc:Exception):
+    return JSONResponse(status_code=500,content={"status":"error","message":"Ocurrió un error interno al procesar la solicitud.","details":{"type":exc.__class__.__name__}})
