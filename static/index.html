@@ -4,630 +4,337 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>¿QUÉ QUIERES LLEVAR? | May Roga LLC</title>
-<meta name="description" content="Preparación sencilla para vuelos, equipaje, documentos, visa y D’Viajeros.">
+<meta name="description" content="Preparación sencilla para viajar a Cuba: D'Viajeros, e-Visa, vuelos, equipaje, artículos y documentos oficiales.">
 <style>
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#000;color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:18px;line-height:1.5}button,input,select,textarea{font:inherit}button{cursor:pointer}.wrap{width:min(1100px,94%);margin:auto}.top{position:sticky;top:0;z-index:20;background:#000;border-bottom:1px solid #333}.topin{min-height:70px;display:flex;align-items:center;justify-content:space-between;gap:15px}.brand{font-size:22px;font-weight:800}.lang{background:#fff;color:#000;border:0;border-radius:10px;padding:10px 15px;font-weight:800}.hero{text-align:center;padding:42px 10px 28px}.hero h1{font-size:clamp(32px,6vw,58px);margin:0 0 12px}.hero p{max-width:760px;margin:8px auto;color:#ddd;font-size:21px}.notice{border:1px solid #555;border-radius:14px;padding:15px;margin:18px auto 30px;max-width:900px;background:#090909;color:#ddd}.notice strong{color:#fff}.home-title{font-size:28px;margin:25px 0 15px}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:16px}.card{background:#fff;color:#000;border:0;border-radius:18px;padding:25px 20px;min-height:150px;text-align:left;font-weight:800;transition:.15s}.card:hover,.card:focus{transform:translateY(-2px)}.card small{display:block;font-weight:400;margin-top:8px;line-height:1.35}.panel{display:none;border:1px solid #444;border-radius:18px;margin:25px 0;padding:25px;background:#050505}.panel.active{display:block}.panel h2{font-size:32px;margin:0 0 8px}.panel>p{color:#ddd}.stepbar{margin:20px 0}.steptext{font-weight:700;margin-bottom:8px}.bar{height:9px;background:#333;border-radius:20px;overflow:hidden}.bar i{display:block;height:100%;background:#fff;width:0}.question{border:1px solid #444;border-radius:16px;padding:22px;margin:20px 0;background:#080808}.question h3{font-size:26px;margin:0 0 8px}.question p{color:#ccc;margin-top:4px}.field{margin:17px 0}.field label{display:block;font-weight:800;margin-bottom:7px}.field input,.field select,.field textarea{width:100%;padding:14px;border:2px solid #777;border-radius:10px;background:#000;color:#fff;min-height:50px}.field input:focus,.field select:focus,.field textarea:focus{outline:3px solid #fff}.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:22px}.primary,.secondary,.danger{border:1px solid #fff;border-radius:10px;padding:13px 18px;font-weight:800}.primary{background:#fff;color:#000}.secondary{background:#000;color:#fff}.danger{background:#000;color:#fff;border-color:#777}.result{border:1px solid #fff;border-radius:15px;padding:20px;margin-top:20px;background:#fff;color:#000}.result h3{margin-top:0}.result a{color:#000;font-weight:800}.summary{white-space:pre-wrap}.backhome{margin-top:20px}.hidden{display:none!important}.official{display:inline-block;background:#fff;color:#000;text-decoration:none;border-radius:10px;padding:13px 18px;font-weight:800}.footer{border-top:1px solid #333;margin-top:40px;padding:30px 0;color:#aaa;font-size:15px}.check{display:flex;gap:10px;align-items:flex-start}.check input{width:24px;height:24px}.bigchoice{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:15px;margin-top:20px}.bigchoice button{min-height:120px;border-radius:16px;border:2px solid #fff;background:#000;color:#fff;padding:20px;text-align:left}.bigchoice strong{font-size:23px;display:block}.muted{color:#aaa}.error{border:1px solid #fff;padding:15px;border-radius:12px;margin-top:15px}.whitebox{background:#fff;color:#000;border-radius:15px;padding:20px}.whitebox input,.whitebox select{background:#fff;color:#000;border:1px solid #333}.mini{font-size:15px;color:#aaa}@media(max-width:600px){body{font-size:17px}.hero{padding-top:28px}.panel{padding:17px}.actions button,.actions a{width:100%;text-align:center}.card{min-height:125px}}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0;background:#000;color:#fff;font-family:Arial,Helvetica,sans-serif}
+body{min-height:100vh}
+button,input,select,textarea{font:inherit}
+button{cursor:pointer}
+a{color:#fff}
+.wrap{width:min(920px,94%);margin:auto}
+header{padding:22px 0 14px;text-align:center;border-bottom:1px solid #333}
+.logo{font-size:clamp(25px,5vw,40px);font-weight:800;letter-spacing:.4px}
+.brand{font-size:14px;margin-top:6px;color:#ddd}
+.legal{margin:14px auto 0;padding:10px 12px;border:1px solid #444;border-radius:8px;font-size:12px;line-height:1.45;color:#ddd;max-width:760px}
+h1{font-size:24px;text-align:center;margin:24px 0 8px}
+.lead{text-align:center;color:#ddd;font-size:15px;line-height:1.5;margin:0 auto 20px;max-width:720px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin:18px 0}
+.card{background:#000;border:1px solid #555;border-radius:10px;padding:17px;min-height:112px;text-align:left}
+.card:hover{border-color:#fff}
+.card strong{display:block;font-size:17px;margin-bottom:7px}
+.card span{display:block;color:#ccc;font-size:13px;line-height:1.45}
+.primary{border:2px solid #fff}
+.panel{display:none;border:1px solid #555;border-radius:10px;padding:18px;margin:16px 0}
+.panel.show{display:block}
+.panel h2{margin:0 0 14px;font-size:20px}
+label{display:block;margin:10px 0 5px;font-size:13px;color:#ddd}
+input,select,textarea{width:100%;background:#000;color:#fff;border:1px solid #666;border-radius:7px;padding:11px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:#fff}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.btn{background:#fff;color:#000;border:1px solid #fff;border-radius:7px;padding:10px 14px;font-weight:700}
+.btn.alt{background:#000;color:#fff}
+.result{margin-top:15px;border-top:1px solid #444;padding-top:15px;line-height:1.5}
+.result strong{font-size:17px}
+.notice{border:1px solid #777;border-radius:7px;padding:11px;margin:10px 0;color:#eee;font-size:13px}
+.step{border-left:3px solid #fff;padding:10px 12px;margin:10px 0}
+.step b{display:block;margin-bottom:5px}
+.official{display:block;border:1px solid #555;border-radius:7px;padding:11px;margin:8px 0;text-decoration:none}
+.official:hover{border-color:#fff}
+.small{font-size:12px;color:#aaa;line-height:1.4}
+.hidden{display:none!important}
+footer{border-top:1px solid #333;margin-top:30px;padding:18px 0 28px;text-align:center;color:#aaa;font-size:12px;line-height:1.5}
+@media(max-width:650px){.grid{grid-template-columns:1fr}.card{min-height:auto}.wrap{width:92%}}
 </style>
 </head>
 <body>
-<header class="top">
-<div class="wrap topin">
-<div class="brand">¿QUÉ QUIERES LLEVAR?</div>
-<button class="lang" id="langBtn" type="button" onclick="toggleLang()">EN</button>
-</div>
+<div class="wrap">
+<header>
+<div class="logo">¿QUÉ QUIERES LLEVAR?</div>
+<div class="brand">May Roga LLC</div>
+<div class="legal">Herramienta independiente de preparación y orientación. No es gobierno, aerolínea, aeropuerto, aduana, inmigración, consulado, agencia de viajes ni operador charter. Las decisiones y trámites oficiales se realizan directamente con la autoridad o proveedor correspondiente.</div>
 </header>
 
-<main class="wrap">
-<section class="hero">
-<h1>Prepárate para viajar</h1>
-<p id="heroText">Hazlo tú mismo, paso a paso, sin miedo y sin perderte.</p>
-<div class="notice"><strong>Importante:</strong> May Roga LLC no es una aerolínea, gobierno, aeropuerto, aduana, inmigración, consulado ni agencia de viajes. Esta aplicación te ayuda a prepararte y practicar. Las acciones oficiales se realizan siempre en el sitio oficial correspondiente.</div>
-</section>
+<main>
+<h1>Viaja preparado, paso a paso</h1>
+<p class="lead">Aquí ves solamente lo que necesitas. La aplicación te ayuda a preparar tus datos, responder tus dudas y llegar al sitio oficial correcto.</p>
 
-<section id="home">
-<h2 class="home-title">¿Qué quieres hacer hoy?</h2>
-<div class="bigchoice">
-<button onclick="startProcess('flight')"><strong>✈️ Quiero preparar mi vuelo</strong><span>Te guiamos desde el origen hasta llegar al sitio oficial.</span></button>
-<button onclick="startProcess('existing')"><strong>🎫 Ya tengo mi vuelo</strong><span>Continúa con tu equipaje, documentos, visa o D’Viajeros.</span></button>
-<button onclick="startProcess('baggage')"><strong>🧳 Quiero preparar mi equipaje</strong><span>Revisa qué debes comprobar antes de viajar.</span></button>
-<button onclick="startProcess('documents')"><strong>📄 Quiero preparar mis documentos</strong><span>Organiza lo que necesitas comprobar para tu viaje.</span></button>
-<button onclick="startProcess('cuba')"><strong>🇨🇺 Voy a viajar a Cuba</strong><span>Prepara el viaje completo sin repetir tus datos.</span></button>
-<button onclick="startProcess('dviajeros')"><strong>📝 Quiero practicar D’Viajeros</strong><span>Recorre los pasos del formulario antes de entrar al sitio oficial.</span></button>
-<button onclick="startProcess('visa')"><strong>🛂 Quiero preparar mi visa</strong><span>Practica y organiza los datos antes de hacerlo oficialmente.</span></button>
-<button onclick="startProcess('continuity')"><strong>📂 Quiero continuar</strong><span>Recupera lo que ya habías preparado.</span></button>
+<div class="grid">
+<button class="card primary" onclick="openPanel('dviajeros')"><strong>1. D'Viajeros</strong><span>Prepara tus datos paso a paso para completar el formulario oficial.</span></button>
+<button class="card" onclick="openPanel('visa')"><strong>2. Visa electrónica</strong><span>Organiza los datos que necesitarás para consultar y realizar el proceso oficial.</span></button>
+<button class="card" onclick="openPanel('llevar')"><strong>3. ¿Qué quieres llevar?</strong><span>Pregunta por un artículo y recibe una orientación clara y su fuente oficial.</span></button>
+<button class="card" onclick="openPanel('vuelos')"><strong>4. Vuelos a Cuba</strong><span>Encuentra los sitios oficiales de aerolíneas y charters.</span></button>
+<button class="card" onclick="openPanel('equipaje')"><strong>5. Equipaje</strong><span>Prepara la información que necesitas revisar antes de viajar.</span></button>
+<button class="card" onclick="openPanel('datos')"><strong>6. Mis datos</strong><span>Guarda localmente tus datos de preparación para no escribirlos otra vez.</span></button>
+<button class="card" onclick="openPanel('pdf')"><strong>7. Mi PDF</strong><span>Crea tu resumen y úsalo como referencia al completar los trámites oficiales.</span></button>
+<button class="card" onclick="openPanel('ayuda')"><strong>8. Ayuda oficial</strong><span>Accede a D'Viajeros, Visa y otras fuentes oficiales cuando quieras comprobar algo.</span></button>
 </div>
-</section>
 
-<section id="panel" class="panel">
-<h2 id="panelTitle"></h2>
-<p id="panelIntro"></p>
-<div id="stepbar" class="stepbar hidden"><div id="steptext" class="steptext"></div><div class="bar"><i id="bar"></i></div></div>
-<div id="content"></div>
+<section id="dviajeros" class="panel">
+<h2>D'Viajeros</h2>
+<div class="notice">Aquí organizamos tus datos para que puedas verlos, copiarlos y pegarlos en el formulario oficial. La aplicación no presenta el formulario oficial por ti.</div>
+<div id="dvForm">
+<label>Nombres</label><input id="dv_given">
+<label>Apellidos</label><input id="dv_surnames">
+<label>Número de pasaporte</label><input id="dv_passport">
+<label>Nacionalidad</label><input id="dv_nationality">
+<label>Sexo</label><input id="dv_sex">
+<label>Fecha de nacimiento</label><input id="dv_birth">
+<label>País de residencia</label><input id="dv_residence">
+<label>Número de Visa / referencia, si corresponde</label><input id="dv_visa">
+<label>País de procedencia</label><input id="dv_origin">
+<label>Aerolínea</label><input id="dv_airline">
+<label>Número de vuelo</label><input id="dv_flight">
+<label>Fecha de entrada</label><input id="dv_arrival">
+<label>Aeropuerto de llegada</label><input id="dv_airport">
+<label>Dirección de alojamiento</label><textarea id="dv_address" rows="2"></textarea>
 <div class="actions">
-<button class="secondary" type="button" onclick="goHome()">← Volver al inicio</button>
+<button class="btn" onclick="saveProfile()">Guardar localmente</button>
+<button class="btn alt" onclick="showDviajerosSteps()">Ver pasos</button>
+<a class="btn" href="https://dviajeros.mitrans.gob.cu/" target="_blank" rel="noopener">Abrir D'Viajeros oficial</a>
+</div>
+<div id="dvResult" class="result"></div>
 </div>
 </section>
 
-<section id="resultPanel" class="panel">
-<h2>Tu preparación</h2>
-<div id="resultContent"></div>
+<section id="visa" class="panel">
+<h2>Visa electrónica</h2>
+<div class="notice">La aplicación organiza tus datos para que puedas utilizarlos en el proceso oficial. La solicitud y cualquier pago se realizan únicamente en la plataforma oficial.</div>
+<label>Nacionalidad</label><input id="v_nationality">
+<label>Primeros nombres</label><input id="v_given">
+<label>Apellidos</label><input id="v_surname">
+<label>Número de pasaporte</label><input id="v_passport">
+<label>Fecha de nacimiento</label><input id="v_birth">
+<label>Motivo del viaje</label><input id="v_purpose" value="Turismo">
+<label>Correo electrónico</label><input id="v_email" type="email">
 <div class="actions">
-<button class="primary" onclick="makePDF()">Guardar mi PDF</button>
-<button class="secondary" onclick="saveRecovery()">Guardar mi preparación</button>
-<button class="secondary" onclick="goHome()">Volver al inicio</button>
+<button class="btn" onclick="saveProfile()">Guardar localmente</button>
+<button class="btn alt" onclick="showVisaSteps()">Ver pasos</button>
+<a class="btn" href="https://evisacuba.cu/" target="_blank" rel="noopener">Abrir e-Visa oficial</a>
 </div>
+<div id="visaResult" class="result"></div>
 </section>
 
-<section id="continuityPanel" class="panel">
-<h2>Continuar mi preparación</h2>
-<p>Si ya preparaste algo en este dispositivo, podemos recuperarlo.</p>
-<div class="field"><label>Selecciona un archivo de preparación</label><input id="recoveryFile" type="file" accept=".json,.txt,.pdf"></div>
+<section id="llevar" class="panel">
+<h2>¿Qué quieres llevar?</h2>
+<p class="small">Escribe el artículo. La respuesta debe orientarte y mostrarte dónde comprobar la regla oficial. No inventamos una autorización cuando depende de una autoridad o aerolínea.</p>
+<label>¿Qué quieres llevar?</label>
+<input id="itemInput" placeholder="Ej.: medicamentos, batería, comida, líquidos...">
+<label>Aerolínea, si ya la sabes</label>
+<input id="itemAirline" placeholder="Ej.: American Airlines">
 <div class="actions">
-<button class="primary" onclick="importRecovery()">Recuperar</button>
-<button class="secondary" onclick="goHome()">Volver</button>
-<button class="danger" onclick="clearLocal()">Borrar preparación local</button>
+<button class="btn" onclick="askItem()">Preguntar</button>
 </div>
-<div id="recoveryResult"></div>
+<div id="itemResult" class="result"></div>
 </section>
 
-<footer class="footer">
-<div>© May Roga LLC — ¿QUÉ QUIERES LLEVAR?</div>
-<div>Preparación independiente. No sustituye las instrucciones de las autoridades, aerolíneas ni portales oficiales.</div>
-</footer>
+<section id="vuelos" class="panel">
+<h2>Sitios oficiales para vuelos a Cuba</h2>
+<p class="small">Estos botones llevan directamente al sitio del proveedor. La aplicación no compra ni reserva el boleto.</p>
+<div id="airlineList"></div>
+<h3>Charters</h3>
+<div id="charterList"></div>
+</section>
+
+<section id="equipaje" class="panel">
+<h2>Equipaje</h2>
+<p class="small">La franquicia depende de la aerolínea, ruta, tarifa y otros datos. La aplicación te ayuda a organizar la consulta y te lleva a la fuente correspondiente.</p>
+<label>Aerolínea</label><input id="bagAirline">
+<label>Origen</label><input id="bagOrigin">
+<label>Destino</label><input id="bagDestination" value="Cuba">
+<label>Tipo de equipaje</label>
+<select id="bagType"><option value="carry_on">Equipaje de mano</option><option value="checked">Equipaje facturado</option><option value="personal">Artículo personal</option></select>
+<div class="actions"><button class="btn" onclick="checkBaggage()">Consultar</button></div>
+<div id="bagResult" class="result"></div>
+</section>
+
+<section id="datos" class="panel">
+<h2>Mis datos</h2>
+<p class="small">Tus datos de preparación se guardan solamente en este navegador. El servidor no necesita conservarlos.</p>
+<div class="actions">
+<button class="btn" onclick="saveProfile()">Guardar</button>
+<button class="btn alt" onclick="loadProfile()">Recuperar</button>
+<button class="btn alt" onclick="clearLocal()">Borrar datos</button>
+</div>
+<div id="dataResult" class="result"></div>
+</section>
+
+<section id="pdf" class="panel">
+<h2>Mi PDF</h2>
+<p class="small">El PDF es tu resumen de preparación. Puedes conservarlo para consultar tus datos mientras completas los procesos oficiales.</p>
+<div class="actions">
+<button class="btn" onclick="makePDF()">Crear mi PDF</button>
+<label class="btn alt" style="display:inline-block;cursor:pointer">Recuperar archivo<input id="recoveryFile" type="file" accept=".json,.txt" style="display:none" onchange="importRecovery(event)"></label>
+</div>
+<div id="pdfResult" class="result"></div>
+</section>
+
+<section id="ayuda" class="panel">
+<h2>Fuentes oficiales</h2>
+<div id="officialList"></div>
+</section>
 </main>
 
+<footer>
+May Roga LLC — herramienta independiente de preparación y orientación.<br>
+La información puede cambiar. Verifica siempre el dato final en el sitio oficial correspondiente.
+</footer>
+</div>
+
 <script>
-const APP={
- version:"14.0.0",
- lang:localStorage.getItem("qql_lang")||"es",
- trip:JSON.parse(localStorage.getItem("qql_trip")||"{}"),
- process:"",
- steps:[],
- index:0,
- data:{}
-};
+const API="/api";
+const KEY="qql_trip_v13";
+let state=JSON.parse(localStorage.getItem(KEY)||"{}");
 
-const $=id=>document.getElementById(id);
-
-function save(){
- localStorage.setItem("qql_trip",JSON.stringify(APP.trip));
+function openPanel(id){
+ document.querySelectorAll(".panel").forEach(x=>x.classList.remove("show"));
+ const p=document.getElementById(id);if(p)p.classList.add("show");
+ if(id==="vuelos")loadSources();
+ if(id==="ayuda")loadOfficial();
+ if(id==="dviajeros"||id==="visa")loadProfile();
+ if(id==="datos")showData();
+ window.scrollTo({top:p?p.offsetTop-10:0,behavior:"smooth"});
 }
-
-function merge(obj){
- if(!obj||typeof obj!=="object")return;
- APP.trip={...APP.trip,...obj};
- save();
+function val(id){return(document.getElementById(id)||{}).value||""}
+function setv(id,v){const e=document.getElementById(id);if(e&&v!=null)e.value=v}
+function profileFromForm(){
+ return {
+ given_names:val("dv_given")||val("v_given"),
+ surnames:val("dv_surnames")||val("v_surname"),
+ passport_number:val("dv_passport")||val("v_passport"),
+ nationality:val("dv_nationality")||val("v_nationality"),
+ sex:val("dv_sex"),
+ birth_date:val("dv_birth")||val("v_birth"),
+ country_of_residence:val("dv_residence"),
+ visa_number:val("dv_visa"),
+ origin:val("dv_origin"),
+ airline:val("dv_airline"),
+ flight:val("dv_flight"),
+ arrival_date:val("dv_arrival"),
+ arrival_airport:val("dv_airport"),
+ address_destination:val("dv_address"),
+ purpose:val("v_purpose"),
+ email:val("v_email")
+ };
 }
-
-function esc(v){
- return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+function saveProfile(){
+ const p=profileFromForm();state={...state,...p};localStorage.setItem(KEY,JSON.stringify(state));
+ const e=document.getElementById("dataResult");if(e)e.innerHTML="<strong>Datos guardados.</strong><br>Quedan en este dispositivo para ayudarte a continuar.";
 }
-
-function api(url,options={}){
- return fetch(url,{headers:{"Content-Type":"application/json"},...options}).then(async r=>{
-  const text=await r.text();
-  let data={};
-  try{data=JSON.parse(text)}catch(e){throw new Error("No se pudo recibir una respuesta válida.")}
-  if(!r.ok)throw new Error(data.detail||data.message||"No se pudo completar el proceso.");
-  return data;
+function loadProfile(){
+ Object.keys(state).forEach(k=>{
+  const map={given_names:"dv_given",surnames:"dv_surnames",passport_number:"dv_passport",nationality:"dv_nationality",sex:"dv_sex",birth_date:"dv_birth",country_of_residence:"dv_residence",visa_number:"dv_visa",origin:"dv_origin",airline:"dv_airline",flight:"dv_flight",arrival_date:"dv_arrival",arrival_airport:"dv_airport",address_destination:"dv_address",purpose:"v_purpose",email:"v_email"};
+  if(map[k])setv(map[k],state[k]);
  });
 }
-
-function goHome(){
- $("panel").classList.remove("active");
- $("resultPanel").classList.remove("active");
- $("continuityPanel").classList.remove("active");
- $("home").style.display="";
- window.scrollTo({top:0,behavior:"smooth"});
+function showData(){
+ loadProfile();
+ const e=document.getElementById("dataResult");
+ if(e)e.innerHTML=Object.keys(state).length?"<strong>Tus datos están disponibles en este dispositivo.</strong>":"Todavía no hay datos guardados.";
 }
-
-function showPanel(title,intro){
- $("home").style.display="none";
- $("continuityPanel").classList.remove("active");
- $("resultPanel").classList.remove("active");
- $("panel").classList.add("active");
- $("panelTitle").textContent=title;
- $("panelIntro").textContent=intro||"";
- $("content").innerHTML="";
- $("stepbar").classList.add("hidden");
- window.scrollTo({top:0,behavior:"smooth"});
-}
-
-function setSteps(steps,index=0){
- APP.steps=steps||[];
- APP.index=index;
- $("stepbar").classList.toggle("hidden",!APP.steps.length);
- renderStepBar();
-}
-
-function renderStepBar(){
- const total=APP.steps.length;
- if(!total)return;
- const n=Math.min(APP.index+1,total);
- $("steptext").textContent=`Paso ${n} de ${total}`;
- $("bar").style.width=`${Math.round(n*100/total)}%`;
-}
-
-function fieldLabel(field){
- const labels={
- origin:["¿Desde dónde viajas?","Lugar desde donde comienza tu viaje.","text"],
- destination:["¿A dónde vas?","Escribe la ciudad o aeropuerto de destino.","text"],
- origin_country:["¿Desde qué país viajas?","Nos ayuda a preparar correctamente tu viaje.","text"],
- destination_country:["¿A qué país vas?","Indica el país de destino.","text"],
- origin_city:["Ciudad de origen","Escribe la ciudad.","text"],
- destination_city:["Ciudad de destino","Escribe la ciudad.","text"],
- origin_airport:["Aeropuerto de salida","Si lo sabes, puedes escribir el nombre o código.","text"],
- destination_airport:["Aeropuerto de llegada","Si lo sabes, puedes escribir el nombre o código.","text"],
- departure_date:["¿Cuándo sales?","Escribe la fecha de salida.","date"],
- return_date:["¿Cuándo regresas?","Déjalo vacío si tu viaje es solo de ida.","date"],
- adults:["¿Cuántos adultos viajan?","Cuenta las personas adultas.","number"],
- children:["¿Cuántos niños viajan?","Indica cuántos niños viajan.","number"],
- infants:["¿Cuántos bebés viajan?","Indica cuántos bebés viajan.","number"],
- trip_type:["¿Es ida y vuelta?","Elige el tipo de viaje.","select",["one_way","round_trip"]],
- direct:["¿Quieres vuelo sin escalas?","Si no estás seguro, puedes indicarlo.","select",["Sí","No","No estoy seguro"]],
- cabin:["¿Qué cabina buscas?","Si no lo sabes, puedes dejarlo para después.","select",["No lo sé","Economy","Premium Economy","Business","First"]],
- airline:["¿Qué aerolínea quieres revisar?","Puedes elegir una aerolínea o continuar sin decidirla.","text"],
- flight_number:["¿Cuál es tu número de vuelo?","Si todavía no tienes vuelo, déjalo vacío.","text"],
- fare:["¿Qué tarifa tienes o buscas?","Si no lo sabes, puedes dejarlo vacío.","text"],
- baggage:["¿Qué equipaje necesitas?","Puedes prepararlo después.","text"],
- booking_reference:["Código de reserva","Si ya tienes una reserva, puedes escribirlo.","text"],
- nationality:["¿Cuál es tu nacionalidad?","Es importante para revisar los requisitos que puedan depender de tu nacionalidad.","text"],
- passport_country:["¿Qué país emitió tu pasaporte?","Escribe el país que aparece como emisor.","text"],
- passport_number:["Número de pasaporte","Escríbelo exactamente como aparece.","text"],
- passport_expiry:["¿Cuándo vence tu pasaporte?","Usaremos este dato para ayudarte a comprobar la vigencia.","date"],
- residence_country:["¿Dónde resides?","Indica tu país de residencia.","text"],
- purpose:["¿Cuál es el motivo del viaje?","Selecciona o escribe el motivo que corresponda.","text"],
- evisa_number:["Número de eVisa","Si ya tienes una, escríbelo. Si no, puedes continuar.","text"],
- visa_number:["Número de visa","Si ya tienes una visa, escríbelo.","text"],
- first_name:["Nombre","Escríbelo exactamente como aparece en tu documento.","text"],
- middle_name:["Segundo nombre","Si aparece en tu documento, escríbelo.","text"],
- surname:["Apellido","Escríbelo exactamente como aparece.","text"],
- second_surname:["Segundo apellido","Si corresponde, escríbelo.","text"],
- given_names:["Nombres","Escribe todos tus nombres tal como aparecen.","text"],
- birth_date:["Fecha de nacimiento","Usa la fecha de tu documento.","date"],
- gender:["Sexo","Selecciona la opción que corresponda.","text"],
- email:["Correo electrónico","Usa un correo al que tengas acceso.","email"],
- phone:["Teléfono","Usa un número donde puedas recibir comunicaciones.","tel"],
- airline_name:["Aerolínea","Escribe el nombre de la aerolínea.","text"],
- seat_number:["Número de asiento","Si ya lo tienes, escríbelo.","text"],
- point_of_entry:["Punto de entrada","Escribe el aeropuerto o punto de entrada.","text"],
- traveler_country_origin:["País desde donde llegas","Indica el país desde el que llegas a Cuba.","text"],
- travel_reason:["Motivo del viaje","Selecciona el motivo correspondiente.","text"],
- province:["Provincia","Provincia donde te alojarás.","text"],
- municipality:["Municipio","Municipio donde te alojarás.","text"],
- accommodation_type:["Tipo de alojamiento","Hotel, casa u otra opción según corresponda.","text"],
- accommodation_place:["Lugar de alojamiento","Escribe el nombre.","text"],
- address:["Dirección","Escribe la dirección completa cuando corresponda.","text"],
- cash_currency:["Moneda del efectivo","Indica la moneda.","text"],
- cash_amount:["Cantidad de efectivo","Indica la cantidad cuando corresponda.","number"],
- goods_description:["¿Qué bienes declararás?","Describe los bienes cuando corresponda.","text"],
- additional_information:["Información adicional","Completa solo si el formulario lo solicita.","textarea"]
- };
- return labels[field]||[field.replaceAll("_"," "),"Completa este dato cuando corresponda.","text"];
-}
-
-function getValue(field){
- if(APP.data[field]!==undefined)return APP.data[field];
- if(APP.trip[field]!==undefined)return APP.trip[field];
- return "";
-}
-
-function setValue(field,value){
- APP.data[field]=value;
- APP.trip[field]=value;
- save();
-}
-
-function inputFor(field){
- const a=fieldLabel(field),value=getValue(field);
- let html=`<div class="field"><label for="f_${field}">${esc(a[0])}</label><div class="mini">${esc(a[1])}</div>`;
- if(a[2]==="select"){
-  html+=`<select id="f_${field}" onchange="setValue('${field}',this.value)">`;
-  a[3].forEach(x=>html+=`<option value="${esc(x)}" ${String(value)===x?"selected":""}>${esc(x)}</option>`);
-  html+="</select>";
- }else if(a[2]==="textarea"){
-  html+=`<textarea id="f_${field}" rows="4" oninput="setValue('${field}',this.value)">${esc(value)}</textarea>`;
- }else{
-  html+=`<input id="f_${field}" type="${a[2]}" value="${esc(value)}" oninput="setValue('${field}',this.value)">`;
- }
- return html+"</div>";
-}
-
-function choice(title,text,action){
- return `<div class="bigchoice"><button onclick="${action}"><strong>${title}</strong><span>${text}</span></button></div>`;
-}
-
-function startProcess(process){
- APP.process=process;
- APP.data={};
- if(process==="existing"){startExisting();return}
- if(process==="continuity"){showContinuity();return}
- if(process==="flight"){startFlight();return}
- if(process==="baggage"){startBaggage();return}
- if(process==="documents"){startDocuments();return}
- if(process==="cuba"){startCuba();return}
- if(process==="dviajeros"){startDviajeros();return}
- if(process==="visa"){startVisa();return}
-}
-
-function startFlight(){
- showPanel("Quiero preparar mi vuelo","Vamos a hacerlo paso a paso. No compramos el boleto por ti: te preparamos para que puedas hacerlo tú mismo en el sitio oficial.");
- const steps=[
-  {title:"¿Desde dónde viajas?",text:"Primero necesitamos saber desde dónde comienza tu viaje.",fields:["origin_country","origin_city","origin_airport"]},
-  {title:"¿A dónde vas?",text:"Ahora indica tu destino.",fields:["destination_country","destination_city","destination_airport"]},
-  {title:"¿Cuándo viajas?",text:"Indica las fechas de tu viaje.",fields:["trip_type","departure_date","return_date"]},
-  {title:"¿Cuántas personas viajan?",text:"Cuenta a las personas que viajarán contigo.",fields:["adults","children","infants"]},
-  {title:"¿Cómo quieres viajar?",text:"Puedes elegir vuelo directo, con conexiones o dejarlo abierto.",fields:["direct","cabin"]},
-  {title:"¿Qué aerolínea quieres revisar?",text:"Si ya tienes una preferencia, escríbela. Si no, puedes continuar.",fields:["airline","fare","baggage"]},
-  {title:"Revisa tu búsqueda",text:"Comprueba que los datos sean correctos antes de continuar.",fields:[]},
-  {title:"Tu preparación está lista",text:"Ahora podrás abrir la fuente oficial y hacer la búsqueda o compra tú mismo.",fields:[]}
- ];
- APP.steps=steps;APP.index=0;renderFlightStep();
-}
-
-function renderFlightStep(){
- renderStepBar();
- const s=APP.steps[APP.index];
- let html=`<div class="question"><h3>${esc(s.title)}</h3><p>${esc(s.text)}</p>`;
- s.fields.forEach(f=>html+=inputFor(f));
- if(APP.index===6){
-  html+=`<div class="whitebox"><strong>Tu viaje</strong><p>Origen: ${esc(getValue("origin_city")||getValue("origin_country"))}</p><p>Destino: ${esc(getValue("destination_city")||getValue("destination_country"))}</p><p>Salida: ${esc(getValue("departure_date"))}</p><p>Regreso: ${esc(getValue("return_date"))}</p><p>Personas: ${esc(getValue("adults")||1)}</p><p>Aerolínea: ${esc(getValue("airline")||"Todavía no elegida")}</p></div>`;
- }
- if(APP.index===7){
-  html+=`<div class="result"><h3>Ya estás preparado.</h3><p>No hemos comprado ni reservado nada. Tu información está organizada para que puedas continuar en el sitio oficial.</p></div>`;
- }
- html+=`</div><div class="actions">`;
- if(APP.index>0)html+=`<button class="secondary" onclick="prevStep()">← Atrás</button>`;
- if(APP.index<APP.steps.length-1)html+=`<button class="primary" onclick="nextFlight()">Continuar →</button>`;
- else html+=`<button class="primary" onclick="finishFlight()">Guardar preparación</button>`;
- html+=`</div>`;
- $("content").innerHTML=html;
-}
-
-function nextFlight(){
- if(APP.index===0&&!getValue("origin_country")&&!getValue("origin_city")&&!getValue("origin_airport"))return alert("Escribe al menos el lugar desde donde viajas.");
- if(APP.index===1&&!getValue("destination_country")&&!getValue("destination_city")&&!getValue("destination_airport"))return alert("Escribe al menos tu destino.");
- if(APP.index===2&&!getValue("departure_date"))return alert("Indica la fecha de salida.");
- if(APP.index===3&&!getValue("adults"))setValue("adults",1);
- APP.index++;
- renderFlightStep();
-}
-
-function finishFlight(){
- merge({current_process:"flight",flight:{...APP.data},flight_ready:true});
- showResult("Vuelo preparado","Tu preparación del vuelo está guardada. Ahora puedes revisar equipaje, documentos o continuar en el sitio oficial.");
-}
-
-function startExisting(){
- showPanel("Ya tengo mi vuelo","No tienes que volver a buscarlo. Introduce lo que ya sabes y continuaremos desde ahí.");
- const steps=[
-  {title:"Tu vuelo",text:"Escribe los datos principales de tu vuelo.",fields:["airline","flight_number","origin","destination"]},
-  {title:"Tus fechas",text:"Comprueba las fechas de tu viaje.",fields:["departure_date","return_date"]},
-  {title:"Tu reserva",text:"Si tienes código de reserva, puedes guardarlo.",fields:["booking_reference","cabin","fare"]},
-  {title:"Continúa con tu preparación",text:"Ahora puedes revisar equipaje, documentos, visa o D’Viajeros sin repetir los datos.",fields:[]}
- ];
- APP.steps=steps;APP.index=0;renderExistingStep();
-}
-
-function renderExistingStep(){
- renderStepBar();
- const s=APP.steps[APP.index];
- let html=`<div class="question"><h3>${esc(s.title)}</h3><p>${esc(s.text)}</p>`;
- s.fields.forEach(f=>html+=inputFor(f));
- if(APP.index===3){
-  html+=choice("🧳 Revisar equipaje","Preparar tu equipaje.","startProcess('baggage')");
-  html+=choice("📄 Revisar documentos","Preparar tus documentos.","startProcess('documents')");
-  html+=choice("🇨🇺 Viajo a Cuba","Continuar con Cuba, visa y D’Viajeros.","startProcess('cuba')");
- }
- html+=`</div><div class="actions">`;
- if(APP.index>0)html+=`<button class="secondary" onclick="prevStep()">← Atrás</button>`;
- if(APP.index<APP.steps.length-1)html+=`<button class="primary" onclick="nextExisting()">Continuar →</button>`;
- html+=`</div>`;
- $("content").innerHTML=html;
-}
-
-function nextExisting(){
- APP.index++;
- renderExistingStep();
-}
-
-function prevStep(){
- if(APP.index>0){APP.index--;renderCurrent();}
-}
-
-function renderCurrent(){
- if(APP.process==="flight")renderFlightStep();
- else if(APP.process==="existing")renderExistingStep();
- else if(APP.process==="baggage")renderBaggageStep();
- else if(APP.process==="documents")renderDocumentsStep();
- else if(APP.process==="cuba")renderCubaStep();
- else if(APP.process==="dviajeros")renderDviajerosStep();
- else if(APP.process==="visa")renderVisaStep();
-}
-
-function startBaggage(){
- APP.process="baggage";APP.steps=[
-  {title:"Identifica tu viaje",text:"Necesitamos saber qué vuelo estás preparando.",fields:["airline","origin","destination"]},
-  {title:"Identifica tu tarifa",text:"La franquicia de equipaje puede cambiar según la tarifa y la cabina.",fields:["fare","cabin"]},
-  {title:"¿Qué equipaje tienes?",text:"Indica qué quieres revisar.",fields:["baggage"]},
-  {title:"Revisa lo que llevas",text:"Si tienes artículos especiales, puedes revisarlos por separado.",fields:[]},
-  {title:"Comprueba la regla oficial",text:"Antes de preparar o pagar una maleta, comprueba la regla vigente de tu aerolínea.",fields:[]}
- ];APP.index=0;showPanel("Quiero preparar mi equipaje","No vamos a inventar peso, dimensiones ni cantidad. Te ayudaremos a comprobar la regla correcta.");renderBaggageStep();
-}
-
-function renderBaggageStep(){
- renderStepBar();const s=APP.steps[APP.index];
- let html=`<div class="question"><h3>${esc(s.title)}</h3><p>${esc(s.text)}</p>`;
- s.fields.forEach(f=>html+=inputFor(f));
- if(APP.index===3)html+=choice("🔎 Revisar un artículo","Comprueba un artículo concreto.","startItem()");
- if(APP.index===4)html+=`<div class="result"><h3>Comprueba siempre la fuente oficial</h3><p>La aerolínea determina las condiciones de equipaje de tu boleto o tarifa. TSA también puede aplicar reglas de seguridad.</p><button class="primary" onclick="checkBaggage()">Revisar mi equipaje</button></div>`;
- html+=`</div><div class="actions">`;
- if(APP.index>0)html+=`<button class="secondary" onclick="prevStep()">← Atrás</button>`;
- if(APP.index<APP.steps.length-1)html+=`<button class="primary" onclick="nextGeneric()">Continuar →</button>`;
- html+=`</div>`;
- $("content").innerHTML=html;
-}
-
-function nextGeneric(){
- if(APP.index<APP.steps.length-1){APP.index++;renderCurrent();}
-}
-
-function checkBaggage(){
- api("/api/baggage",{method:"POST",body:JSON.stringify({...APP.trip,...APP.data})}).then(r=>{
-  merge({baggage_data:r.rules||r.result||{},baggage_checked:true});
-  showResult("Equipaje preparado",r.message||"Ya sabes qué debes comprobar antes de viajar.",r);
- }).catch(e=>showError(e));
-}
-
-function startItem(){
- APP.process="item";showPanel("¿Puedo llevar esto?","Escribe el artículo. No te daremos una autorización inventada: te indicaremos qué fuente oficial debes comprobar.");
- $("content").innerHTML=`<div class="question">${inputFor("item_name")}<div class="actions"><button class="primary" onclick="checkItem()">Revisar artículo</button></div></div>`;
-}
-
-function checkItem(){
- const item=getValue("item_name");
- if(!item)return alert("Escribe primero el artículo.");
- api("/api/item",{method:"POST",body:JSON.stringify({...APP.trip,...APP.data,item})}).then(r=>showResult("Artículo preparado para revisión",r.message||"Comprueba la regla oficial indicada.",r)).catch(e=>showError(e));
-}
-
-function startDocuments(){
- APP.process="documents";APP.steps=[
-  {title:"Tu identidad",text:"Estos datos ayudan a orientar qué requisitos debes comprobar.",fields:["nationality","residence_country","passport_country","passport_number","passport_expiry"]},
-  {title:"Tu viaje",text:"Ahora relacionamos tus documentos con el itinerario.",fields:["origin","destination","departure_date","return_date","purpose"]},
-  {title:"Comprueba los requisitos",text:"Aquí no inventamos requisitos. Te mostramos qué debes comprobar oficialmente.",fields:[]},
-  {title:"Guarda tu preparación",text:"Conserva este resultado para continuar después.",fields:[]}
- ];APP.index=0;showPanel("Quiero preparar mis documentos","Vamos a organizar tu información sin sustituir la decisión de las autoridades.");renderDocumentsStep();
-}
-
-function renderDocumentsStep(){
- renderStepBar();const s=APP.steps[APP.index];
- let html=`<div class="question"><h3>${esc(s.title)}</h3><p>${esc(s.text)}</p>`;
- s.fields.forEach(f=>html+=inputFor(f));
- if(APP.index===2)html+=`<div class="result"><h3>Fuentes que debes comprobar</h3><p>Pasaporte, visa, salud y autorización de entrada pueden depender de tu nacionalidad y destino.</p></div>`;
- html+=`</div><div class="actions">`;
- if(APP.index>0)html+=`<button class="secondary" onclick="prevStep()">← Atrás</button>`;
- if(APP.index<APP.steps.length-1)html+=`<button class="primary" onclick="nextDocuments()">Continuar →</button>`;
- else html+=`<button class="primary" onclick="checkDocuments()">Guardar documentos</button>`;
- html+=`</div>`;$("content").innerHTML=html;
-}
-
-function nextDocuments(){APP.index++;renderDocumentsStep();}
-
-function checkDocuments(){
- api("/api/documents",{method:"POST",body:JSON.stringify({...APP.trip,...APP.data})}).then(r=>{
-  merge({documents:r.result||{},documents_checked:true});
-  showResult("Documentos preparados",r.message||"Tu preparación de documentos está guardada.",r);
- }).catch(e=>showError(e));
-}
-
-function startCuba(){
- APP.process="cuba";APP.steps=[
-  {title:"Tu viaje a Cuba",text:"Primero reunimos los datos básicos.",fields:["origin_country","nationality","passport_country","residence_country"]},
-  {title:"Tu vuelo",text:"Ahora relacionamos tu vuelo con tu entrada a Cuba.",fields:["airline","flight_number","departure_date","arrival_date","purpose"]},
-  {title:"Tu nacionalidad y pasaporte",text:"Estos datos pueden cambiar los pasos que debes comprobar.",fields:["passport_number","passport_expiry"]},
-  {title:"¿Qué quieres preparar ahora?",text:"Puedes continuar con D’Viajeros, visa, documentos o equipaje.",fields:[]}
- ];APP.index=0;showPanel("Voy a viajar a Cuba","Vamos a preparar el viaje sin repetir información. Después podrás entrar directamente a cada proceso.");renderCubaStep();
-}
-
-function renderCubaStep(){
- renderStepBar();const s=APP.steps[APP.index];
- let html=`<div class="question"><h3>${esc(s.title)}</h3><p>${esc(s.text)}</p>`;
- s.fields.forEach(f=>html+=inputFor(f));
- if(APP.index===3){
-  html+=choice("📝 Practicar D’Viajeros","Recorre todos los pasos antes de entrar al sitio oficial.","startProcess('dviajeros')");
-  html+=choice("🛂 Preparar visa","Organiza los datos antes del proceso oficial.","startProcess('visa')");
-  html+=choice("📄 Preparar documentos","Revisa lo necesario para tu viaje.","startProcess('documents')");
-  html+=choice("🧳 Preparar equipaje","Revisa tu equipaje.","startProcess('baggage')");
- }
- html+=`</div><div class="actions">`;
- if(APP.index>0)html+=`<button class="secondary" onclick="prevStep()">← Atrás</button>`;
- if(APP.index<APP.steps.length-1)html+=`<button class="primary" onclick="nextCuba()">Continuar →</button>`;
- html+=`</div>`;$("content").innerHTML=html;
-}
-
-function nextCuba(){
- APP.index++;
- if(APP.index>=APP.steps.length)APP.index=APP.steps.length-1;
- renderCubaStep();
-}
-
-function startDviajeros(){
- APP.process="dviajeros";
- APP.steps=[
-  {title:"Crear nueva aplicación",text:"Primero selecciona el idioma y prepara el inicio del formulario.",fields:[]},
-  {title:"Datos personales y del documento",text:"Escribe cada dato exactamente como aparece en tu pasaporte.",fields:["first_name","middle_name","surname","second_surname","birth_date","gender","nationality","document_issuing_country","passport_number","residence_country","email","phone"]},
-  {title:"Información migratoria y del vuelo",text:"Ahora prepara los datos de tu entrada a Cuba.",fields:["arrival_date","flight_number","airline_name","point_of_entry","traveler_country_origin","travel_reason","visa_number","evisa_number"]},
-  {title:"Alojamiento en Cuba",text:"Indica dónde te alojarás.",fields:["province","municipality","accommodation_type","accommodation_place","address"]},
-  {title:"Salud",text:"Completa las preguntas de salud exactamente como las solicite el formulario oficial.",fields:["countries_last_15_days","symptoms_last_15_days","vaccination"]},
-  {title:"Aduana",text:"Ahora prepara la parte de aduana. Responde según tu situación real.",fields:["cash_currency","cash_amount","goods_description"]},
-  {title:"Revisa toda la información",text:"Antes de continuar, revisa cada dato. No avances si hay un error.",fields:[]},
-  {title:"Finaliza en el sitio oficial",text:"La aplicación de May Roga no envía el formulario. Ahora puedes hacerlo tú mismo en D’Viajeros.",fields:[]}
- ];
- APP.index=0;showPanel("Practicar D’Viajeros","Vamos a recorrer el proceso completo sin saltarnos pasos. Esto es una práctica, no el formulario oficial.");renderDviajerosStep();
-}
-
-function renderDviajerosStep(){
- renderStepBar();const s=APP.steps[APP.index];
- let html=`<div class="question"><h3>${esc(s.title)}</h3><p>${esc(s.text)}</p>`;
- if(APP.index===0){
-  html+=`<div class="bigchoice"><button onclick="setValue('language','es');nextDviajeros()"><strong>🇪🇸 Español</strong><span>Preparar el formulario en español.</span></button><button onclick="setValue('language','en');nextDviajeros()"><strong>🇺🇸 English</strong><span>Practice the form in English.</span></button></div>`;
- }else s.fields.forEach(f=>html+=inputFor(f));
- if(APP.index===6){
-  html+=`<div class="whitebox"><strong>Revisión final</strong><p>Comprueba nombres, pasaporte, vuelo, alojamiento, salud y aduana antes de continuar.</p><div class="check"><input id="confirmDV" type="checkbox"><label for="confirmDV">He revisado los datos de esta práctica.</label></div></div>`;
- }
- if(APP.index===7){
-  html+=`<div class="result"><h3>Práctica terminada</h3><p>Ya recorriste el proceso. Ahora puedes abrir el sitio oficial y repetir los pasos allí.</p><a class="official" href="https://dviajeros.mitrans.gob.cu/" target="_blank" rel="noopener">Abrir D’Viajeros oficial</a></div>`;
- }
- html+=`</div><div class="actions">`;
- if(APP.index>0)html+=`<button class="secondary" onclick="prevStep()">← Atrás</button>`;
- if(APP.index>0&&APP.index<7)html+=`<button class="primary" onclick="nextDviajeros()">Continuar →</button>`;
- if(APP.index===6)html+=`<button class="primary" onclick="finishDviajeros()">Terminar práctica</button>`;
- if(APP.index===7)html+=`<button class="primary" onclick="finishDviajeros()">Guardar D’Viajeros</button>`;
- html+=`</div>`;$("content").innerHTML=html;
-}
-
-function nextDviajeros(){
- if(APP.index===1&&!getValue("first_name")&&!getValue("given_names"))return alert("Completa al menos tu nombre.");
- if(APP.index===1&&!getValue("passport_number"))return alert("Completa el número de pasaporte.");
- APP.index++;renderDviajerosStep();
-}
-
-function finishDviajeros(){
- merge({dviajeros:{...APP.data},dviajeros_done:true,current_process:"dviajeros"});
- showResult("D’Viajeros preparado","La práctica está completa. Guarda este resultado y utiliza el sitio oficial para hacer el trámite real.",{official_url:"https://dviajeros.mitrans.gob.cu/",pdf_type:"dviajeros"});
-}
-
-function startVisa(){
- APP.process="visa";
- APP.steps=[
-  {title:"Datos personales",text:"Comienza con tus datos exactamente como aparecen en tu documento.",fields:["given_names","surname","gender","nationality","birth_date","place_of_birth"]},
-  {title:"Datos de contacto",text:"Necesitamos preparar los datos de contacto que pueda pedir el formulario.",fields:["email","phone","current_address","city","state_province","country"]},
-  {title:"Datos del pasaporte",text:"Escribe todos los datos del pasaporte que el proceso solicite.",fields:["passport_type","passport_number","issuing_country","issuing_authority","passport_issue_date","passport_expiry"]},
-  {title:"Datos del viaje",text:"Ahora prepara el motivo y los datos del viaje.",fields:["arrival_date","length_of_stay","flight_number","purpose","destination","accommodation"]},
-  {title:"Información adicional",text:"Completa únicamente lo que el proceso oficial solicite.",fields:["additional_information"]},
-  {title:"Revisa antes de continuar",text:"Lee todo nuevamente. Corrige cualquier dato antes de ir al sitio oficial.",fields:[]},
-  {title:"Continúa en el sitio oficial",text:"May Roga no presenta ni paga la solicitud por ti. Tú haces el proceso oficial.",fields:[]}
- ];
- APP.index=0;showPanel("Quiero preparar mi visa","Recorreremos los pasos de preparación sin saltarnos los datos necesarios. La solicitud real se realiza únicamente en el sitio oficial.");renderVisaStep();
-}
-
-function renderVisaStep(){
- renderStepBar();const s=APP.steps[APP.index];
- let html=`<div class="question"><h3>${esc(s.title)}</h3><p>${esc(s.text)}</p>`;
- s.fields.forEach(f=>html+=inputFor(f));
- if(APP.index===5)html+=`<div class="whitebox"><strong>Revisión</strong><p>Comprueba nombres, fecha de nacimiento, nacionalidad, pasaporte, contacto y datos del viaje.</p><div class="check"><input id="confirmVisa" type="checkbox"><label for="confirmVisa">He revisado mi preparación.</label></div></div>`;
- if(APP.index===6)html+=`<div class="result"><h3>Preparación terminada</h3><p>Ya puedes continuar tú mismo en el portal oficial.</p><a class="official" href="https://evisacuba.cu/" target="_blank" rel="noopener">Abrir sitio oficial de visa</a></div>`;
- html+=`</div><div class="actions">`;
- if(APP.index>0)html+=`<button class="secondary" onclick="prevStep()">← Atrás</button>`;
- if(APP.index<5)html+=`<button class="primary" onclick="nextVisa()">Continuar →</button>`;
- if(APP.index===5)html+=`<button class="primary" onclick="finishVisa()">Terminar preparación</button>`;
- if(APP.index===6)html+=`<button class="primary" onclick="finishVisa()">Guardar visa</button>`;
- html+=`</div>`;$("content").innerHTML=html;
-}
-
-function nextVisa(){
- if(APP.index===0&&!getValue("given_names")&&!getValue("first_name"))return alert("Completa tus nombres.");
- if(APP.index===2&&!getValue("passport_number"))return alert("Completa el número de pasaporte.");
- APP.index++;renderVisaStep();
-}
-
-function finishVisa(){
- merge({visa:{...APP.data},visa_checked:true,current_process:"visa"});
- showResult("Visa preparada","Tu preparación está guardada. La solicitud real debe hacerse en el sitio oficial.",{official_url:"https://evisacuba.cu/",pdf_type:"visa"});
-}
-
-function showResult(title,message,data={}){
- $("panel").classList.remove("active");
- $("resultPanel").classList.add("active");
- const next=data.next_action||"Continúa con el siguiente paso de tu viaje.";
- let html=`<div class="result"><h3>${esc(title)}</h3><p>${esc(message)}</p><p><strong>Siguiente acción:</strong> ${esc(next)}</p>`;
- if(data.official_url)html+=`<p><a class="official" href="${esc(data.official_url)}" target="_blank" rel="noopener">Abrir sitio oficial</a></p>`;
- html+=`</div>`;
- $("resultContent").innerHTML=html;
- window.scrollTo({top:0,behavior:"smooth"});
-}
-
-function showError(e){
- $("content").innerHTML+=`<div class="error">No pudimos completar este paso ahora. Tus datos locales no se han borrado. Puedes intentarlo nuevamente.</div>`;
- console.error(e);
-}
-
-function makePDF(){
- const pdfType=APP.process||"guide";
- const payload={trip:APP.trip,data:APP.data,language:APP.lang,pdf_type:pdfType,process:pdfType,title:"Mi preparación de viaje"};
- api("/api/pdf",{method:"POST",body:JSON.stringify(payload)}).then(r=>{
-  if(r.url){window.open(r.url,"_blank");return}
-  if(r.file_url){window.open(r.file_url,"_blank");return}
-  showResult("Preparación guardada","El servidor confirmó la preparación del PDF.",r);
- }).catch(e=>showError(e));
-}
-
-function saveRecovery(){
- const data={
-  version:APP.version,
-  language:APP.lang,
-  trip:APP.trip,
-  saved_at:new Date().toISOString()
- };
- const blob=new Blob([JSON.stringify(data,null,2)],{type:"application/json"});
- const a=document.createElement("a");
- a.href=URL.createObjectURL(blob);
- a.download="mi-preparacion-de-viaje.json";
- a.click();
- URL.revokeObjectURL(a.href);
-}
-
-function showContinuity(){
- $("home").style.display="none";
- $("panel").classList.remove("active");
- $("resultPanel").classList.remove("active");
- $("continuityPanel").classList.add("active");
-}
-
-function importRecovery(){
- const file=$("recoveryFile").files[0];
- if(!file)return alert("Selecciona primero tu archivo.");
- const reader=new FileReader();
- reader.onload=()=>{
-  try{
-   const text=String(reader.result||"");
-   if(file.name.toLowerCase().endsWith(".json")){
-    const obj=JSON.parse(text);
-    if(obj.trip)APP.trip={...APP.trip,...obj.trip};
-    else APP.trip={...APP.trip,...obj};
-    save();
-    $("recoveryResult").innerHTML=`<div class="result"><h3>Preparación recuperada</h3><p>Ya puedes continuar desde el inicio.</p><button class="primary" onclick="goHome()">Continuar</button></div>`;
-   }else{
-    $("recoveryResult").innerHTML=`<div class="result"><h3>Archivo recibido</h3><p>Este tipo de archivo necesita ser interpretado por el servidor antes de reconstruir automáticamente los datos.</p></div>`;
-   }
-  }catch(e){
-   $("recoveryResult").innerHTML=`<div class="error">No pudimos leer ese archivo como una preparación válida.</div>`;
-  }
- };
- reader.readAsText(file);
-}
-
 function clearLocal(){
- if(!confirm("¿Quieres borrar la preparación guardada en este dispositivo?"))return;
- localStorage.removeItem("qql_trip");
- APP.trip={};
- $("recoveryResult").innerHTML=`<div class="result"><h3>Preparación borrada</h3><p>Los datos locales de esta aplicación fueron eliminados.</p></div>`;
+ if(!confirm("¿Quieres borrar los datos guardados en este dispositivo?"))return;
+ localStorage.removeItem(KEY);state={};showData();
 }
-
-function toggleLang(){
- APP.lang=APP.lang==="es"?"en":"es";
- localStorage.setItem("qql_lang",APP.lang);
- $("langBtn").textContent=APP.lang==="es"?"EN":"ES";
- $("heroText").textContent=APP.lang==="es"?"Hazlo tú mismo, paso a paso, sin miedo y sin perderte.":"Do it yourself, step by step, without fear or confusion.";
+function showDviajerosSteps(){
+ document.getElementById("dvResult").innerHTML=`
+ <div class="step"><b>Paso 1 — Datos personales</b>Revisa nombres, apellidos, pasaporte, nacionalidad y fecha de nacimiento.</div>
+ <div class="step"><b>Paso 2 — Datos del viaje</b>Revisa motivo, visa o referencia cuando corresponda.</div>
+ <div class="step"><b>Paso 3 — Vuelo</b>Revisa procedencia, aerolínea, vuelo, fecha y aeropuerto.</div>
+ <div class="step"><b>Paso 4 — Alojamiento</b>Revisa provincia, municipio y dirección donde te alojarás.</div>
+ <div class="step"><b>Paso 5 — Aduana y salud</b>Contesta las preguntas oficiales según tu situación real.</div>
+ <div class="step"><b>Paso 6 — Final</b>Revisa todo antes de enviar y conserva el comprobante oficial.</div>`;
 }
-
-function loadKnown(){
- const t=APP.trip;
- if(t.airline||t.flight_number)console.log("Preparación existente cargada.");
+function showVisaSteps(){
+ document.getElementById("visaResult").innerHTML=`
+ <div class="step"><b>Paso 1 — Pasaporte</b>Revisa que los datos coincidan exactamente con tu documento.</div>
+ <div class="step"><b>Paso 2 — Viaje</b>Revisa nacionalidad, motivo, fechas y demás datos solicitados.</div>
+ <div class="step"><b>Paso 3 — Contacto</b>Utiliza un correo que puedas consultar.</div>
+ <div class="step"><b>Paso 4 — Revisión</b>Comprueba los datos antes de continuar.</div>
+ <div class="step"><b>Paso 5 — Proceso oficial</b>Continúa directamente en la plataforma oficial de e-Visa.</div>`;
 }
-
-loadKnown();
-$("langBtn").textContent=APP.lang==="es"?"EN":"ES";
+async function askItem(){
+ const item=val("itemInput"),airline=val("itemAirline");
+ if(!item){document.getElementById("itemResult").innerHTML="<strong>Escribe el artículo que quieres consultar.</strong>";return}
+ const e=document.getElementById("itemResult");e.innerHTML="Consultando...";
+ try{
+  const r=await fetch(API+"/item",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({item,airline,origin:state.origin||"",destination:"Cuba"})});
+  const d=await r.json();
+  let html="<strong>"+esc(d.message||"Revisa la información oficial antes de viajar.")+"</strong>";
+  if(d.next_action)html+="<div class='notice'>"+esc(d.next_action)+"</div>";
+  if(d.verify_with?.length)html+="<div><b>Fuente oficial:</b></div>"+d.verify_with.map(x=>sourceLink(x)).join("");
+  if(d.sources?.length)html+="<div><b>También puedes revisar:</b></div>"+d.sources.map(x=>sourceLink(x)).join("");
+  e.innerHTML=html;
+ }catch(x){e.innerHTML="<strong>La consulta no pudo completarse.</strong><br>Revisa directamente la fuente oficial correspondiente."}
+}
+async function checkBaggage(){
+ const e=document.getElementById("bagResult");e.innerHTML="Consultando...";
+ try{
+  const d=await post("/baggage",{airline:val("bagAirline"),origin:val("bagOrigin"),destination:val("bagDestination"),type:val("bagType")});
+  let h="<strong>"+esc(d.message||"Revisa la franquicia de equipaje en la fuente oficial.")+"</strong>";
+  if(d.next_action)h+="<div class='notice'>"+esc(d.next_action)+"</div>";
+  if(d.sources?.length)h+=d.sources.map(sourceLink).join("");
+  e.innerHTML=h;
+ }catch(x){e.innerHTML="<strong>Revisa la fuente oficial de la aerolínea.</strong>"}
+}
+async function post(path,data){
+ const r=await fetch(API+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+ return await r.json();
+}
+function sourceLink(x){
+ if(!x)return"";
+ const url=x.url||"";if(!url)return"";
+ return `<a class="official" href="${escAttr(url)}" target="_blank" rel="noopener"><b>${esc(x.name||"Fuente oficial")}</b><br><span class="small">${esc(x.what_it_covers||"Abrir sitio oficial")}</span></a>`;
+}
+async function loadSources(){
+ try{
+  const d=await fetch(API+"/airlines").then(r=>r.json());
+  const a=document.getElementById("airlineList"),c=document.getElementById("charterList");
+  a.innerHTML=(d.airlines||[]).map(sourceLink).join("")||"<span class='small'>Consulta las fuentes oficiales disponibles.</span>";
+  c.innerHTML=(d.charters||[]).map(sourceLink).join("")||"<span class='small'>No hay fuentes disponibles.</span>";
+ }catch(x){}
+}
+async function loadOfficial(){
+ const e=document.getElementById("officialList");
+ try{
+  const d=await fetch(API+"/sources?topic=official").then(r=>r.json());
+  e.innerHTML=(d.sources||[]).map(sourceLink).join("");
+ }catch(x){e.innerHTML="<span class='small'>Abre directamente los procesos oficiales desde las secciones principales.</span>"}
+}
+async function makePDF(){
+ saveProfile();
+ const data={
+  ...state,
+  items:state.items||[],
+  baggage:state.baggage||{},
+  next_action:"Revisar los datos y continuar en los sitios oficiales de D'Viajeros y e-Visa."
+ };
+ try{
+  const r=await fetch(API+"/pdf",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({data,lang:"es"})});
+  if(!r.ok)throw 0;
+  const blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement("a");
+  a.href=url;a.download="mi-guia-que-quieres-llevar.pdf";a.click();URL.revokeObjectURL(url);
+  document.getElementById("pdfResult").innerHTML="<strong>Tu PDF está listo.</strong><br>Consérvalo como referencia.";
+ }catch(x){document.getElementById("pdfResult").innerHTML="<strong>No se pudo crear el PDF.</strong>"}
+}
+async function importRecovery(ev){
+ const f=ev.target.files[0];if(!f)return;
+ const text=await f.text();
+ try{
+  const obj=JSON.parse(text),d=obj.data||obj.recovery_data||obj;
+  state={...state,...d};localStorage.setItem(KEY,JSON.stringify(state));loadProfile();
+  document.getElementById("pdfResult").innerHTML="<strong>Datos recuperados.</strong><br>Revisa la información antes de continuar.";
+ }catch(x){
+  try{
+   const d=await post("/pdf/import",{filename:f.name,text});
+   if(d.data){state={...state,...d.data};localStorage.setItem(KEY,JSON.stringify(state));loadProfile()}
+   document.getElementById("pdfResult").innerHTML=d.recovered?"<strong>Datos recuperados.</strong>":"<strong>No se encontraron datos recuperables.</strong>";
+  }catch(y){document.getElementById("pdfResult").innerHTML="<strong>No se pudo recuperar el archivo.</strong>"}
+ }
+}
+function esc(v){return String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function escAttr(v){return esc(v)}
+loadProfile();
 </script>
 </body>
 </html>
