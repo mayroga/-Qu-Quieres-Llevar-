@@ -1,355 +1,121 @@
+/*01 BASE*/
 "use strict";
-const APP={name:"QUE QUIERES LLEVAR",version:"8.1.2",lang:localStorage.getItem("qql_lang")||"es",serviceToken:localStorage.getItem("qql_service_token")||"",adminToken:localStorage.getItem("qql_admin_token")||"",session:null,config:null,_bound:false,practice:null};
-const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>Array.from(r.querySelectorAll(s));
-const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-const txt=v=>String(v??"").trim();
-const val=id=>txt(document.getElementById(id)?.value);
-function active(){return!!(APP.serviceToken||APP.adminToken)}
-function headers(extra={}){const h={"Content-Type":"application/json",...extra};if(APP.serviceToken)h["X-Service-Token"]=APP.serviceToken;if(APP.adminToken)h["X-Admin-Token"]=APP.adminToken;return h}
-function saveTokens(){localStorage.setItem("qql_service_token",APP.serviceToken||"");localStorage.setItem("qql_admin_token",APP.adminToken||"")}
-function clearTokens(){APP.serviceToken="";APP.adminToken="";APP.session=null;saveTokens()}
-function msg(text,type="info"){let b=$("#appMessage")||$("#message")||$(".app-message");if(!b){b=document.createElement("div");b.id="appMessage";document.body.prepend(b)}b.className=`app-message ${type}`;b.textContent=text}
-async function api(path,options={},timeout=10000){
- const c=new AbortController(),tm=setTimeout(()=>c.abort(),timeout);
- try{
-  const r=await fetch(path,{...options,headers:headers(options.headers||{}),signal:c.signal});
-  let d={};try{d=await r.json()}catch(_){}
-  if(!r.ok){const e=new Error(d.detail||d.message||`HTTP ${r.status}`);e.status=r.status;e.data=d;throw e}
-  return d
- }catch(e){
-  if(e.name==="AbortError")throw new Error(APP.lang==="en"?"The server took too long to respond.":"El servidor tardó demasiado en responder.");
-  throw e
- }finally{clearTimeout(tm)}
-}
-function screens(){return["loading","home","payment","flight","item","baggage","cuba","guide","sources","teach","legal","admin"].map(id=>document.getElementById(id)).filter(Boolean)}
-function setView(name){screens().forEach(x=>x.classList.toggle("hidden",x.id!==name));document.body.dataset.view=name}
-function home(){setView(active()?"home":"payment")}
-function requirePaid(){if(active())return true;setView("payment");msg(APP.lang==="en"?"Payment or administrator access is required.":"Se requiere acceso mediante pago o administrador.","warn");return false}
-function lang(){return APP.lang==="en"?"en":"es"}
-function setLang(v){APP.lang=v==="en"?"en":"es";localStorage.setItem("qql_lang",APP.lang);translate();ensureAirlineField();ensureFlightPracticeButton();ensureCubaPracticeButtons()}
-function toggleLang(){setLang(APP.lang==="es"?"en":"es")}
-function translate(){
- document.documentElement.lang=APP.lang;
- $$("[data-es][data-en]").forEach(e=>e.textContent=e.dataset[APP.lang]||e.dataset.es||"");
- const b=$("#langBtn");if(b)b.textContent=APP.lang==="en"?"ES":"EN";
- const l=$("#loadingText");if(l)l.textContent=APP.lang==="en"?"Preparing your trip...":"Preparando tu viaje...";
- const s=$("#sessionStatus");if(s)s.textContent=active()?(APP.lang==="en"?"Access active":"Acceso activo"):(APP.lang==="en"?"Session not active":"Sesión no activa");
- const p=$("#payment .card");if(p){
-  const h=p.querySelector("h2"),ps=p.querySelectorAll("p"),n=p.querySelector(".notice"),bt=$("#payBtn");
-  if(h)h.textContent=APP.lang==="en"?"Activate your travel preparation":"Activa tu preparación";
-  if(ps[0])ps[0].textContent=APP.lang==="en"?"Before paying, know what you receive: a simple 15-minute guided session to organize your trip, understand your flight, practice airline procedures, review baggage, practice D’Viajeros and Cuba visa/eVisa procedures, and reach official sources.":"Antes de pagar, conoce lo que recibes: una sesión guiada de 15 minutos para organizar tu viaje, entender tu vuelo, practicar procesos de la aerolínea, revisar equipaje, practicar D’Viajeros y visa/eVisa de Cuba, y llegar a las fuentes oficiales.";
-  if(n)n.innerHTML=APP.lang==="en"?"<strong>What you gain:</strong> you practice before doing the real process and finish with clear next actions.":"<strong>Qué ganas:</strong> practicas antes de hacer el proceso real y terminas con próximos pasos claros.";
-  if(bt)bt.textContent=APP.lang==="en"?"Continue to payment — $15.99":"Continuar al pago — $15.99";
- }
-}
-async function checkSession(){
- if(!active()){home();return false}
- try{
-  const d=await api("/api/v1/session",{method:"GET"},7000);
-  if(d.active===false){clearTokens();home();return false}
-  APP.session=d;translate();home();return true
- }catch(e){
-  if(e.status===401||e.status===403){clearTokens();home();return false}
-  APP.session={active:true};translate();home();return true
- }
-}
-async function loadConfig(){
- try{APP.config=await api("/api/v1/config",{method:"GET"},7000);renderConfig(APP.config)}catch(_){}
-}
-function renderConfig(d){
- if(!d)return;
- $$("[data-config]").forEach(e=>{const k=e.dataset.config;if(d[k]!=null)e.textContent=d[k]})
-}
-async function createCheckout(){
- try{
-  const d=await api("/api/v1/create-checkout-session",{method:"POST",body:JSON.stringify({language:lang()})},15000);
-  const u=d.checkout_url||d.url;
-  if(u)location.href=u;else msg(APP.lang==="en"?"The payment link was not received.":"No se recibió el enlace de pago.","error")
- }catch(e){msg(e.message||"No se pudo iniciar el pago.","error")}
-}
-async function verifyPayment(){
- const q=new URLSearchParams(location.search),sid=q.get("session_id")||q.get("checkout_session_id");
- if(!sid)return false;
- try{
-  const d=await api("/api/v1/verify-payment",{method:"POST",body:JSON.stringify({session_id:sid})},15000);
-  const t=d.token||d.service_token;
-  if(!t)throw new Error(APP.lang==="en"?"Access could not be activated.":"No se pudo activar el acceso.");
-  APP.serviceToken=t;APP.adminToken="";saveTokens();
-  history.replaceState({},document.title,location.pathname);
-  APP.session={active:true};
-  setView("home");translate();
-  msg(APP.lang==="en"?"Your 15-minute preparation session is active.":"Tu sesión de preparación de 15 minutos está activa.","success");
-  return true
- }catch(e){msg(e.message||"No se pudo verificar el pago.","error");return false}
-}
-async function adminLogin(){
- const user=val("adminUser"),pass=val("adminPass");
- if(!user||!pass){msg(APP.lang==="en"?"Enter username and password.":"Escribe usuario y contraseña.","warn");return}
- try{
-  const d=await api("/api/v1/admin/login",{method:"POST",body:JSON.stringify({username:user,password:pass})},15000);
-  const t=d.token||d.admin_token;
-  if(!t)throw new Error(APP.lang==="en"?"Administrator access could not be activated.":"No se pudo activar el acceso de administrador.");
-  APP.adminToken=t;APP.serviceToken="";saveTokens();APP.session={active:true,admin:true};setView("home");translate();
-  msg(APP.lang==="en"?"Administrator access is active.":"El acceso de administrador está activo.","success")
- }catch(e){msg(e.message||"No se pudo iniciar sesión.","error")}
-}
-function logout(){clearTokens();home();translate();msg(APP.lang==="en"?"Session closed.":"Sesión cerrada.","info")}
-function ensureAirlineField(){
- const form=$("#flight")?.querySelector(".form");
- if(!form||$("#airline"))return;
- const label=document.createElement("label");
- label.textContent=APP.lang==="en"?"Airline":"Aerolínea";
- const input=document.createElement("input");
- input.id="airline";input.maxLength=40;input.placeholder=APP.lang==="en"?"Example: American Airlines":"Ej.: American Airlines";
- label.appendChild(input);
- const passengers=$("#passengers")?.closest("label");
- if(passengers)form.insertBefore(label,passengers);else form.insertBefore(label,form.querySelector("button"));
-}
-function ensureFlightPracticeButton(){
- const form=$("#flight")?.querySelector(".form");
- if(!form||$("#practiceAirlineBtn"))return;
- const b=document.createElement("button");
- b.id="practiceAirlineBtn";b.type="button";b.className="primary";
- b.textContent=APP.lang==="en"?"Practice with my airline":"Practicar con mi aerolínea";
- form.appendChild(b);
- b.addEventListener("click",startAirlinePractice)
-}
-function ensureCubaPracticeButtons(){
- const card=$("#cuba")?.querySelector(".card");
- if(!card||$("#practiceCubaBtn"))return;
- const wrap=document.createElement("div");wrap.className="practice-actions";
- const a=document.createElement("button");a.id="practiceCubaBtn";a.className="primary";a.type="button";a.textContent=APP.lang==="en"?"Practice D’Viajeros":"Practicar D’Viajeros";
- const v=document.createElement("button");v.id="practiceVisaBtn";v.className="primary";v.type="button";v.textContent=APP.lang==="en"?"Practice Cuba visa/eVisa":"Practicar visa/eVisa de Cuba";
- wrap.append(a,v);card.insertBefore(wrap,$("#cubaResult"));
- a.addEventListener("click",()=>startCubaPractice("dviajeros"));
- v.addEventListener("click",()=>startCubaPractice("visa"))
-}
-function dataObject(){
- ensureAirlineField();
- const o={language:lang()};
- ["origin","destination","departureDate","returnDate","airline","cabin","fare","passengers","stops"].forEach(id=>{
-  const v=val(id);
-  if(v!==""){
-   const k=id==="departureDate"?"departure_date":id==="returnDate"?"return_date":id;
-   o[k]=k==="passengers"||k==="stops"?Number(v):v
-  }
- });
- return o
-}
-async function flight(){
- if(!requirePaid())return;
- const data=dataObject();
- if(!data.origin||!data.destination){msg(APP.lang==="en"?"Enter your origin and destination to continue.":"Escribe tu origen y destino para continuar.","warn");return}
- try{renderFlight(await api("/api/v1/flight/understand",{method:"POST",body:JSON.stringify(data)},15000))}
- catch(e){msg(e.message||"No se pudo preparar la información del vuelo.","error")}
-}
-function sourceList(items){
- if(!Array.isArray(items)||!items.length)return"";
- return `<div class="source-list">${items.map(x=>{const n=esc(x.name||"Fuente oficial"),u=esc(x.url||"#"),d=x.description?`<p>${esc(x.description)}</p>`:"";return `<div class="source-card"><strong>${n}</strong>${d}${x.url?`<a href="${u}" target="_blank" rel="noopener noreferrer">${APP.lang==="en"?"Open source":"Abrir fuente"}</a>`:""}</div>`}).join("")}</div>`
-}
-function renderFlight(d){
- const b=$("#flightResult");if(!b)return;
- let h="",a=d.airline||val("airline"),o=d.origin||val("origin"),des=d.destination||val("destination"),date=d.departure_date||val("departureDate");
- if(o||des||date||a){h+=`<div class="next-action"><strong>${APP.lang==="en"?"Flight information":"Información del vuelo"}</strong>${o?`<p>Origen: ${esc(o)}</p>`:""}${des?`<p>Destino: ${esc(des)}</p>`:""}${date?`<p>Fecha: ${esc(date)}</p>`:""}${a?`<p>Aerolínea: ${esc(a)}</p>`:""}</div>`}
- if(d.understood)h+=`<p>${esc(typeof d.understood==="string"?d.understood:JSON.stringify(d.understood))}</p>`;
- if(Array.isArray(d.steps)&&d.steps.length)h+=`<h3>${APP.lang==="en"?"Next steps":"Próximos pasos"}</h3><ol>${d.steps.map(x=>`<li>${esc(typeof x==="string"?x:(x.text||x.title||x.description||JSON.stringify(x)))}</li>`).join("")}</ol>`;
- if(d.google_flights_url)h+=`<div class="next-action"><strong>${APP.lang==="en"?"Review current flight options":"Revisa las opciones actuales de vuelo"}</strong><p><a href="${esc(d.google_flights_url)}" target="_blank" rel="noopener noreferrer">Google Flights</a></p></div>`;
- if((d.airline_sources||[]).length)h+=sourceList(d.airline_sources);
- if((d.charter_sources||[]).length)h+=sourceList(d.charter_sources);
- h+=`<div class="next-action"><strong>${APP.lang==="en"?"Practice before doing it for real":"Practica antes de hacerlo de verdad"}</strong><p>${APP.lang==="en"?"Use the Practice with my airline button. It does not purchase anything.":"Usa el botón Practicar con mi aerolínea. No realiza ninguna compra."}</p></div>`;
- b.innerHTML=h
-}
-async function charterSources(){
- if(!requirePaid())return;
- try{
-  const d=await api("/api/v1/flight/sources",{method:"POST",body:JSON.stringify({origin:val("origin"),destination:val("destination"),airline:val("airline"),language:lang()})},12000);
-  renderSources(d.charter_sources||d.sources||[])
- }catch(e){
-  try{const d=await api(`/api/v1/sources/charter?language=${encodeURIComponent(lang())}`,{method:"GET"},8000);renderSources(d.sources||d.charter_sources||[])}
-  catch(x){msg(x.message||e.message||"No se pudieron cargar las fuentes.","error")}
- }
-}
-function renderSources(items){
- const b=$("#sourcesResult")||$("#flightResult");if(!b)return;
- b.innerHTML=Array.isArray(items)&&items.length?sourceList(items):`<div class="next-action"><strong>${APP.lang==="en"?"Official sources":"Fuentes oficiales"}</strong><p>${APP.lang==="en"?"Open the official source for your airline and route.":"Abre la fuente oficial de tu aerolínea y ruta."}</p></div>`
-}
-async function officialSources(){
- if(!requirePaid())return;
- try{const d=await api("/api/v1/sources/official",{method:"GET"},10000);renderSources(d.sources||d.official_sources||d.links||[])}
- catch(e){msg(e.message||"No se pudieron cargar las fuentes oficiales.","error")}
-}
-async function cubaGuide(){
- if(!requirePaid())return;
- try{renderObject($("#cubaResult"),await api(`/api/v1/cuba/official?language=${encodeURIComponent(lang())}`,{method:"GET"},10000))}
- catch(e){msg(e.message||"No se pudo cargar la preparación de Cuba.","error")}
-}
-async function guide(){
- if(!requirePaid())return;
- try{renderGuide(await api("/api/v1/guide",{method:"POST",body:JSON.stringify({language:lang(),flight:dataObject()})},10000))}
- catch(e){msg(e.message||"No se pudo preparar la guía.","error")}
-}
-function renderGuide(d){
- const b=$("#guideResult");if(!b)return;
- let h="";
- if(d.next_action)h+=`<div class="next-action"><strong>${esc(d.next_action)}</strong></div>`;
- if(Array.isArray(d.steps)&&d.steps.length)h+=`<ol>${d.steps.map(x=>`<li>${esc(typeof x==="string"?x:(x.text||x.title||x.description||JSON.stringify(x)))}</li>`).join("")}</ol>`;
- if(Array.isArray(d.cuba_steps)&&d.cuba_steps.length)h+=`<h3>${APP.lang==="en"?"Cuba preparation":"Preparación para Cuba"}</h3><ol>${d.cuba_steps.map(x=>`<li>${esc(typeof x==="string"?x:(x.text||x.title||x.description||JSON.stringify(x)))}</li>`).join("")}</ol>`;
- if(Array.isArray(d.official_sources)&&d.official_sources.length)h+=sourceList(d.official_sources);
- b.innerHTML=h||`<div class="next-action"><strong>${APP.lang==="en"?"Continue your preparation":"Continúa tu preparación"}</strong></div>`
-}
-function renderObject(b,d){
- if(!b)return;
- if(typeof d==="string"){b.innerHTML=`<p>${esc(d)}</p>`;return}
- let h="";
- ["title","intro","short_notice","message","reason","explanation"].forEach(k=>{if(d[k])h+=k==="title"?`<h2>${esc(d[k])}</h2>`:`<p>${esc(d[k])}</p>`});
- if(d.status)h+=`<p><strong>${esc(d.status)}</strong></p>`;
- if(d.baggage_place)h+=`<p><strong>Equipaje:</strong> ${esc(d.baggage_place)}</p>`;
- if(Array.isArray(d.conditions)&&d.conditions.length)h+=`<h3>${APP.lang==="en"?"Conditions":"Condiciones"}</h3><ul>${d.conditions.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
- if(Array.isArray(d.missing_information)&&d.missing_information.length)h+=`<h3>${APP.lang==="en"?"Still needed":"Información que falta"}</h3><ul>${d.missing_information.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
- if(d.source_name)h+=`<p>${esc(d.source_name)}</p>`;
- if(d.official_link)h+=`<p><a href="${esc(d.official_link)}" target="_blank" rel="noopener noreferrer">${APP.lang==="en"?"Open official source":"Abrir fuente oficial"}</a></p>`;
- const s=d.sources||d.official_sources||d.links||[];if(Array.isArray(s)&&s.length)h+=sourceList(s);
- if(d.next_action)h+=`<p><strong>${esc(d.next_action)}</strong></p>`;
- b.innerHTML=h||`<div class="next-action">${APP.lang==="en"?"Continue":"Continúa"}</div>`
-}
-async function legal(){
- try{
-  const d=await api(`/api/v1/legal?language=${encodeURIComponent(lang())}`,{method:"GET"},8000),b=$("#legalResult");
-  if(!b)return;
-  let h="";["short_notice","full_notice","user_guidance","source_notice"].forEach(k=>{if(d[k])h+=`<p>${esc(d[k])}</p>`});
-  b.innerHTML=h||`<p>${APP.lang==="en"?"Review the service information.":"Revisa la información del servicio."}`
- }catch(e){msg(e.message||"No se pudo cargar el aviso legal.","error")}
-}
-async function itemConsult(){
- if(!requirePaid())return;
- const item=val("itemName"),quantity=val("itemQty")||"1",description=val("itemDescription");
- if(!item){msg(APP.lang==="en"?"Enter the item to continue.":"Escribe el artículo para continuar.","warn");return}
- try{renderObject($("#itemResult"),await api("/api/v1/consultar-articulo",{method:"POST",body:JSON.stringify({item,quantity,description,language:lang(),baggage_type:val("baggage_type"),airline:val("airline"),destination:val("destination"),origin:val("origin"),cabin:val("cabin"),fare:val("fare")})},15000))}
- catch(e){msg(e.message||"No se pudo preparar la consulta del artículo.","error")}
-}
-async function teach(){
- if(!requirePaid())return;
- const term=val("term");if(!term){msg(APP.lang==="en"?"Enter a term to continue.":"Escribe un término para continuar.","warn");return}
- try{renderObject($("#teachResult"),await api("/api/v1/item/teach",{method:"POST",body:JSON.stringify({term,language:lang()})},10000))}
- catch(e){msg(e.message||"No se pudo preparar la explicación.","error")}
-}
-function practiceBox(){
- let x=$("#qqlPractice");if(x)return x;
- x=document.createElement("div");x.id="qqlPractice";x.className="card";
- const host=$("#flight")||$("#cuba")||document.body;
- host.appendChild(x);return x
-}
-function closePractice(){const x=$("#qqlPractice");if(x)x.remove();APP.practice=null}
-function startAirlinePractice(){if(!requirePaid())return;APP.practice={type:"airline",airline:val("airline")||"mi aerolínea",step:0};renderPractice()}
-function startCubaPractice(mode){if(!requirePaid())return;APP.practice={type:"cuba",mode,step:0};renderPractice()}
-function practiceSteps(){
- const p=APP.practice;
- if(p.type==="airline")return[
-  APP.lang==="en"?`We will practice ${p.airline}. Nothing is purchased.`:`Practicaremos ${p.airline}. No se compra nada.`,
-  APP.lang==="en"?"Open the airline's official website or app.":"Abre el sitio o aplicación oficial de la aerolínea.",
-  APP.lang==="en"?"Enter origin, destination and travel date.":"Escribe origen, destino y fecha del viaje.",
-  APP.lang==="en"?"Review flight options, airports, times and stops.":"Revisa vuelos, aeropuertos, horarios y escalas.",
-  APP.lang==="en"?"Select a flight for practice only.":"Selecciona un vuelo solamente para practicar.",
-  APP.lang==="en"?"Review passenger information using fictitious information.":"Revisa los datos del pasajero usando información ficticia.",
-  APP.lang==="en"?"Review baggage and fare conditions.":"Revisa equipaje y condiciones de la tarifa.",
-  APP.lang==="en"?"Stop before payment. The real process must be completed on the official airline site/app.":"Detente antes del pago. El proceso real debe hacerse en el sitio o aplicación oficial."
- ];
- if(p.mode==="dviajeros")return[
-  APP.lang==="en"?"D’Viajeros practice. This is only a simulation.":"Práctica de D’Viajeros. Esto es solamente una simulación.",
-  APP.lang==="en"?"Open the official D’Viajeros portal.":"Abre el portal oficial de D’Viajeros.",
-  APP.lang==="en"?"Identify the information requested by the official form.":"Identifica la información que solicita el formulario oficial.",
-  APP.lang==="en"?"Practice the order of the fields without entering sensitive information.":"Practica el orden de los campos sin introducir información sensible.",
-  APP.lang==="en"?"Review the information before submitting the real form.":"Revisa la información antes de enviar el formulario real.",
-  APP.lang==="en"?"Complete the real process only at the official portal.":"Realiza el proceso real solamente en el portal oficial."
- ];
- return[
-  APP.lang==="en"?"Cuba visa/eVisa practice. This is only a simulation.":"Práctica de visa/eVisa de Cuba. Esto es solamente una simulación.",
-  APP.lang==="en"?"Open the official Cuba visa/eVisa source.":"Abre la fuente oficial de visa/eVisa de Cuba.",
-  APP.lang==="en"?"Check the requirement for your nationality.":"Comprueba el requisito según tu nacionalidad.",
-  APP.lang==="en"?"Review the documents and information requested.":"Revisa los documentos y la información solicitada.",
-  APP.lang==="en"?"Practice the order of the process without submitting anything.":"Practica el orden del proceso sin enviar nada.",
-  APP.lang==="en"?"Complete the real process only through the applicable official source.":"Realiza el proceso real solamente mediante la fuente oficial correspondiente."
- ]
-}
-function renderPractice(){
- const p=APP.practice;if(!p)return;
- const steps=practiceSteps(),b=practiceBox(),title=p.type==="airline"?(APP.lang==="en"?`Practice: ${p.airline}`:`Práctica: ${p.airline}`):(p.mode==="dviajeros"?(APP.lang==="en"?"Practice: D’Viajeros":"Práctica: D’Viajeros"):(APP.lang==="en"?"Practice: Cuba visa/eVisa":"Práctica: visa/eVisa de Cuba"));
- b.innerHTML=`<div><button id="practiceClose" type="button">× ${APP.lang==="en"?"Close":"Cerrar"}</button><h2>${esc(title)}</h2><div class="next-action"><strong>${APP.lang==="en"?`Step ${p.step+1} of ${steps.length}`:`Paso ${p.step+1} de ${steps.length}`}</strong><p>${esc(steps[p.step])}</p></div><div class="practice-actions">${p.step?`<button id="practiceBack" class="primary" type="button">${APP.lang==="en"?"Back":"Atrás"}</button>`:""}${p.step<steps.length-1?`<button id="practiceNext" class="primary" type="button">${APP.lang==="en"?"Next":"Siguiente"}</button>`:`<button id="practiceFinish" class="primary" type="button">${APP.lang==="en"?"Finish":"Terminar"}</button>`}</div></div>`;
- $("#practiceClose").onclick=closePractice;
- $("#practiceBack")?.addEventListener("click",()=>{p.step--;renderPractice()});
- $("#practiceNext")?.addEventListener("click",()=>{p.step++;renderPractice()});
- $("#practiceFinish")?.addEventListener("click",finishPractice)
-}
-function finishPractice(){
- const p=APP.practice,b=$("#qqlPractice");if(!b)return;
- const s=p.type==="airline"?(APP.lang==="en"?"For the real process, use the airline's official website/app.":"Para el proceso real, usa el sitio o aplicación oficial de la aerolínea."):p.mode==="dviajeros"?(APP.lang==="en"?"Official D’Viajeros: https://dviajeros.mitrans.gob.cu/":"D’Viajeros oficial: https://dviajeros.mitrans.gob.cu/"):(APP.lang==="en"?"Official Cuba eVisa: https://evisacuba.cu/":"eVisa Cuba oficial: https://evisacuba.cu/");
- b.innerHTML=`<div><button id="practiceClose" type="button">× ${APP.lang==="en"?"Close":"Cerrar"}</button><h2>${APP.lang==="en"?"Practice completed":"Práctica completada"}</h2><div class="next-action"><strong>${APP.lang==="en"?"You are ready for the real process.":"Ya puedes pasar al proceso real."}</strong><p>${esc(s)}</p><p>${APP.lang==="en"?"No real information was submitted or purchased.":"No se envió información real ni se realizó ninguna compra."}</p></div></div>`;
- $("#practiceClose").onclick=closePractice
-}
-function bind(){
- if(APP._bound)return;
- APP._bound=true;
- $("#langBtn")?.addEventListener("click",toggleLang);
- $("#adminBtn")?.addEventListener("click",()=>setView("admin"));
- $("#startBtn")?.addEventListener("click",()=>{if(requirePaid())setView("flight")});
- $("#payBtn")?.addEventListener("click",createCheckout);
- $("#flightBtn")?.addEventListener("click",flight);
- $("#itemBtn")?.addEventListener("click",itemConsult);
- $("#teachBtn")?.addEventListener("click",teach);
- $("#adminLoginBtn")?.addEventListener("click",adminLogin);
- document.addEventListener("click",e=>{
-  const b=e.target.closest("[data-action]");if(!b)return;
-  const a=b.dataset.action;
-  if(a==="home")home();
-  else if(a==="flight"){if(requirePaid())setView("flight")}
-  else if(a==="item"){if(requirePaid())setView("item")}
-  else if(a==="baggage"){if(requirePaid())setView("baggage")}
-  else if(a==="cuba"){if(requirePaid()){setView("cuba");cubaGuide()}}
-  else if(a==="guide"){if(requirePaid()){setView("guide");guide()}}
-  else if(a==="sources"){if(requirePaid()){setView("sources");officialSources()}}
-  else if(a==="teach"){if(requirePaid())setView("teach")}
-  else if(a==="legal"){setView("legal");legal()}
-  else if(a==="pay"||a==="payment")createCheckout();
-  else if(a==="logout")logout()
- })
-}
-function init(){
- document.documentElement.lang=APP.lang;
- bind();
- translate();
- ensureAirlineField();
- ensureFlightPracticeButton();
- ensureCubaPracticeButtons();
-
- /* LA INTERFAZ APARECE INMEDIATAMENTE */
- if(active())setView("home");else setView("payment");
-
- /* LAS OPERACIONES DE RED NO BLOQUEAN LA APP */
- Promise.resolve().then(async()=>{
-  await loadConfig();
-  if(active())await checkSession();
-  const q=new URLSearchParams(location.search);
-  if(q.get("session_id")||q.get("checkout_session_id")){
-   const ok=await verifyPayment();
-   if(ok)await checkSession()
-  }
- }).catch(()=>{})
-}
-window.APP=APP;
-window.createCheckout=createCheckout;
-window.adminLogin=adminLogin;
-window.logout=logout;
-window.flight=flight;
-window.charterSources=charterSources;
-window.flightSources=charterSources;
-window.officialSources=officialSources;
-window.cubaGuide=cubaGuide;
-window.guide=guide;
-window.itemConsult=itemConsult;
-window.teach=teach;
-window.toggleLang=toggleLang;
-window.legal=legal;
-window.startAirlinePractice=startAirlinePractice;
-window.startCubaPractice=startCubaPractice;
-window.closePractice=closePractice;
-document.addEventListener("DOMContentLoaded",init);
+const APP={name:"¿QUÉ QUIERES LLEVAR?",version:"9.0.0",lang:localStorage.getItem("qql_lang")||"es",session:null,config:null,adminTaps:0,adminTapTimer:null,practice:{},cuba:{}};
+const $=id=>document.getElementById(id),$$=s=>Array.from(document.querySelectorAll(s));
+const TEXT={es:{loading:"Cargando...",start:"Comenzar",back:"Volver",next:"Continuar",required:"Completa los campos necesarios.",error:"Ocurrió un error. Intenta nuevamente.",noSession:"Necesitas iniciar una sesión.",sessionActive:"Sesión activa",sessionInactive:"Sesión no iniciada",admin:"Acceso administrativo",login:"Entrar",logout:"Salir",simulation:"SIMULACIÓN / ENTRENAMIENTO",simulationNotice:"Esto es una simulación. No crea una reserva, no realiza un pago ni envía información.",official:"Para realizar un proceso real, utiliza siempre el sitio o aplicación oficial."},en:{loading:"Loading...",start:"Start",back:"Back",next:"Continue",required:"Complete the required fields.",error:"An error occurred. Try again.",noSession:"You need to start a session.",sessionActive:"Session active",sessionInactive:"Session not started",admin:"Administrative access",login:"Login",logout:"Logout",simulation:"SIMULATION / TRAINING",simulationNotice:"This is a simulation. It does not create a reservation or make a payment.",official:"For a real process, always use the corresponding official website or application."}};
+const tr=k=>(TEXT[APP.lang]?.[k]||TEXT.es[k]||k),esc=v=>String(v??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const api=(path,opt={})=>{opt.headers=Object.assign({"Content-Type":"application/json"},opt.headers||{});return fetch(path,opt).then(async r=>{let d=null;try{d=await r.json()}catch(_){}if(!r.ok){let e=new Error(d?.detail||d?.message||"HTTP "+r.status);e.status=r.status;e.data=d;throw e}return d})};
+const loading=v=>{const e=$("loading");if(e)e.hidden=!v};
+const showMessage=(e,m,t="")=>{e=typeof e==="string"?$(e):e;if(e){e.className=t?"result "+t:"result";e.innerHTML=m}};
+const setView=id=>{$$("main section[id]").forEach(x=>x.hidden=x.id!==id);const e=$(id);if(e)e.hidden=false;window.scrollTo({top:0,behavior:"smooth"})};
+const home=()=>setView("home"),value=id=>$(id)?.value?.trim()||"",numberValue=(id,d=0)=>{const n=Number($(id)?.value);return Number.isFinite(n)?n:d};
+const translate=()=>{$("langBtn")&&($("langBtn").textContent=APP.lang==="es"?"EN":"ES");$("startBtn")&&($("startBtn").textContent=tr("start"));$("adminBtn")&&($("adminBtn").textContent=tr("admin"));updateSessionStatus?.()};
+const toggleLanguage=()=>{APP.lang=APP.lang==="es"?"en":"es";localStorage.setItem("qql_lang",APP.lang);translate()};
+const bindBase=()=>{$("langBtn")?.addEventListener("click",toggleLanguage)};
+document.addEventListener("DOMContentLoaded",()=>{bindBase();translate()});
+/*02 SESIÓN*/
+async function sessionStart(){loading(true);try{const d=await api("/api/v1/session",{method:"POST",body:"{}"});APP.session=d||{active:true};updateSessionStatus();return true}catch(e){APP.session=null;updateSessionStatus();showMessage("sessionStatus",esc(e.message||tr("error")),"error");return false}finally{loading(false)}}
+async function sessionCheck(){try{const d=await api("/api/v1/session");APP.session=d||{active:false};updateSessionStatus();return !!APP.session.active}catch(_){APP.session=null;updateSessionStatus();return false}}
+const sessionIsActive=()=>!!APP.session?.active;
+const sessionRequired=()=>{if(sessionIsActive())return true;updateSessionStatus();showMessage("sessionStatus",tr("noSession"),"error");return false};
+const updateSessionStatus=()=>{const e=$("sessionStatus");if(e)e.textContent=sessionIsActive()?tr("sessionActive"):tr("sessionInactive")};
+const bindSession=()=>{$("startBtn")?.addEventListener("click",async()=>{if(sessionIsActive()){setView("flight");return}if(await sessionStart())setView("flight")})};
+document.addEventListener("DOMContentLoaded",()=>{bindSession();sessionCheck()});
+/*03 ADMIN — 3 TOQUES*/
+function openHiddenAdmin(){let b=$("qqlHiddenAdmin");if(b){b.hidden=false;return}b=document.createElement("div");b.id="qqlHiddenAdmin";b.innerHTML=`<div style="position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px"><div style="background:#fff;max-width:420px;width:100%;padding:20px;border-radius:12px"><h3>${tr("admin")}</h3><input id="qqlHiddenUser" autocomplete="username" placeholder="Username"><input id="qqlHiddenPass" type="password" autocomplete="current-password" placeholder="Password"><div id="qqlHiddenMsg"></div><button type="button" id="qqlHiddenLogin">${tr("login")}</button><button type="button" id="qqlHiddenClose">${tr("back")}</button></div></div>`;document.body.appendChild(b);$("qqlHiddenClose").onclick=()=>b.remove();$("qqlHiddenLogin").onclick=adminLogin}
+async function adminLogin(){const u=value("qqlHiddenUser"),p=$("qqlHiddenPass")?.value||"",m=$("qqlHiddenMsg");if(!u||!p){if(m)m.textContent=tr("required");return}try{const d=await api("/api/v1/admin/login",{method:"POST",body:JSON.stringify({username:u,password:p})});if(d?.ok||d?.success||d?.token||d?.admin){if(d?.redirect)location.href=d.redirect;else if(d?.url)location.href=d.url;else $("qqlHiddenAdmin")?.remove()}else if(m)m.textContent=d?.message||tr("error")}catch(e){if(m)m.textContent=e.message||tr("error")}}
+function adminTapHandler(e){if(e.target.closest("button,input,select,textarea,a"))return;APP.adminTaps++;clearTimeout(APP.adminTapTimer);APP.adminTapTimer=setTimeout(()=>APP.adminTaps=0,900);if(APP.adminTaps>=3){APP.adminTaps=0;openHiddenAdmin()}}
+function createHiddenAdminAccess(){const h=$("home");if(!h)return;h.removeEventListener("click",adminTapHandler);h.addEventListener("click",adminTapHandler)}
+const bindAdmin=()=>{$("adminBtn")?.addEventListener("click",openHiddenAdmin);createHiddenAdminAccess()};
+document.addEventListener("DOMContentLoaded",bindAdmin);
+/*04 PREPARAR MI VUELO*/
+const flightData=()=>({origin:value("origin"),destination:value("destination"),departureDate:$("departureDate")?.value||"",returnDate:$("returnDate")?.value||"",airline:$("airline")?.value||"",cabin:$("cabin")?.value||"",fare:$("fare")?.value||"",passengers:numberValue("passengers",1),stops:$("stops")?.value||""});
+function renderFlight(d){const r=$("flightResult");if(!r)return;const x=d?.understood||d?.result||d||{};let h=`<div class="resultCard"><h3>${esc(APP.lang==="es"?"Preparación del vuelo":"Flight preparation")}</h3>`;[["origin","Origen"],["destination","Destino"],["departureDate","Salida"],["returnDate","Regreso"],["airline","Aerolínea"],["cabin","Cabina"],["fare","Tarifa"],["passengers","Pasajeros"],["stops","Escalas"]].forEach(a=>{if(x[a[0]]!==undefined&&x[a[0]]!=="")h+=`<p><b>${a[1]}:</b> ${esc(x[a[0]])}</p>`});if(Array.isArray(d?.steps)){h+="<ol>";d.steps.forEach(s=>h+=`<li>${esc(typeof s==="string"?s:s?.label||s?.title||"")}</li>`);h+="</ol>"};h+=`<p><small>${esc(tr("official"))}</small></p></div>`;showMessage(r,h)}
+async function flight(){if(!sessionRequired())return;const d=flightData();if(!d.origin||!d.destination||!d.departureDate||!d.airline){showMessage("flightResult",tr("required"),"error");return}loading(true);try{renderFlight(await api("/api/v1/flight/understand",{method:"POST",body:JSON.stringify(d)}))}catch(e){showMessage("flightResult",esc(e.message||tr("error")),"error")}finally{loading(false)}}
+function bindFlight(){$("flightBtn")?.addEventListener("click",flight);$("practiceAirlineBtn")?.addEventListener("click",()=>{if($("practiceAirline"))$("practiceAirline").value=$("airline")?.value||"";setView("practice")})}
+document.addEventListener("DOMContentLoaded",bindFlight);
+/*05 PRACTICAR CON UNA AEROLÍNEA*/
+APP.practice={step:0,airline:"",trip:"round",origin:"",destination:"",departure:"",returnDate:"",passengers:1,flight:null,passenger:{first:"",last:"",email:""},baggage:"none",seat:""};
+const practiceReset=()=>{APP.practice={step:0,airline:$("practiceAirline")?.value||"",trip:"round",origin:"",destination:"",departure:"",returnDate:"",passengers:1,flight:null,passenger:{first:"",last:"",email:""},baggage:"none",seat:""}};
+const practiceStart=()=>{const a=$("practiceAirline")?.value||"";if(!a){showMessage("practiceResult",tr("required"),"error");return}practiceReset();APP.practice.airline=a;renderPractice()};
+const practiceBox=(title,body,next="")=>`<div class="resultCard">${simulationHeader()}<h3>${title}</h3>${body}${next?`<div class="practiceNav">${dynamicButton(next,"practice-next")}</div>`:""}</div>`;
+function renderPractice(){const p=APP.practice,r=$("practiceResult");if(!r)return;let h="";
+if(p.step===0)h=practiceBox("1. Tipo de viaje",`<button type="button" data-practice-trip="round"${p.trip==="round"?" class=\"selected\"":""}>${tr("round")}</button><button type="button" data-practice-trip="oneway"${p.trip==="oneway"?" class=\"selected\"":""}>${tr("oneway")}</button>`,tr("next"));
+else if(p.step===1)h=practiceBox("2. Datos del viaje",`<label>Origen<input id="pOrigin" value="${esc(p.origin)}"></label><label>Destino<input id="pDestination" value="${esc(p.destination)}"></label><label>Salida<input id="pDeparture" type="date" value="${esc(p.departure)}"></label>${p.trip==="round"?`<label>Regreso<input id="pReturn" type="date" value="${esc(p.returnDate)}"></label>`:""}<label>Pasajeros<input id="pPassengers" type="number" min="1" max="9" value="${p.passengers}"></label>`,tr("search"));
+else if(p.step===2){const f=[["MR101","08:20","11:05"],["MR205","12:40","15:25"],["MR318","18:15","21:00"]];h=practiceBox("3. Seleccionar vuelo",f.map(x=>`<button type="button" data-practice-flight="${x[0]}" data-time="${x[1]}" data-arrive="${x[2]}"${p.flight?.id===x[0]?" class=\"selected\"":""}><b>${x[0]}</b><br>${x[1]} → ${x[2]}<br>${esc(p.origin)} → ${esc(p.destination)}</button>`).join(""),p.flight?tr("next"):"")}
+else if(p.step===3)h=practiceBox("4. Pasajero ficticio",`<p>${esc(tr("simulationNotice"))}</p><label>Nombre<input id="pFirst" value="${esc(p.passenger.first)}" autocomplete="off"></label><label>Apellido<input id="pLast" value="${esc(p.passenger.last)}" autocomplete="off"></label><label>Correo de práctica<input id="pEmail" type="email" value="${esc(p.passenger.email)}" autocomplete="off"></label>`,tr("next"));
+else if(p.step===4)h=practiceBox("5. Equipaje",`<button type="button" data-practice-bag="none"${p.baggage==="none"?" class=\"selected\"":""}>${tr("none")}</button><button type="button" data-practice-bag="carry"${p.baggage==="carry"?" class=\"selected\"":""}>${tr("carry")}</button><button type="button" data-practice-bag="checked"${p.baggage==="checked"?" class=\"selected\"":""}>${tr("checked")}</button><button type="button" data-practice-bag="both"${p.baggage==="both"?" class=\"selected\"":""}>${tr("both")}</button>`,tr("next"));
+else if(p.step===5){const seats=["1A","1B","1C","1D","2A","2B","2C","2D","3A","3B","3C","3D","4A","4B","4C","4D"];h=practiceBox("6. Seleccionar asiento",seats.map(s=>`<button type="button" data-practice-seat="${s}"${p.seat===s?" class=\"selected\"":""}>${s}</button>`).join(""),p.seat?tr("next"):"")}
+else if(p.step===6)h=practiceBox("7. Revisar",`<p><b>Vuelo:</b> ${esc(p.flight?.id)} · ${esc(p.flight?.time)} → ${esc(p.flight?.arrive)}</p><p><b>Ruta:</b> ${esc(p.origin)} → ${esc(p.destination)}</p><p><b>Pasajero:</b> ${esc(p.passenger.first)} ${esc(p.passenger.last)}</p><p><b>Equipaje:</b> ${esc(p.baggage)}</p><p><b>Asiento:</b> ${esc(p.seat)}</p>`,tr("finish"));
+else h=practiceBox(tr("complete"),`<p>${esc(tr("paymentStop"))}</p>${officialNotice()}`,tr("back"));
+r.innerHTML=h}
+function practiceNext(){const p=APP.practice;if(p.step===0){p.step=1}
+else if(p.step===1){p.origin=value("pOrigin");p.destination=value("pDestination");p.departure=$("pDeparture")?.value||"";p.returnDate=$("pReturn")?.value||"";p.passengers=Math.max(1,Math.min(9,numberValue("pPassengers",1)));if(!p.origin||!p.destination||!p.departure||(p.trip==="round"&&!p.returnDate)){alert(tr("required"));return}p.step=2}
+else if(p.step===2){if(!p.flight)return;p.step=3}
+else if(p.step===3){p.passenger.first=value("pFirst");p.passenger.last=value("pLast");p.passenger.email=value("pEmail");if(!p.passenger.first||!p.passenger.last){alert(tr("required"));return}p.step=4}
+else if(p.step===4)p.step=5;
+else if(p.step===5){if(!p.seat)return;p.step=6}
+else if(p.step===6)p.step=7;
+renderPractice()}
+function practiceBack(){if(APP.practice.step>0){APP.practice.step--;renderPractice()}else setView("practice")}
+document.addEventListener("click",e=>{const t=e.target.closest("[data-practice-trip]");if(t){APP.practice.trip=t.dataset.practiceTrip;renderPractice();return}const f=e.target.closest("[data-practice-flight]");if(f){APP.practice.flight={id:f.dataset.practiceFlight,time:f.dataset.time,arrive:f.dataset.arrive};renderPractice();return}const b=e.target.closest("[data-practice-bag]");if(b){APP.practice.baggage=b.dataset.practiceBag;renderPractice();return}const s=e.target.closest("[data-practice-seat]");if(s){APP.practice.seat=s.dataset.practiceSeat;renderPractice()}});
+function bindPractice(){$("practiceStartBtn")?.addEventListener("click",practiceStart)}
+document.addEventListener("DOMContentLoaded",bindPractice);
+/*06 ¿QUÉ PUEDO LLEVAR?*/
+async function itemConsult(){if(!sessionRequired())return;const n=value("itemName");if(!n){showMessage("itemResult",tr("required"),"error");return}const d={item:n,quantity:numberValue("itemQty",1),description:value("itemDescription"),baggage_type:$("baggage_type")?.value||"",airline:$("itemAirline")?.value||"",destination:$("itemDestination")?.value||"",wh:numberValue("itemWh"),volts:numberValue("itemVolts"),ah:numberValue("itemAh"),mah:numberValue("itemMah")};loading(true);try{const r=await api("/api/v1/item/check",{method:"POST",body:JSON.stringify(d)});renderItemResult(r)}catch(e){showMessage("itemResult",esc(e.message||tr("error")),"error")}finally{loading(false)}}
+function renderItemResult(d){const r=$("itemResult");if(!r)return;const x=d?.result||d?.understood||d||{};let h=`<div class="resultCard"><h3>${esc(APP.lang==="es"?"Resultado del artículo":"Item result")}</h3>`;if(typeof x==="string")h+=`<p>${esc(x)}</p>`;else Object.entries(x).forEach(([k,v])=>{if(v!==null&&v!==undefined&&v!=="")h+=`<p><b>${esc(k)}:</b> ${esc(typeof v==="object"?JSON.stringify(v):v)}</p>`});h+=officialNotice()+"</div>";showMessage(r,h)}
+function bindItem(){$("itemBtn")?.addEventListener("click",itemConsult)}
+document.addEventListener("DOMContentLoaded",bindItem);
+/*07 EQUIPAJE*/
+async function baggageConsult(){if(!sessionRequired())return;loading(true);try{const d=await api("/api/v1/baggage",{method:"POST",body:JSON.stringify({airline:$("itemAirline")?.value||$("airline")?.value||"",destination:$("itemDestination")?.value||$("destination")?.value||"",baggage_type:$("baggage_type")?.value||""})});renderBaggage(d)}catch(e){showMessage("baggageResult",esc(e.message||tr("error")),"error")}finally{loading(false)}}
+function renderBaggage(d){const r=$("baggageResult");if(!r)return;const x=d?.result||d?.understood||d||{};let h=`<div class="resultCard"><h3>${esc(APP.lang==="es"?"Equipaje":"Baggage")}</h3>`;if(typeof x==="string")h+=`<p>${esc(x)}</p>`;else Object.entries(x).forEach(([k,v])=>{if(v!==null&&v!==undefined&&v!=="")h+=`<p><b>${esc(k)}:</b> ${esc(typeof v==="object"?JSON.stringify(v):v)}</p>`});h+=officialNotice()+"</div>";showMessage(r,h)}
+async function baggageSources(){if(!sessionRequired())return;loading(true);try{const d=await api("/api/v1/flight/sources");let h=`<div class="resultCard"><h3>${esc(APP.lang==="es"?"Fuentes oficiales":"Official sources")}</h3>`;const x=d?.sources||d?.result||d||{};if(Array.isArray(x))x.forEach(v=>{const u=v?.url||v?.link;if(u)h+=`<p><a href="${esc(u)}" target="_blank" rel="noopener">${esc(v?.name||v?.title||u)}</a></p>`});else Object.entries(x).forEach(([k,v])=>{if(v)h+=`<p><b>${esc(k)}:</b> ${esc(typeof v==="object"?JSON.stringify(v):v)}</p>`});h+=officialNotice()+"</div>";showMessage("baggageResult",h)}catch(e){showMessage("baggageResult",esc(e.message||tr("error")),"error")}finally{loading(false)}}
+function bindBaggage(){$$("section#baggage [data-action]").forEach(b=>b.addEventListener("click",()=>{const a=b.dataset.action;if(a==="item")setView("item");else if(a==="practice")setView("practice");else if(a==="baggageSources")baggageSources()}))}
+document.addEventListener("DOMContentLoaded",bindBaggage);
+/*08 CUBA*/
+async function cubaRequest(type){if(!sessionRequired())return;loading(true);try{const d=await api("/api/v1/cuba/"+type);renderCuba(d,type)}catch(e){showMessage("cubaResult",esc(e.message||tr("error")),"error")}finally{loading(false)}}
+function renderCuba(d,type){const r=$("cubaResult");if(!r)return;const x=d?.result||d?.data||d||{};let title=type==="visa"?(APP.lang==="es"?"Visa para Cuba":"Cuba visa"):type==="dviajeros"?"D’Viajeros":(APP.lang==="es"?"Fuentes oficiales de Cuba":"Official Cuba sources");let h=`<div class="resultCard"><h3>${esc(title)}</h3>`;if(typeof x==="string")h+=`<p>${esc(x)}</p>`;else if(Array.isArray(x))x.forEach(v=>{if(typeof v==="string")h+=`<p>${esc(v)}</p>`;else h+=`<p>${esc(v?.title||v?.name||"")} ${v?.url?`<a href="${esc(v.url)}" target="_blank" rel="noopener">${esc(v.url)}</a>`:""}</p>`});else Object.entries(x).forEach(([k,v])=>{if(v!==null&&v!==undefined&&v!=="")h+=`<p><b>${esc(k)}:</b> ${esc(typeof v==="object"?JSON.stringify(v):v)}</p>`});h+=officialNotice()+"</div>";showMessage(r,h)}
+async function cubaPracticeStart(){if(!sessionRequired())return;loading(true);try{const d=await api("/api/v1/cuba/practice");APP.cuba={step:0,data:d};setView("cubaPractice");renderCubaPractice()}catch(e){showMessage("cubaResult",esc(e.message||tr("error")),"error")}finally{loading(false)}}
+function renderCubaPractice(){const r=$("cubaPracticeResult");if(!r)return;const d=APP.cuba?.data||{},x=d?.steps||d?.questions||[];let h=`<div class="resultCard"><h3>${esc(APP.lang==="es"?"Práctica de viaje a Cuba":"Cuba travel practice")}</h3><p>${esc(tr("simulationNotice"))}</p>`;if(Array.isArray(x)&&x.length){const q=x[APP.cuba.step]||{};h+=`<h4>${esc(q.title||q.question||("Paso "+(APP.cuba.step+1)))}</h4>`;if(q.text)h+=`<p>${esc(q.text)}</p>`;if(Array.isArray(q.options))q.options.forEach((o,i)=>h+=`<button type="button" data-cuba-option="${i}">${esc(typeof o==="string"?o:o.label||o.title||"")}</button>`);h+=`<button type="button" data-cuba-next="1">${esc(tr("next"))}</button>`}else h+=`<p>${esc(typeof d==="string"?d:JSON.stringify(d))}</p>`;h+=`<button type="button" data-action="cuba">${esc(tr("back"))}</button></div>`;r.innerHTML=h}
+function bindCuba(){$$("section#cuba [data-action]").forEach(b=>b.addEventListener("click",()=>{const a=b.dataset.action;if(a==="cuba-visa")cubaRequest("visa");else if(a==="cuba-dviajeros")cubaRequest("dviajeros");else if(a==="cuba-official")cubaRequest("official");else if(a==="cuba-practice")cubaPracticeStart()}));$("cubaPracticeResult")?.addEventListener("click",e=>{const n=e.target.closest("[data-cuba-next]");if(n){APP.cuba.step++;renderCubaPractice()}})}
+document.addEventListener("DOMContentLoaded",bindCuba);
+/*09 MI GUÍA*/
+async function loadGuide(){if(!sessionRequired())return;loading(true);try{const d=await api("/api/v1/guide",{method:"POST",body:JSON.stringify({})});renderGuide(d)}catch(e){showMessage("guideResult",esc(e.message||tr("error")),"error")}finally{loading(false)}}
+function renderGuide(d){const r=$("guideResult");if(!r)return;const x=d?.guide||d?.result||d||{};let h=`<div class="resultCard"><h3>${esc(APP.lang==="es"?"Mi guía":"My guide")}</h3>`;if(typeof x==="string")h+=`<p>${esc(x)}</p>`;else if(Array.isArray(x)){h+="<ol>";x.forEach(v=>h+=`<li>${esc(typeof v==="string"?v:v?.title||v?.text||JSON.stringify(v))}</li>`);h+="</ol>"}else Object.entries(x).forEach(([k,v])=>{if(v!==null&&v!==undefined&&v!=="")h+=`<p><b>${esc(k)}:</b> ${esc(typeof v==="object"?JSON.stringify(v):v)}</p>`});h+=officialNotice()+"</div>";showMessage(r,h)}
+function bindGuide(){$("guideBtn")?.addEventListener("click",loadGuide)}
+document.addEventListener("DOMContentLoaded",bindGuide);
+/*10 FUENTES OFICIALES*/
+async function loadSources(){if(!sessionRequired())return;loading(true);try{const d=await api("/api/v1/official-sources");renderSources(d)}catch(e){showMessage("sourcesResult",esc(e.message||tr("error")),"error")}finally{loading(false)}}
+function renderSources(d){const r=$("sourcesResult");if(!r)return;const x=d?.sources||d?.result||d||{};let h=`<div class="resultCard"><h3>${esc(APP.lang==="es"?"Fuentes oficiales":"Official sources")}</h3>`;if(Array.isArray(x))x.forEach(v=>{const n=typeof v==="string"?v:v?.name||v?.title||"Fuente oficial",u=typeof v==="object"?v?.url||v?.link:"";h+=`<p><b>${esc(n)}</b>${u?`<br><a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a>`:""}</p>`});else Object.entries(x).forEach(([k,v])=>{if(v!==null&&v!==undefined&&v!==""){const u=typeof v==="string"&&/^https?:\/\//i.test(v)?v:"";h+=`<p><b>${esc(k)}</b>${u?`<br><a href="${esc(u)}" target="_blank" rel="noopener noreferrer">${esc(u)}</a>`:`: ${esc(typeof v==="object"?JSON.stringify(v):v)}`}</p>`}});h+=`<p><small>${esc(tr("official"))}</small></p></div>`;showMessage(r,h)}
+function bindSources(){$$("section#sources [data-action]").forEach(b=>b.addEventListener("click",()=>{const a=b.dataset.action;if(a==="official-sources")loadSources()}));}
+document.addEventListener("DOMContentLoaded",bindSources);
+/*11 APRENDER UN TÉRMINO*/
+async function teachTerm(){if(!sessionRequired())return;const term=value("term");if(!term){showMessage("teachResult",tr("required"),"error");return}loading(true);try{const d=await api("/api/v1/item/teach",{method:"POST",body:JSON.stringify({term})});renderTerm(d,term)}catch(e){showMessage("teachResult",esc(e.message||tr("error")),"error")}finally{loading(false)}}
+function renderTerm(d,term){const r=$("teachResult");if(!r)return;const x=d?.result||d?.definition||d||{};let h=`<div class="resultCard"><h3>${esc(APP.lang==="es"?"Aprender un término":"Learn a term")}</h3><p><b>${esc(term)}</b></p>`;if(typeof x==="string")h+=`<p>${esc(x)}</p>`;else Object.entries(x).forEach(([k,v])=>{if(v!==null&&v!==undefined&&v!=="")h+=`<p><b>${esc(k)}:</b> ${esc(typeof v==="object"?JSON.stringify(v):v)}</p>`});h+=`<p><small>${esc(tr("official"))}</small></p></div>`;showMessage(r,h)}
+function bindTeach(){$("teachBtn")?.addEventListener("click",teachTerm);$("term")?.addEventListener("keydown",e=>{if(e.key==="Enter")teachTerm()})}
+document.addEventListener("DOMContentLoaded",bindTeach);
+/*12 AVISO LEGAL*/
+async function loadLegal(){loading(true);try{const d=await api("/api/v1/legal");renderLegal(d)}catch(_){renderLegal()}finally{loading(false)}}
+function renderLegal(d){const r=$("legalResult");if(!r)return;const x=d?.legal||d?.result||d;let h=`<div class="resultCard"><h3>${esc(APP.lang==="es"?"Aviso legal":"Legal notice")}</h3>`;if(typeof x==="string"&&x)h+=`<p>${esc(x)}</p>`;else h+=`<p>${esc(APP.lang==="es"?"¿QUÉ QUIERES LLEVAR? es una herramienta independiente de preparación y orientación. No es una aerolínea, agencia de viajes, autoridad gubernamental, autoridad migratoria ni proveedor de transporte. La información debe verificarse siempre con la fuente oficial correspondiente.":"¿QUÉ QUIERES LLEVAR? is an independent preparation and guidance tool. It is not an airline, travel agency, government authority, immigration authority, or transportation provider. Information should always be verified with the applicable official source.")}</p>`;h+=`<p><small>${esc(tr("official"))}</small></p></div>`;showMessage(r,h)}
+function bindLegal(){$$("section#legal [data-action]").forEach(b=>b.addEventListener("click",()=>{if(b.dataset.action==="legal")loadLegal()}));loadLegal()}
+document.addEventListener("DOMContentLoaded",bindLegal);
+/*13 PAGO*/
+async function createPayment(){loading(true);try{const d=await api("/api/v1/create-checkout",{method:"POST",body:JSON.stringify({})});if(d?.url)location.href=d.url;else if(d?.checkout_url)location.href=d.checkout_url;else showMessage("payment",d?.message||tr("error"),"error")}catch(e){showMessage("payment",esc(e.message||tr("error")),"error")}finally{loading(false)}}
+async function verifyPayment(){try{const q=new URLSearchParams(location.search),s=q.get("session_id")||q.get("checkout_session_id");if(!s)return;loading(true);const d=await api("/api/v1/verify-payment",{method:"POST",body:JSON.stringify({session_id:s})});if(d?.active||d?.ok||d?.paid){APP.session=Object.assign({},APP.session||{},d,{active:true});updateSessionStatus()}history.replaceState({},document.title,location.pathname)}catch(e){console.error(e)}finally{loading(false)}}
+function bindPayment(){const b=$("[data-action='payment']")||$("paymentBtn")||$("payBtn")||$("checkoutBtn");b?.addEventListener("click",createPayment)}
+document.addEventListener("DOMContentLoaded",()=>{bindPayment();verifyPayment()});
+/*14 NAVEGACIÓN + HOME*/
+const simulationHeader=()=>`<p><strong>${esc(tr("simulation"))}</strong></p>`;
+const officialNotice=()=>`<p><small>${esc(tr("official"))}</small></p>`;
+const dynamicButton=(txt,cls="")=>`<button type="button" class="${cls}">${esc(txt)}</button>`;
+const showHomeAction=a=>{if(a==="flight")setView("flight");else if(a==="practice")setView("practice");else if(a==="item")setView("item");else if(a==="baggage")setView("baggage");else if(a==="cuba")setView("cuba");else if(a==="guide")setView("guide");else if(a==="sources")setView("sources");else if(a==="teach")setView("teach");else if(a==="legal")setView("legal");else if(a==="payment")setView("payment");else if(a==="cuba-practice")cubaPracticeStart();};
+function bindHome(){const h=$("home");if(!h)return;h.addEventListener("click",e=>{const b=e.target.closest("[data-action]");if(!b||!h.contains(b))return;const a=b.dataset.action;if(a==="payment")createPayment();else showHomeAction(a)})}
+function bindBackButtons(){$$("main section").forEach(s=>s.addEventListener("click",e=>{const b=e.target.closest("[data-action='home'],[data-action='back']");if(b)home()}))}
+function finishPractice(){setView("home")}
+document.addEventListener("click",e=>{const b=e.target.closest("[data-practice-next]");if(b)practiceNext();const f=e.target.closest("[data-practice-finish]");if(f)finishPractice()});
+document.addEventListener("DOMContentLoaded",()=>{bindHome();bindBackButtons()});
+/*15 INTEGRACIÓN FINAL*/
+Object.assign(TEXT.es,{round:"Ida y vuelta",oneway:"Solo ida",none:"Sin equipaje",carry:"Equipaje de mano",checked:"Equipaje facturado",both:"Mano + facturado",search:"Buscar vuelos",finish:"Finalizar",complete:"Práctica completada",paymentStop:"La práctica termina antes del pago. No se realiza ninguna compra."});
+Object.assign(TEXT.en,{round:"Round trip",oneway:"One way",none:"No baggage",carry:"Carry-on",checked:"Checked baggage",both:"Carry-on + checked",search:"Search flights",finish:"Finish",complete:"Practice completed",paymentStop:"The practice ends before payment. No purchase is made."});
+function initApp(){translate();sessionCheck();createHiddenAdminAccess();bindAdmin();if(location.pathname!=="/"&&!location.pathname.endsWith("index.html"))return;const p=new URLSearchParams(location.search);if(p.get("payment")==="success"||p.get("session_id"))verifyPayment();loading(false)}
+document.addEventListener("DOMContentLoaded",initApp);
