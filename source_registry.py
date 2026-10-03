@@ -1,10 +1,10 @@
-# source_registry.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v12.2.0
+# source_registry.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v13.0.0
 from __future__ import annotations
 from dataclasses import dataclass,asdict
-from typing import Any,Dict,List
+from typing import Any,Dict,List,Iterable,Optional
 import re
 
-VERSION="12.2.0"
+VERSION="13.0.0"
 VERIFICATION_DATE="2026-10-03"
 
 @dataclass(frozen=True)
@@ -17,127 +17,112 @@ class Source:
     topics:tuple=()
     what_it_covers:str=""
     limitations:str=""
-    verified:str=VERIFICATION_DATE
+    verified:bool=True
     country:str=""
     category:str="official"
 
-def S(id,name,publisher,url,topics=(),covers="",limitations="",country="",category="official",type="official"):
+def S(id:str,name:str,publisher:str,url:str,topics:Any=(),what_it_covers:str="",limitations:str="",country:str="",category:str="official",type:str="official",verified:bool=True)->Source:
     if isinstance(topics,str):
-        topics=tuple(x.strip() for x in topics.split(",") if x.strip())
+        topics=(topics,)
     else:
-        topics=tuple(topics)
-    return Source(id,name,publisher,url,type,topics,covers,limitations,VERIFICATION_DATE,country,category)
+        topics=tuple(topics or ())
+    return Source(id=id,name=name,publisher=publisher,url=url,type=type,topics=topics,what_it_covers=what_it_covers,limitations=limitations,verified=verified,country=country,category=category)
 
 SOURCES=[
-S("tsa","Transportation Security Administration (TSA)","U.S. Transportation Security Administration","https://www.tsa.gov/travel/security-screening","baggage","security screening,carry-on,checked baggage,items","TSA rules do not replace airline or destination-country rules.","United States","security"),
-S("tsa_what_can_i_bring","TSA — What Can I Bring?","U.S. Transportation Security Administration","https://www.tsa.gov/travel/security-screening/whatcanibring","items,baggage","searchable guidance for many travel items","Use the exact item and check the result; airline and destination rules may also apply.","United States","items"),
-S("tsa_liquids","TSA — Liquids Rule","U.S. Transportation Security Administration","https://www.tsa.gov/travel/security-screening/liquids-rule","liquids,baggage","security screening of liquids","Security rules are separate from destination import rules.","United States","security"),
-S("tsa_medication","TSA — Medication","U.S. Transportation Security Administration","https://www.tsa.gov/travel/tsa-cares/traveling-medication","medication,items","screening information for medication","Medication legality/import requirements can also depend on destination authorities.","United States","medication"),
-S("tsa_batteries","TSA — Batteries","U.S. Transportation Security Administration","https://www.tsa.gov/travel/security-screening/whatcanibring/all","batteries,electronics","screening information for batteries and electronics","Check the airline and applicable dangerous-goods restrictions as well.","United States","security"),
-S("cbp","U.S. Customs and Border Protection","U.S. Customs and Border Protection","https://www.cbp.gov/","customs,entry,documents","U.S. entry and customs information","Applies to U.S. customs and border matters, not every destination.","United States","customs"),
-S("cbp_travel","CBP — Travelers","U.S. Customs and Border Protection","https://www.cbp.gov/travel","customs,documents","traveler information and entry/customs guidance","Check the applicable port and current official guidance.","United States","customs"),
-S("state_travel","U.S. Department of State — Travel","U.S. Department of State","https://travel.state.gov/content/travel/en/international-travel.html","travel,documents,entry","international travel and destination information","Information is for U.S. travelers and does not replace destination authority instructions.","United States","travel"),
-S("state_cuba","U.S. Department of State — Cuba","U.S. Department of State","https://travel.state.gov/content/travel/en/international-travel/International-Travel-Country-Information-Pages/Cuba.html","cuba,travel,documents","U.S. traveler information concerning Cuba","Destination authorities may have additional requirements.","Cuba","cuba"),
-S("cuba_dviajeros","D'Viajeros","Republic of Cuba — official travel declaration portal","https://dviajeros.mitrans.gob.cu/","cuba,dviajeros,documents","official Cuban traveler information/declaration process","Use the current official portal and follow its current instructions.","Cuba","cuba"),
-S("cuba_aduana","Aduana General de la República de Cuba","Aduana General de la República de Cuba","https://www.aduana.gob.cu/","cuba,customs,baggage,items","Cuban customs requirements and traveler information","Customs rules can depend on the item, quantity and traveler circumstances.","Cuba","cuba"),
-S("cuba_mitrans","Ministerio de Transporte de Cuba","Ministerio de Transporte de Cuba","https://www.mitrans.gob.cu/","cuba,transport,travel","Cuban transportation information","Use the specific current publication applicable to the journey.","Cuba","cuba"),
-S("cuba_minrex","Ministerio de Relaciones Exteriores de Cuba","MINREX","https://cubaminrex.cu/","cuba,visa,documents","Cuban foreign-affairs and consular information","Visa/entry requirements can depend on nationality and purpose.","Cuba","cuba"),
-S("cuba_evisa","Cuba eVisa","Cuba eVisa — official portal","https://evisacuba.cu/","cuba,visa,evisa,documents","official Cuba eVisa information and process","Confirm the currently applicable process for the traveler's nationality.","Cuba","visa"),
-S("icao","International Civil Aviation Organization","ICAO","https://www.icao.int/","aviation,travel","international aviation framework and information","ICAO does not replace an airline's passenger conditions or a country's specific entry rules.","International","aviation"),
-S("iata","International Air Transport Association","IATA","https://www.iata.org/","aviation,airlines,baggage","industry aviation information","IATA is not the passenger's airline and does not itself confirm a specific booking.","International","aviation"),
-S("iata_travelcentre","IATA Travel Centre","IATA","https://www.iatatravelcentre.com/","documents,entry,visa,travel","travel-document and entry information","Use it as an orientation source and confirm with the destination authority.","International","travel"),
-S("faa","Federal Aviation Administration","FAA","https://www.faa.gov/","aviation,safety","U.S. aviation safety information","FAA is not the authority for every international destination rule.","United States","aviation"),
+S("tsa","TSA","Transportation Security Administration","https://www.tsa.gov/","security","Security screening and passenger preparation","Does not replace airline or destination rules","US","security"),
+S("tsa_bring","What Can I Bring","TSA","https://www.tsa.gov/travel/security-screening/whatcanibring","baggage,item,security","Carry-on and checked-baggage item guidance","Final screening decision is made by TSA","US","security"),
+S("tsa_liquids","Liquids Rule","TSA","https://www.tsa.gov/travel/security-screening/liquids-rule","liquids,baggage,security","Liquids and screening information","Airline and destination rules may also apply","US","security"),
+S("tsa_medication","Medication","TSA","https://www.tsa.gov/travel/secure-flight/traveling-medication","medication,baggage,security","Medication screening information","Destination entry rules may differ","US","security"),
+S("tsa_batteries","Batteries","TSA","https://www.tsa.gov/travel/security-screening/whatcanibring/all","battery,electronics,baggage","Battery and electronic screening information","Battery limits can also depend on airline and destination","US","security"),
+S("faa","FAA","Federal Aviation Administration","https://www.faa.gov/","aviation,flight,battery","U.S. aviation safety information","Not an individual airline baggage contract","US","aviation"),
+S("cbp","CBP","U.S. Customs and Border Protection","https://www.cbp.gov/","customs,entry,travel","U.S. customs and entry information","Destination-country rules remain separate","US","customs"),
+S("cbp_travel","CBP Travelers","U.S. Customs and Border Protection","https://www.cbp.gov/travel","customs,entry,baggage","Traveler and customs information","Applies to U.S. entry processes","US","customs"),
+S("state_travel","Travel.State.Gov","U.S. Department of State","https://travel.state.gov/","travel,documents,entry","Travel and destination information","Official guidance should be checked for the specific trip","US","travel"),
+S("state_cuba","Cuba Travel Information","U.S. Department of State","https://travel.state.gov/content/travel/en/international-travel/International-Travel-Country-Information-Pages/Cuba.html","cuba,travel,documents","U.S. government Cuba travel information","Does not replace Cuban authorities","US/CU","cuba"),
+S("cuba_dviajeros","D'Viajeros","República de Cuba","https://dviajeros.mitrans.gob.cu/","cuba,dviajeros,entry,documents","Official traveler information/form access","Use the official site for real submission","CU","cuba"),
+S("cuba_aduana","Aduana General de la República de Cuba","Aduana de Cuba","https://www.aduana.gob.cu/","cuba,customs,baggage,item,entry,exit","Cuban customs information","Specific restrictions can change","CU","customs"),
+S("cuba_mitrans","MITRANS","Ministerio de Transporte de Cuba","https://www.mitrans.gob.cu/","cuba,transport,aviation,travel","Transportation information","Check current official notices","CU","cuba"),
+S("cuba_minrex","MINREX","Ministerio de Relaciones Exteriores de Cuba","https://cubaminrex.cu/","cuba,visa,documents,entry,exit","Cuban foreign-affairs information","Specific consular requirements may depend on nationality","CU","cuba"),
+S("cuba_evisa","Cuba eVisa","MINREX","https://evisacuba.cu/","cuba,visa,evisa,entry,documents","Official Cuba eVisa information","Eligibility and procedures must be checked for the traveler","CU","visa"),
+S("icao","ICAO","International Civil Aviation Organization","https://www.icao.int/","aviation,flight","International aviation information","Does not determine individual airline baggage allowances","INT","aviation"),
+S("iata","IATA","International Air Transport Association","https://www.iata.org/","aviation,flight,baggage","Air transport industry information","Not a substitute for the airline's conditions","INT","aviation"),
+S("iata_travel","IATA Travel Centre","IATA","https://www.iatatravelcentre.com/","travel,documents,visa,entry","Travel-document information tool","Always verify with official destination authorities","INT","travel"),
 
-S("aa","American Airlines","American Airlines","https://www.aa.com/","airline,flight,baggage","official airline booking, itinerary and baggage information","Conditions depend on route, fare, cabin and other circumstances.","United States","airline"),
-S("aa_bags","American Airlines — Baggage","American Airlines","https://www.aa.com/i18n/travel-info/baggage/baggage.jsp","airline,baggage","official baggage information","Verify the baggage allowance attached to the specific reservation.","United States","airline"),
-S("delta","Delta Air Lines","Delta Air Lines","https://www.delta.com/","airline,flight,baggage","official airline information","Schedules, fares and baggage conditions can change.","United States","airline"),
-S("delta_bags","Delta — Baggage","Delta Air Lines","https://www.delta.com/us/en/baggage/overview","airline,baggage","official baggage information","Check the reservation-specific allowance.","United States","airline"),
-S("united","United Airlines","United Airlines","https://www.united.com/","airline,flight,baggage","official airline information","Schedules and conditions can change.","United States","airline"),
-S("united_bags","United — Baggage","United Airlines","https://www.united.com/en/us/fly/baggage.html","airline,baggage","official baggage information","Check the exact itinerary and fare.","United States","airline"),
-S("southwest","Southwest Airlines","Southwest Airlines","https://www.southwest.com/","airline,flight,baggage","official airline information","Rules depend on current policy and itinerary.","United States","airline"),
-S("jetblue","JetBlue","JetBlue Airways","https://www.jetblue.com/","airline,flight,baggage","official airline information","Check current baggage and fare conditions.","United States","airline"),
-S("spirit","Spirit Airlines","Spirit Airlines","https://www.spirit.com/","airline,flight,baggage","official airline information","Baggage and fare conditions can vary.","United States","airline"),
-S("frontier","Frontier Airlines","Frontier Airlines","https://www.flyfrontier.com/","airline,flight,baggage","official airline information","Check the purchased bundle/fare and itinerary.","United States","airline"),
-S("copa","Copa Airlines","Copa Airlines","https://www.copaair.com/","airline,flight,baggage","official airline information","Check the specific route, fare and reservation.","Panama","airline"),
-S("avianca","Avianca","Avianca","https://www.avianca.com/","airline,flight,baggage","official airline information","Conditions vary by fare and itinerary.","Colombia","airline"),
-S("latam","LATAM Airlines","LATAM Airlines","https://www.latamairlines.com/","airline,flight,baggage","official airline information","Check the exact itinerary and fare.","Chile","airline"),
-S("aeromexico","Aeroméxico","Aeroméxico","https://www.aeromexico.com/","airline,flight,baggage","official airline information","Check the current fare and itinerary conditions.","Mexico","airline"),
-S("volaris","Volaris","Volaris","https://www.volaris.com/","airline,flight,baggage","official airline information","Check current baggage conditions for the reservation.","Mexico","airline"),
-S("viva","Viva","Viva Aerobus","https://www.vivaaerobus.com/","airline,flight,baggage","official airline information","Check the current fare and route conditions.","Mexico","airline"),
-S("southwest_cuba","Southwest — Cuba information","Southwest Airlines","https://www.southwest.com/","cuba,airline,baggage","official airline information when applicable","Do not infer current Cuba service from this registry; verify the current itinerary.","United States","airline"),
-S("jetblue_cuba","JetBlue — Cuba information","JetBlue Airways","https://www.jetblue.com/","cuba,airline,baggage","official airline information when applicable","Do not infer current Cuba service from this registry; verify the current itinerary.","United States","airline"),
-S("aa_cuba","American Airlines — Cuba information","American Airlines","https://www.aa.com/","cuba,airline,baggage","official airline information when applicable","Do not infer current service from this registry; verify the current itinerary.","United States","airline"),
-S("copa_cuba","Copa Airlines — Cuba information","Copa Airlines","https://www.copaair.com/","cuba,airline,baggage","official airline information when applicable","Do not infer current service from this registry; verify the current itinerary.","Panama","airline"),
-S("aeromexico_bags","Aeroméxico — Baggage","Aeroméxico","https://www.aeromexico.com/en-us/travel-information/baggage/carry-on-baggage","airline,baggage,cuba","official carry-on and baggage information","Verify the exact fare, route and current reservation conditions.","Mexico","airline"),
-S("southwest_cuba_bags","Southwest — Cuba baggage restrictions","Southwest Airlines","https://support.southwest.com/helpcenter/article/baggage-embargo-for-checked-bags","cuba,baggage,airline","official baggage restriction information","Verify current Cuba restrictions before travel.","United States","airline"),
-S("delta_cuba_bags","Delta — baggage restrictions","Delta Air Lines","https://es.delta.com/us/es/baggage/checked-baggage/embargoes-restrictions","cuba,baggage,airline","official baggage restriction information","Verify current route and seasonal restrictions.","United States","airline"),
+S("american","American Airlines","American Airlines","https://www.aa.com/","airline,flight,baggage,booking","Official airline site for flights, booking and baggage","Rules depend on itinerary and fare","US","airline"),
+S("delta","Delta Air Lines","Delta Air Lines","https://www.delta.com/","airline,flight,baggage,booking","Official airline site","Rules depend on itinerary and fare","US","airline"),
+S("united","United Airlines","United Airlines","https://www.united.com/","airline,flight,baggage,booking","Official airline site","Rules depend on itinerary and fare","US","airline"),
+S("southwest","Southwest Airlines","Southwest Airlines","https://www.southwest.com/","airline,flight,baggage,booking","Official airline site","Rules depend on itinerary","US","airline"),
+S("jetblue","JetBlue","JetBlue","https://www.jetblue.com/","airline,flight,baggage,booking","Official airline site","Rules depend on itinerary and fare","US","airline"),
+S("spirit","Spirit Airlines","Spirit Airlines","https://www.spirit.com/","airline,flight,baggage,booking","Official airline site","Rules depend on itinerary and fare","US","airline"),
+S("frontier","Frontier Airlines","Frontier Airlines","https://www.flyfrontier.com/","airline,flight,baggage,booking","Official airline site","Rules depend on itinerary and fare","US","airline"),
+S("copa","Copa Airlines","Copa Airlines","https://www.copaair.com/","airline,flight,baggage,booking","Official airline site","Rules depend on itinerary and fare","PA","airline"),
+S("avianca","Avianca","Avianca","https://www.avianca.com/","airline,flight,baggage,booking","Official airline site","Rules depend on itinerary and fare","CO","airline"),
+S("latam","LATAM Airlines","LATAM Airlines","https://www.latamairlines.com/","airline,flight,baggage,booking","Official airline site","Rules depend on itinerary and fare","CL","airline"),
+S("aeromexico","Aeroméxico","Aeroméxico","https://www.aeromexico.com/","airline,flight,baggage,booking","Official airline site","Rules depend on itinerary and fare","MX","airline"),
+S("volaris","Volaris","Volaris","https://www.volaris.com/","airline,flight,baggage,booking","Official airline site","Rules depend on itinerary and fare","MX","airline"),
+S("viva","Viva","Viva Aerobus","https://www.vivaaerobus.com/","airline,flight,baggage,booking","Official airline site","Rules depend on itinerary and fare","MX","airline"),
 
-S("mexico_gob","Gobierno de México","Gobierno de México","https://www.gob.mx/","mexico,entry,documents,customs","official Mexican government information","Use the agency-specific page for the exact requirement.","Mexico","destination"),
-S("mexico_migracion","Instituto Nacional de Migración","Gobierno de México","https://www.gob.mx/inm","mexico,entry,documents","Mexican immigration information","Requirements depend on nationality and circumstances.","Mexico","destination"),
-S("guatemala_gob","Gobierno de Guatemala","Gobierno de Guatemala","https://guatemala.gob.gt/","guatemala,travel,documents","official Guatemalan government information","Use the responsible agency's current instructions.","Guatemala","destination"),
-S("honduras_gob","Gobierno de Honduras","Gobierno de Honduras","https://www.gob.hn/","honduras,travel,documents","official Honduran government information","Use the applicable immigration/customs authority.","Honduras","destination"),
-S("elsalvador_gob","Gobierno de El Salvador","Gobierno de El Salvador","https://www.presidencia.gob.sv/","elsalvador,travel,documents","official Salvadoran government information","Use the applicable authority's current instructions.","El Salvador","destination"),
-S("dominican_gob","Gobierno de República Dominicana","Gobierno de República Dominicana","https://www.gob.do/","dominican republic,travel,documents","official Dominican government information","Confirm immigration and customs requirements through the responsible authority.","Dominican Republic","destination"),
+S("xael","Xael Charters","Xael Charters","https://www.xaelcharter.com/","charter,cuba,flight,booking","Official charter operator website","Availability, routes and conditions must be checked directly","US/CU","charter"),
+S("aerocuba","Aerocuba","Aerocuba","https://www.aerocuba.com/","charter,cuba,flight,booking","Official charter operator website","Availability, routes and conditions must be checked directly","US/CU","charter"),
+S("cubazul","Cubazul Air Charter","Cubazul Air Charter","https://cubazulaircharter.com/","charter,cuba,flight,booking","Official charter operator website","Availability, routes and conditions must be checked directly","US/CU","charter"),
+S("cuballama_viajes","Cuballama Viajes","Cuballama","https://www.cuballama.com/viajes/vuelos/charters","charter,cuba,flight,booking","Official Cuballama charter-travel page","Availability, routes and conditions must be checked directly","US/CU","charter"),
 
-S("xael_charter","Xael Charters","Xael Charters","https://www.xaelcharter.com/","cuba,charter,flight,baggage","official charter operator information for Cuba travel","Verify current route, ticket, baggage allowance and conditions directly with the operator.","Cuba","charter"),
-S("aerocuba","Aerocuba","Aerocuba","https://www.aerocuba.com/","cuba,charter,flight,baggage","official charter operator information for Cuba travel","Verify current route, ticket, baggage allowance and conditions directly with the operator.","Cuba","charter"),
-S("cubazul","Cubazul Air Charter","Cubazul Air Charter","https://cubazulaircharter.com/","cuba,charter,flight,baggage","official charter operator information for Cuba travel","Verify current route, ticket, baggage allowance and conditions directly with the operator.","Cuba","charter"),
-S("cuballama_charters","Cuballama Viajes — Charters","Cuballama Viajes","https://www.cuballama.com/viajes/vuelos/charters","cuba,charter,flight,baggage","official charter booking/operator information","Verify current route, ticket, baggage allowance and conditions directly with the operator.","Cuba","charter"),
+S("mexico","Gobierno de México","Gobierno de México","https://www.gob.mx/","mexico,entry,documents","Official Mexican government information","Specific immigration requirements depend on traveler","MX","destination"),
+S("guatemala","Gobierno de Guatemala","Gobierno de Guatemala","https://guatemala.gob.gt/","guatemala,entry,documents","Official government information","Check the responsible immigration authority","GT","destination"),
+S("honduras","Gobierno de Honduras","Gobierno de Honduras","https://www.gob.hn/","honduras,entry,documents","Official government information","Check current immigration requirements","HN","destination"),
+S("elsalvador","Gobierno de El Salvador","Gobierno de El Salvador","https://www.presidencia.gob.sv/","elsalvador,entry,documents","Official government information","Check current immigration requirements","SV","destination"),
+S("dominican_republic","Gobierno de República Dominicana","Gobierno de República Dominicana","https://www.gob.do/","dominican_republic,entry,documents","Official government information","Check current immigration requirements","DO","destination"),
 ]
 
-AIRLINES=[x for x in SOURCES if x.category=="airline" and not x.id.endswith("_bags") and not x.id.endswith("_cuba")]
-CHARTERS=[x for x in SOURCES if x.category=="charter"]
+SOURCES_BY_ID={s.id:s for s in SOURCES}
+AIRLINES=[s for s in SOURCES if s.category=="airline"]
+CHARTERS=[s for s in SOURCES if s.category=="charter"]
 
 def _dict(s:Source)->Dict[str,Any]:
-    d=asdict(s)
-    d["topics"]=list(d.get("topics",()))
-    return d
+    return asdict(s)
 
 def all_sources()->List[Dict[str,Any]]:
-    return [_dict(x) for x in SOURCES]
+    return [_dict(s) for s in SOURCES]
 
-def get_sources(topic:str="official",query:str="")->List[Dict[str,Any]]:
-    t=(topic or "official").lower().strip()
-    q=(query or "").lower().strip()
-    words=set(re.findall(r"[a-z0-9áéíóúñü'-]+",q))
+def source_by_id(source_id:str)->Optional[Dict[str,Any]]:
+    s=SOURCES_BY_ID.get(str(source_id or "").strip())
+    return _dict(s) if s else None
+
+def _match_text(s:Source,q:str)->bool:
+    q=str(q or "").strip().lower()
+    if not q:return True
+    hay=" ".join([s.id,s.name,s.publisher,s.what_it_covers,s.country,s.category,*s.topics]).lower()
+    words=[w for w in re.findall(r"[a-záéíóúñü0-9]+",q) if len(w)>1]
+    return not words or all(w in hay for w in words)
+
+def get_sources(topic:str="official",query:str="",country:str="",airline:str="")->List[Dict[str,Any]]:
+    t=str(topic or "").strip().lower()
+    c=str(country or "").strip().lower()
+    a=str(airline or "").strip().lower()
     out=[]
     for s in SOURCES:
-        blob=" ".join([
-            s.id,s.name,s.publisher,s.url,s.type,s.country,s.category,
-            s.what_it_covers,s.limitations," ".join(s.topics)
-        ]).lower()
-        topic_match=t in ("","official","all") or t in s.topics or t in s.category or t in s.id
-        query_match=not words or any(w in blob for w in words)
-        if topic_match and query_match:
+        topic_ok=t in ("","official","all") or t in s.topics or t==s.category or t in s.id.lower() or t in s.name.lower()
+        country_ok=not c or c in s.country.lower() or c in s.name.lower() or c in s.id.lower()
+        airline_ok=not a or a in s.name.lower() or a in s.id.lower()
+        if topic_ok and country_ok and airline_ok and _match_text(s,query):
             out.append(_dict(s))
-    if not out and q:
-        for s in SOURCES:
-            blob=(s.name+" "+s.what_it_covers+" "+" ".join(s.topics)).lower()
-            if q in blob:
-                out.append(_dict(s))
-    return out[:50]
+    return out
 
-def sources_for(topic:str="",query:str="")->List[Dict[str,Any]]:
-    return get_sources(topic,query)
+def sources_for(topic:str="",country:str="",airline:str="")->List[Dict[str,Any]]:
+    return get_sources(topic or "official","",country,airline)
 
-def find_sources(topic:str="",query:str="")->List[Dict[str,Any]]:
-    return get_sources(topic,query)
+def find_sources(query:str="",topic:str="",country:str="")->List[Dict[str,Any]]:
+    return get_sources(topic or "official",query,country)
 
-def official_sources(topic:str="",query:str="")->List[Dict[str,Any]]:
-    return get_sources(topic,query)
+def official_sources(topic:str="",country:str="",airline:str="")->List[Dict[str,Any]]:
+    return [x for x in get_sources(topic or "official","",country,airline) if x.get("verified") and x.get("type")=="official"]
 
-def get_official_sources(topic:str="",query:str="")->List[Dict[str,Any]]:
-    return get_sources(topic or "official",query)
+def get_official_sources(topic:str="",country:str="",airline:str="")->List[Dict[str,Any]]:
+    return official_sources(topic,country,airline)
 
 def get_airlines(query:str="")->List[Dict[str,Any]]:
-    q=(query or "").lower().strip()
-    if not q:
-        return [_dict(x) for x in AIRLINES]
-    return [
-        _dict(x) for x in AIRLINES
-        if q in (x.name+" "+x.publisher+" "+x.country+" "+x.id).lower()
-        or any(q in t.lower() for t in x.topics)
-    ]
+    q=str(query or "").strip().lower()
+    return [_dict(s) for s in AIRLINES if not q or q in s.name.lower() or q in s.id.lower()]
 
 def airlines(query:str="")->List[Dict[str,Any]]:
     return get_airlines(query)
@@ -145,63 +130,22 @@ def airlines(query:str="")->List[Dict[str,Any]]:
 def find_airlines(query:str="")->List[Dict[str,Any]]:
     return get_airlines(query)
 
-def airline_list(query:str="")->List[Dict[str,Any]]:
-    return get_airlines(query)
+def airline_list()->List[Dict[str,Any]]:
+    return get_airlines()
 
 def get_charters(query:str="")->List[Dict[str,Any]]:
-    q=(query or "").lower().strip()
-    if not q:
-        return [_dict(x) for x in CHARTERS]
-    return [
-        _dict(x) for x in CHARTERS
-        if q in (x.name+" "+x.publisher+" "+x.country+" "+x.id).lower()
-        or any(q in t.lower() for t in x.topics)
-    ]
+    q=str(query or "").strip().lower()
+    return [_dict(s) for s in CHARTERS if not q or q in s.name.lower() or q in s.id.lower()]
 
-def charters(query:str="")->List[Dict[str,Any]]:
+def get_charter_sources(query:str="")->List[Dict[str,Any]]:
     return get_charters(query)
 
-def find_charters(query:str="")->List[Dict[str,Any]]:
-    return get_charters(query)
-
-def charter_list(query:str="")->List[Dict[str,Any]]:
-    return get_charters(query)
-
-def get_cuba_official_sources(query:str="")->List[Dict[str,Any]]:
-    q=(query or "").lower().strip()
-    out=[x for x in SOURCES if x.category in ("cuba","visa") and x.country=="Cuba"]
-    if not q:
-        return [_dict(x) for x in out]
-    return [
-        _dict(x) for x in out
-        if q in (
-            x.name+" "+x.publisher+" "+x.what_it_covers+" "+
-            " ".join(x.topics)+" "+x.id
-        ).lower()
-    ]
-
-def cuba_official_sources(query:str="")->List[Dict[str,Any]]:
-    return get_cuba_official_sources(query)
-
-def source_by_id(source_id:str)->Optional[Dict[str,Any]]:
-    sid=(source_id or "").strip()
+def official_url(name_or_id:str)->str:
+    q=str(name_or_id or "").strip().lower()
+    if not q:return ""
     for s in SOURCES:
-        if s.id==sid:
-            return _dict(s)
-    return None
+        if q in (s.id.lower(),s.name.lower()) or q in s.name.lower() or q in s.id.lower():
+            return s.url
+    return ""
 
-def official_url(source_id:str)->str:
-    x=source_by_id(source_id)
-    return x.get("url","") if x else ""
-
-def source_url(source_id:str)->str:
-    return official_url(source_id)
-
-__all__=[
-    "VERSION","VERIFICATION_DATE","Source","SOURCES","AIRLINES","CHARTERS",
-    "all_sources","get_sources","sources_for","find_sources","official_sources",
-    "get_official_sources","get_airlines","airlines","find_airlines","airline_list",
-    "get_charters","charters","find_charters","charter_list",
-    "get_cuba_official_sources","cuba_official_sources",
-    "source_by_id","official_url","source_url"
-]
+__all__=["VERSION","VERIFICATION_DATE","Source","SOURCES","AIRLINES","CHARTERS","all_sources","get_sources","sources_for","find_sources","official_sources","get_official_sources","get_airlines","airlines","find_airlines","airline_list","get_charters","get_charter_sources","source_by_id","official_url"]
