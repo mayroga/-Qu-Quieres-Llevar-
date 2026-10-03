@@ -1,9 +1,8 @@
 "use strict";
-const APP={name:"QUE QUIERES LLEVAR",version:"8.1.2",lang:localStorage.getItem("qql_lang")||"es",serviceToken:localStorage.getItem("qql_service_token")||"",adminToken:localStorage.getItem("qql_admin_token")||"",session:null,config:null,_bound:false,practice:null,adminTaps:0,adminTapTimer:null};
+const APP={name:"QUE QUIERES LLEVAR",version:"8.1.3",lang:localStorage.getItem("qql_lang")||"es",serviceToken:localStorage.getItem("qql_service_token")||"",adminToken:localStorage.getItem("qql_admin_token")||"",session:null,config:null,_bound:false,practice:null,adminTaps:0,adminTapTimer:null};
 const $=(s,r=document)=>r.querySelector(s),$$=(s,r=document)=>Array.from(r.querySelectorAll(s));
 const esc=v=>String(v??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
-const txt=v=>String(v??"").trim();
-const val=id=>txt(document.getElementById(id)?.value);
+const txt=v=>String(v??"").trim(),val=id=>txt(document.getElementById(id)?.value);
 function active(){return!!(APP.serviceToken||APP.adminToken)}
 function headers(extra={}){const h={"Content-Type":"application/json",...extra};if(APP.serviceToken)h["X-Service-Token"]=APP.serviceToken;if(APP.adminToken)h["X-Admin-Token"]=APP.adminToken;return h}
 function saveTokens(){localStorage.setItem("qql_service_token",APP.serviceToken||"");localStorage.setItem("qql_admin_token",APP.adminToken||"")}
@@ -21,7 +20,7 @@ async function api(path,options={},timeout=10000){
   throw e
  }finally{clearTimeout(tm)}
 }
-function screens(){return["loading","home","payment","flight","item","baggage","cuba","cubaPractice","guide","sources","teach","legal","admin"].map(id=>document.getElementById(id)).filter(Boolean)}
+function screens(){return["loading","home","payment","flight","practice","item","baggage","cuba","cubaPractice","guide","sources","teach","legal","admin"].map(id=>document.getElementById(id)).filter(Boolean)}
 function setView(name){screens().forEach(x=>x.classList.toggle("hidden",x.id!==name));document.body.dataset.view=name}
 function home(){setView(active()?"home":"payment")}
 function requirePaid(){if(active())return true;setView("payment");msg(APP.lang==="en"?"Payment or administrator access is required.":"Se requiere acceso mediante pago o administrador.","warn");return false}
@@ -41,6 +40,8 @@ function translate(){
   if(n)n.innerHTML=APP.lang==="en"?"<strong>What you gain:</strong> you practice before doing the real process and finish with clear next actions.":"<strong>Qué ganas:</strong> practicas antes de hacer el proceso real y terminas con próximos pasos claros.";
   if(bt)bt.textContent=APP.lang==="en"?"Continue to payment — $15.99":"Continuar al pago — $15.99";
  }
+ const hu=$("#qqlHiddenUserLabel");if(hu)hu.textContent=APP.lang==="en"?"Username":"Usuario";
+ const hp=$("#qqlHiddenPassLabel");if(hp)hp.textContent=APP.lang==="en"?"Password":"Contraseña"
 }
 async function checkSession(){
  if(!active()){home();return false}
@@ -62,8 +63,7 @@ function renderConfig(d){
 }
 async function createCheckout(){
  try{
-  const d=await api("/api/v1/create-checkout-session",{method:"POST",body:JSON.stringify({language:lang()})},15000);
-  const u=d.checkout_url||d.url;
+  const d=await api("/api/v1/create-checkout-session",{method:"POST",body:JSON.stringify({language:lang()})},15000),u=d.checkout_url||d.url;
   if(u)location.href=u;else msg(APP.lang==="en"?"The payment link was not received.":"No se recibió el enlace de pago.","error")
  }catch(e){msg(e.message||"No se pudo iniciar el pago.","error")}
 }
@@ -71,66 +71,48 @@ async function verifyPayment(){
  const q=new URLSearchParams(location.search),sid=q.get("session_id")||q.get("checkout_session_id");
  if(!sid)return false;
  try{
-  const d=await api("/api/v1/verify-payment",{method:"POST",body:JSON.stringify({session_id:sid})},15000);
-  const t=d.token||d.service_token;
+  const d=await api("/api/v1/verify-payment",{method:"POST",body:JSON.stringify({session_id:sid})},15000),t=d.token||d.service_token;
   if(!t)throw new Error(APP.lang==="en"?"Access could not be activated.":"No se pudo activar el acceso.");
-  APP.serviceToken=t;APP.adminToken="";saveTokens();
-  history.replaceState({},document.title,location.pathname);
-  APP.session={active:true};setView("home");translate();
-  msg(APP.lang==="en"?"Your 15-minute preparation session is active.":"Tu sesión de preparación de 15 minutos está activa.","success");
-  return true
+  APP.serviceToken=t;APP.adminToken="";saveTokens();history.replaceState({},document.title,location.pathname);APP.session={active:true};setView("home");translate();msg(APP.lang==="en"?"Your 15-minute preparation session is active.":"Tu sesión de preparación de 15 minutos está activa.","success");return true
  }catch(e){msg(e.message||"No se pudo verificar el pago.","error");return false}
 }
 async function adminLogin(){
  const user=val("adminUser"),pass=val("adminPass");
  if(!user||!pass){msg(APP.lang==="en"?"Enter username and password.":"Escribe usuario y contraseña.","warn");return}
  try{
-  const d=await api("/api/v1/admin/login",{method:"POST",body:JSON.stringify({username:user,password:pass})},15000);
-  const t=d.token||d.admin_token;
+  const d=await api("/api/v1/admin/login",{method:"POST",body:JSON.stringify({username:user,password:pass})},15000),t=d.token||d.admin_token;
   if(!t)throw new Error(APP.lang==="en"?"Administrator access could not be activated.":"No se pudo activar el acceso de administrador.");
-  APP.adminToken=t;APP.serviceToken="";saveTokens();APP.session={active:true,admin:true};setView("home");translate();
-  msg(APP.lang==="en"?"Administrator access is active.":"El acceso de administrador está activo.","success")
+  APP.adminToken=t;APP.serviceToken="";saveTokens();APP.session={active:true,admin:true};setView("home");translate();msg(APP.lang==="en"?"Administrator access is active.":"El acceso de administrador está activo.","success")
  }catch(e){msg(e.message||"No se pudo iniciar sesión.","error")}
 }
 function logout(){clearTokens();home();translate();msg(APP.lang==="en"?"Session closed.":"Sesión cerrada.","info")}
 function ensureAirlineField(){
- const form=$("#flight")?.querySelector(".form");
- if(!form||$("#airline"))return;
- const label=document.createElement("label");
- label.textContent=APP.lang==="en"?"Airline":"Aerolínea";
- const input=document.createElement("input");
- input.id="airline";input.maxLength=40;input.placeholder=APP.lang==="en"?"Example: American Airlines":"Ej.: American Airlines";
- label.appendChild(input);
- const passengers=$("#passengers")?.closest("label");
- if(passengers)form.insertBefore(label,passengers);else form.insertBefore(label,form.querySelector("button"));
+ const form=$("#flight")?.querySelector(".form");if(!form||$("#airline"))return;
+ const label=document.createElement("label");label.textContent=APP.lang==="en"?"Airline":"Aerolínea";
+ const input=document.createElement("input");input.id="airline";input.maxLength=80;input.placeholder=APP.lang==="en"?"Example: American Airlines":"Ej.: American Airlines";
+ label.appendChild(input);const passengers=$("#passengers")?.closest("label");
+ if(passengers)form.insertBefore(label,passengers);else form.insertBefore(label,form.querySelector("button"))
 }
 function ensureFlightPracticeButton(){
- const form=$("#flight")?.querySelector(".form");
- if(!form||$("#practiceAirlineBtn"))return;
- const b=document.createElement("button");
- b.id="practiceAirlineBtn";b.type="button";b.className="primary";
- b.textContent=APP.lang==="en"?"Practice with my airline":"Practicar con mi aerolínea";
- form.appendChild(b);b.addEventListener("click",startAirlinePractice)
+ const b=$("#practiceAirlineBtn");if(!b)return;
+ b.textContent=APP.lang==="en"?"🎓 Practice with my airline":"🎓 Practicar con mi aerolínea";
+ if(!b.dataset.bound){b.dataset.bound="1";b.addEventListener("click",()=>{if(!requirePaid())return;setView("practice");const s=$("#practiceAirline");if(s&&val("airline")){const opt=Array.from(s.options).find(o=>o.value.toLowerCase()===val("airline").toLowerCase());if(opt)s.value=opt.value}})}
+ const sb=$("#practiceStartBtn");
+ if(sb&&!sb.dataset.bound){sb.dataset.bound="1";sb.addEventListener("click",startSelectedAirlinePractice)}
 }
 function ensureCubaPracticeButtons(){
- const card=$("#cuba")?.querySelector(".card");
- if(!card||$("#practiceCubaBtn"))return;
+ const card=$("#cuba")?.querySelector(".card");if(!card||$("#practiceCubaBtn"))return;
  const wrap=document.createElement("div");wrap.className="practice-actions";
  const a=document.createElement("button");a.id="practiceCubaBtn";a.className="primary";a.type="button";a.textContent=APP.lang==="en"?"Practice D’Viajeros":"Practicar D’Viajeros";
  const v=document.createElement("button");v.id="practiceVisaBtn";v.className="primary";v.type="button";v.textContent=APP.lang==="en"?"Practice Cuba visa/eVisa":"Practicar visa/eVisa de Cuba";
- wrap.append(a,v);card.insertBefore(wrap,$("#cubaResult"));
- a.addEventListener("click",()=>startCubaPractice("dviajeros"));
- v.addEventListener("click",()=>startCubaPractice("visa"))
+ wrap.append(a,v);card.insertBefore(wrap,$("#cubaResult"));a.addEventListener("click",()=>startCubaPractice("dviajeros"));v.addEventListener("click",()=>startCubaPractice("visa"))
 }
 function dataObject(){
  ensureAirlineField();
  const o={language:lang()};
  ["origin","destination","departureDate","returnDate","airline","cabin","fare","passengers","stops"].forEach(id=>{
   const v=val(id);
-  if(v!==""){
-   const k=id==="departureDate"?"departure_date":id==="returnDate"?"return_date":id;
-   o[k]=k==="passengers"||k==="stops"?Number(v):v
-  }
+  if(v!==""){const k=id==="departureDate"?"departure_date":id==="returnDate"?"return_date":id;o[k]=k==="passengers"||k==="stops"?Number(v):v}
  });
  return o
 }
@@ -159,13 +141,8 @@ function renderFlight(d){
 }
 async function charterSources(){
  if(!requirePaid())return;
- try{
-  const d=await api("/api/v1/flight/sources",{method:"POST",body:JSON.stringify({origin:val("origin"),destination:val("destination"),airline:val("airline"),language:lang()})},12000);
-  renderSources(d.charter_sources||d.sources||[])
- }catch(e){
-  try{const d=await api(`/api/v1/sources/charter?language=${encodeURIComponent(lang())}`,{method:"GET"},8000);renderSources(d.sources||d.charter_sources||[])}
-  catch(x){msg(x.message||e.message||"No se pudieron cargar las fuentes.","error")}
- }
+ try{const d=await api("/api/v1/flight/sources",{method:"POST",body:JSON.stringify({origin:val("origin"),destination:val("destination"),airline:val("airline"),language:lang()})},12000);renderSources(d.charter_sources||d.sources||[])}
+ catch(e){try{const d=await api(`/api/v1/sources/charter?language=${encodeURIComponent(lang())}`,{method:"GET"},8000);renderSources(d.sources||d.charter_sources||[])}catch(x){msg(x.message||e.message||"No se pudieron cargar las fuentes.","error")}}
 }
 function renderSources(items){
  const b=$("#sourcesResult")||$("#flightResult");if(!b)return;
@@ -212,10 +189,9 @@ function renderObject(b,d){
 }
 async function legal(){
  try{
-  const d=await api(`/api/v1/legal?language=${encodeURIComponent(lang())}`,{method:"GET"},8000),b=$("#legalResult");
-  if(!b)return;
+  const d=await api(`/api/v1/legal?language=${encodeURIComponent(lang())}`,{method:"GET"},8000),b=$("#legalResult");if(!b)return;
   let h="";["short_notice","full_notice","user_guidance","source_notice"].forEach(k=>{if(d[k])h+=`<p>${esc(d[k])}</p>`});
-  b.innerHTML=h||`<p>${APP.lang==="en"?"Review the service information.":"Revisa la información del servicio."}</p>`
+  b.innerHTML=h||`<p>${APP.lang==="en"?"Review the service information.":"Revisa la información del servicio."}`
  }catch(e){msg(e.message||"No se pudo cargar el aviso legal.","error")}
 }
 async function itemConsult(){
@@ -234,11 +210,22 @@ async function teach(){
 function practiceBox(){
  let x=$("#qqlPractice");if(x)return x;
  x=document.createElement("div");x.id="qqlPractice";x.className="card";
- const host=$("#flight")||$("#cuba")||document.body;host.appendChild(x);return x
+ const host=$("#practiceResult")||$("#flightResult")||$("#cubaPracticeResult")||document.body;host.appendChild(x);return x
 }
 function closePractice(){const x=$("#qqlPractice");if(x)x.remove();APP.practice=null}
-function startAirlinePractice(){if(!requirePaid())return;APP.practice={type:"airline",airline:val("airline")||"mi aerolínea",step:0};renderPractice()}
-function startCubaPractice(mode){if(!requirePaid())return;APP.practice={type:"cuba",mode,step:0};renderPractice()}
+function startSelectedAirlinePractice(){
+ if(!requirePaid())return;
+ const a=val("practiceAirline")||val("airline")||"mi aerolínea";
+ APP.practice={type:"airline",airline:a,step:0};renderPractice()
+}
+function startAirlinePractice(){
+ if(!requirePaid())return;
+ APP.practice={type:"airline",airline:val("airline")||"mi aerolínea",step:0};renderPractice()
+}
+function startCubaPractice(mode){
+ if(!requirePaid())return;
+ APP.practice={type:"cuba",mode,step:0};setView("cubaPractice");renderPractice()
+}
 function practiceSteps(){
  const p=APP.practice;
  if(p.type==="airline")return[
@@ -283,18 +270,25 @@ function finishPractice(){
  b.innerHTML=`<div><button id="practiceClose" type="button">× ${APP.lang==="en"?"Close":"Cerrar"}</button><h2>${APP.lang==="en"?"Practice completed":"Práctica completada"}</h2><div class="next-action"><strong>${APP.lang==="en"?"You are ready for the real process.":"Ya puedes pasar al proceso real."}</strong><p>${esc(s)}</p><p>${APP.lang==="en"?"No real information was submitted or purchased.":"No se envió información real ni se realizó ninguna compra."}</p></div></div>`;
  $("#practiceClose").onclick=closePractice
 }
+
+/* ACCESO ADMINISTRADOR OCULTO: 3 TOQUES RÁPIDOS SOBRE "MAY ROGA LLC" */
 function createHiddenAdminAccess(){
- const btn=$("#adminBtn");
- if(btn)btn.style.display="none";
- const homeScreen=$("#home");
- if(!homeScreen)return;
- homeScreen.addEventListener("click",adminTapHandler,true);
+ const btn=$("#adminBtn");if(btn)btn.style.display="none";
+ const targets=$$("header small,header strong,footer span");
+ targets.forEach(el=>{
+  if(!/May Roga LLC/i.test(txt(el.textContent)))return;
+  el.style.cursor="pointer";
+  el.dataset.adminTouch="1";
+  el.addEventListener("click",adminTapHandler,true);
+  el.addEventListener("touchend",adminTapHandler,{capture:true,passive:true});
+ });
 }
 function adminTapHandler(e){
- if(e.target.closest("button,input,textarea,select,a"))return;
+ const t=e.currentTarget;
+ if(t&&!/May Roga LLC/i.test(txt(t.textContent)))return;
  APP.adminTaps++;
  clearTimeout(APP.adminTapTimer);
- APP.adminTapTimer=setTimeout(()=>APP.adminTaps=0,900);
+ APP.adminTapTimer=setTimeout(()=>{APP.adminTaps=0},1000);
  if(APP.adminTaps>=3){
   APP.adminTaps=0;
   clearTimeout(APP.adminTapTimer);
@@ -306,24 +300,22 @@ function openHiddenAdmin(){
  if(existing){existing.remove();return}
  const box=document.createElement("div");
  box.id="qqlHiddenAdmin";
- box.innerHTML=`<div class="qql-admin-overlay"><div class="qql-admin-card"><button id="qqlAdminClose" type="button">×</button><h2>ADMIN</h2><p>${APP.lang==="en"?"Enter administrator credentials.":"Escribe usuario y contraseña."}</p><label>${APP.lang==="en"?"Username":"Usuario"}<input id="qqlHiddenUser" type="text" autocomplete="username"></label><label>${APP.lang==="en"?"Password":"Contraseña"}<input id="qqlHiddenPass" type="password" autocomplete="current-password"></label><button id="qqlHiddenLogin" class="primary" type="button">${APP.lang==="en"?"Sign in":"Entrar"}</button><p id="qqlHiddenMsg" class="message"></p></div></div>`;
+ box.innerHTML=`<div class="qql-admin-overlay"><div class="qql-admin-card"><button id="qqlAdminClose" type="button">×</button><h2>ADMIN</h2><p>${APP.lang==="en"?"Enter your administrator credentials to enter free.":"Escribe tu usuario y contraseña de administrador para entrar gratis."}</p><label id="qqlHiddenUserLabel">${APP.lang==="en"?"Username":"Usuario"}<input id="qqlHiddenUser" type="text" autocomplete="username" autocapitalize="none"></label><label id="qqlHiddenPassLabel">${APP.lang==="en"?"Password":"Contraseña"}<input id="qqlHiddenPass" type="password" autocomplete="current-password"></label><button id="qqlHiddenLogin" class="primary" type="button">${APP.lang==="en"?"Sign in":"Entrar"}</button><p id="qqlHiddenMsg" class="message"></p></div></div>`;
  document.body.appendChild(box);
  $("#qqlAdminClose").onclick=()=>box.remove();
  $("#qqlHiddenLogin").onclick=hiddenAdminLogin;
  $("#qqlHiddenUser").focus();
- $("#qqlHiddenPass").addEventListener("keydown",e=>{if(e.key==="Enter")hiddenAdminLogin()});
+ $("#qqlHiddenPass").addEventListener("keydown",e=>{if(e.key==="Enter")hiddenAdminLogin()})
 }
 async function hiddenAdminLogin(){
  const u=txt($("#qqlHiddenUser")?.value),p=txt($("#qqlHiddenPass")?.value),m=$("#qqlHiddenMsg");
  if(!u||!p){if(m)m.textContent=APP.lang==="en"?"Enter username and password.":"Escribe usuario y contraseña.";return}
  try{
-  const d=await api("/api/v1/admin/login",{method:"POST",body:JSON.stringify({username:u,password:p})},15000);
-  const t=d.token||d.admin_token;
+  const d=await api("/api/v1/admin/login",{method:"POST",body:JSON.stringify({username:u,password:p})},15000),t=d.token||d.admin_token;
   if(!t)throw new Error(APP.lang==="en"?"Administrator access could not be activated.":"No se pudo activar el acceso de administrador.");
   APP.adminToken=t;APP.serviceToken="";APP.session={active:true,admin:true};saveTokens();
-  $("#qqlHiddenAdmin")?.remove();
-  setView("home");translate();
-  msg(APP.lang==="en"?"Administrator access is active.":"El acceso de administrador está activo.","success");
+  $("#qqlHiddenAdmin")?.remove();setView("home");translate();
+  msg(APP.lang==="en"?"Administrator access is active.":"Acceso gratuito de administrador activado.","success")
  }catch(e){if(m)m.textContent=e.message||"No se pudo iniciar sesión."}
 }
 function bind(){
@@ -336,12 +328,14 @@ function bind(){
  $("#flightBtn")?.addEventListener("click",flight);
  $("#itemBtn")?.addEventListener("click",itemConsult);
  $("#teachBtn")?.addEventListener("click",teach);
+ $("#guideBtn")?.addEventListener("click",guide);
  $("#adminLoginBtn")?.addEventListener("click",adminLogin);
  document.addEventListener("click",e=>{
   const b=e.target.closest("[data-action]");if(!b)return;
   const a=b.dataset.action;
   if(a==="home")home();
   else if(a==="flight"){if(requirePaid())setView("flight")}
+  else if(a==="practice"){if(requirePaid())setView("practice")}
   else if(a==="item"){if(requirePaid())setView("item")}
   else if(a==="baggage"){if(requirePaid())setView("baggage")}
   else if(a==="cuba"){if(requirePaid()){setView("cuba");cubaGuide()}}
@@ -350,31 +344,24 @@ function bind(){
   else if(a==="teach"){if(requirePaid())setView("teach")}
   else if(a==="legal"){setView("legal");legal()}
   else if(a==="baggageSources"){if(requirePaid()){setView("sources");charterSources()}}
-  else if(a==="cuba-visa"){if(requirePaid()){setView("cubaPractice");startCubaPractice("visa")}}
-  else if(a==="cuba-dviajeros"){if(requirePaid()){setView("cubaPractice");startCubaPractice("dviajeros")}}
+  else if(a==="cuba-visa"){if(requirePaid())startCubaPractice("visa")}
+  else if(a==="cuba-dviajeros"){if(requirePaid())startCubaPractice("dviajeros")}
   else if(a==="cuba-official"){if(requirePaid()){setView("cuba");cubaGuide()}}
-  else if(a==="practice"){if(requirePaid())setView("practice")}
   else if(a==="pay"||a==="payment")createCheckout();
   else if(a==="logout")logout()
  });
- createHiddenAdminAccess()
+ createHiddenAdminAccess();
+ ensureFlightPracticeButton()
 }
 function init(){
  document.documentElement.lang=APP.lang;
- bind();
- translate();
- ensureAirlineField();
- ensureFlightPracticeButton();
- ensureCubaPracticeButtons();
+ bind();translate();ensureAirlineField();ensureFlightPracticeButton();ensureCubaPracticeButtons();
  if(active())setView("home");else setView("payment");
  Promise.resolve().then(async()=>{
   await loadConfig();
   if(active())await checkSession();
   const q=new URLSearchParams(location.search);
-  if(q.get("session_id")||q.get("checkout_session_id")){
-   const ok=await verifyPayment();
-   if(ok)await checkSession()
-  }
+  if(q.get("session_id")||q.get("checkout_session_id")){const ok=await verifyPayment();if(ok)await checkSession()}
  }).catch(()=>{})
 }
 window.APP=APP;
@@ -393,5 +380,6 @@ window.toggleLang=toggleLang;
 window.legal=legal;
 window.startAirlinePractice=startAirlinePractice;
 window.startCubaPractice=startCubaPractice;
+window.startSelectedAirlinePractice=startSelectedAirlinePractice;
 window.closePractice=closePractice;
 document.addEventListener("DOMContentLoaded",init);
