@@ -1,10 +1,10 @@
-# source_registry.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v12.1.0
+# source_registry.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v12.2.0
 from __future__ import annotations
 from dataclasses import dataclass,asdict
 from typing import Any,Dict,List
 import re
 
-VERSION="12.1.0"
+VERSION="12.2.0"
 VERIFICATION_DATE="2026-10-03"
 
 @dataclass(frozen=True)
@@ -22,7 +22,11 @@ class Source:
     category:str="official"
 
 def S(id,name,publisher,url,topics=(),covers="",limitations="",country="",category="official",type="official"):
-    return Source(id,name,publisher,url,type,tuple(topics),covers,limitations,VERIFICATION_DATE,country,category)
+    if isinstance(topics,str):
+        topics=tuple(x.strip() for x in topics.split(",") if x.strip())
+    else:
+        topics=tuple(topics)
+    return Source(id,name,publisher,url,type,topics,covers,limitations,VERIFICATION_DATE,country,category)
 
 SOURCES=[
 S("tsa","Transportation Security Administration (TSA)","U.S. Transportation Security Administration","https://www.tsa.gov/travel/security-screening","baggage","security screening,carry-on,checked baggage,items","TSA rules do not replace airline or destination-country rules.","United States","security"),
@@ -84,21 +88,24 @@ S("cuballama_charters","Cuballama Viajes — Charters","Cuballama Viajes","https
 AIRLINES=[x for x in SOURCES if x.category=="airline" and not x.id.endswith("_bags") and not x.id.endswith("_cuba")]
 CHARTERS=[x for x in SOURCES if x.category=="charter"]
 
-def _dict(s):
+def _dict(s:Source)->Dict[str,Any]:
     d=asdict(s)
-    d["topics"]=list(d["topics"])
+    d["topics"]=list(d.get("topics",()))
     return d
 
-def all_sources():
+def all_sources()->List[Dict[str,Any]]:
     return [_dict(x) for x in SOURCES]
 
-def get_sources(topic:str="official",query:str=""):
+def get_sources(topic:str="official",query:str="")->List[Dict[str,Any]]:
     t=(topic or "official").lower().strip()
     q=(query or "").lower().strip()
     words=set(re.findall(r"[a-z0-9áéíóúñü'-]+",q))
     out=[]
     for s in SOURCES:
-        blob=" ".join([s.id,s.name,s.publisher,s.url,s.type,s.country,s.category,s.what_it_covers,s.limitations," ".join(s.topics)]).lower()
+        blob=" ".join([
+            s.id,s.name,s.publisher,s.url,s.type,s.country,s.category,
+            s.what_it_covers,s.limitations," ".join(s.topics)
+        ]).lower()
         topic_match=t in ("","official","all") or t in s.topics or t in s.category or t in s.id
         query_match=not words or any(w in blob for w in words)
         if topic_match and query_match:
@@ -108,68 +115,93 @@ def get_sources(topic:str="official",query:str=""):
             blob=(s.name+" "+s.what_it_covers+" "+" ".join(s.topics)).lower()
             if q in blob:
                 out.append(_dict(s))
-    return out[:30]
+    return out[:50]
 
-def sources_for(topic="",query=""):
+def sources_for(topic:str="",query:str="")->List[Dict[str,Any]]:
     return get_sources(topic,query)
 
-def find_sources(topic="",query=""):
+def find_sources(topic:str="",query:str="")->List[Dict[str,Any]]:
     return get_sources(topic,query)
 
-def official_sources(topic="",query=""):
+def official_sources(topic:str="",query:str="")->List[Dict[str,Any]]:
     return get_sources(topic,query)
 
-def get_airlines(query=""):
+def get_official_sources(topic:str="",query:str="")->List[Dict[str,Any]]:
+    return get_sources(topic or "official",query)
+
+def get_airlines(query:str="")->List[Dict[str,Any]]:
     q=(query or "").lower().strip()
     if not q:
         return [_dict(x) for x in AIRLINES]
-    return [_dict(x) for x in AIRLINES if q in (x.name+" "+x.publisher+" "+x.country).lower() or any(q in t.lower() for t in x.topics)]
+    return [
+        _dict(x) for x in AIRLINES
+        if q in (x.name+" "+x.publisher+" "+x.country+" "+x.id).lower()
+        or any(q in t.lower() for t in x.topics)
+    ]
 
-def airlines(query=""):
+def airlines(query:str="")->List[Dict[str,Any]]:
     return get_airlines(query)
 
-def find_airlines(query=""):
+def find_airlines(query:str="")->List[Dict[str,Any]]:
     return get_airlines(query)
 
-def airline_list(query=""):
+def airline_list(query:str="")->List[Dict[str,Any]]:
     return get_airlines(query)
 
-def get_charters(query=""):
+def get_charters(query:str="")->List[Dict[str,Any]]:
     q=(query or "").lower().strip()
     if not q:
         return [_dict(x) for x in CHARTERS]
-    return [_dict(x) for x in CHARTERS if q in (x.name+" "+x.publisher+" "+x.country).lower() or any(q in t.lower() for t in x.topics)]
+    return [
+        _dict(x) for x in CHARTERS
+        if q in (x.name+" "+x.publisher+" "+x.country+" "+x.id).lower()
+        or any(q in t.lower() for t in x.topics)
+    ]
 
-def charters(query=""):
+def charters(query:str="")->List[Dict[str,Any]]:
     return get_charters(query)
 
-def find_charters(query=""):
+def find_charters(query:str="")->List[Dict[str,Any]]:
     return get_charters(query)
 
-def charter_list(query=""):
+def charter_list(query:str="")->List[Dict[str,Any]]:
     return get_charters(query)
 
-def get_cuba_official_sources(query=""):
+def get_cuba_official_sources(query:str="")->List[Dict[str,Any]]:
     q=(query or "").lower().strip()
     out=[x for x in SOURCES if x.category in ("cuba","visa") and x.country=="Cuba"]
     if not q:
         return [_dict(x) for x in out]
-    return [_dict(x) for x in out if q in (x.name+" "+x.publisher+" "+x.what_it_covers+" "+" ".join(x.topics)).lower()]
+    return [
+        _dict(x) for x in out
+        if q in (
+            x.name+" "+x.publisher+" "+x.what_it_covers+" "+
+            " ".join(x.topics)+" "+x.id
+        ).lower()
+    ]
 
-def cuba_official_sources(query=""):
+def cuba_official_sources(query:str="")->List[Dict[str,Any]]:
     return get_cuba_official_sources(query)
 
-def source_by_id(source_id:str):
+def source_by_id(source_id:str)->Optional[Dict[str,Any]]:
+    sid=(source_id or "").strip()
     for s in SOURCES:
-        if s.id==source_id:
+        if s.id==sid:
             return _dict(s)
     return None
 
-def official_url(source_id:str):
+def official_url(source_id:str)->str:
     x=source_by_id(source_id)
-    return x.get("url") if x else ""
+    return x.get("url","") if x else ""
 
-def source_url(source_id:str):
+def source_url(source_id:str)->str:
     return official_url(source_id)
 
-__all__=["VERSION","VERIFICATION_DATE","Source","SOURCES","AIRLINES","CHARTERS","all_sources","get_sources","sources_for","find_sources","official_sources","get_airlines","airlines","find_airlines","airline_list","get_charters","charters","find_charters","charter_list","get_cuba_official_sources","cuba_official_sources","source_by_id","official_url","source_url"]
+__all__=[
+    "VERSION","VERIFICATION_DATE","Source","SOURCES","AIRLINES","CHARTERS",
+    "all_sources","get_sources","sources_for","find_sources","official_sources",
+    "get_official_sources","get_airlines","airlines","find_airlines","airline_list",
+    "get_charters","charters","find_charters","charter_list",
+    "get_cuba_official_sources","cuba_official_sources",
+    "source_by_id","official_url","source_url"
+]
