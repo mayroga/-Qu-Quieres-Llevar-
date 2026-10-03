@@ -1,9 +1,8 @@
-# schemas.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v11.0.0
+# schemas.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v12.0.0
 from __future__ import annotations
-from typing import Any,Dict,List,Optional,Union
-from pydantic import BaseModel,Field,ConfigDict
-
-VERSION="11.0.0"
+from typing import Any,Dict,List,Optional
+from pydantic import BaseModel,Field,ConfigDict,AliasChoices
+VERSION="12.0.0"
 
 class BaseRequest(BaseModel):
     model_config=ConfigDict(extra="allow",str_strip_whitespace=True)
@@ -25,7 +24,7 @@ class FlightRequest(BaseRequest):
     stops:Any=""
     departure:str=""
     return_date:str=""
-    return_:str=Field(default="",alias="return")
+    return_:str=Field(default="",validation_alias=AliasChoices("return","return_","return_date"))
     passengers:int=Field(default=1,ge=1,le=20)
     cabin:str="Economy"
     fare:str=""
@@ -39,7 +38,7 @@ class BookingRequest(BaseRequest):
     destination:str=""
     departure:str=""
     return_date:str=""
-    return_:str=Field(default="",alias="return")
+    return_:str=Field(default="",validation_alias=AliasChoices("return","return_","return_date"))
     passengers:int=Field(default=1,ge=1,le=20)
     cabin:str="Economy"
     fare:str=""
@@ -309,6 +308,7 @@ class BookingResponse(BaseModel):
     message:str=""
     search:Dict[str,Any]=Field(default_factory=dict)
     fields:List[Dict[str,Any]]=Field(default_factory=list)
+    steps:List[Dict[str,Any]]=Field(default_factory=list)
     next_action:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
 
@@ -318,6 +318,7 @@ class ItemResponse(BaseModel):
     item:str=""
     category:str=""
     status:str="verify"
+    status_label:str=""
     placement:str=""
     message:str=""
     details:List[str]=Field(default_factory=list)
@@ -331,6 +332,7 @@ class BaggageResponse(BaseModel):
     title:str=""
     message:str=""
     status:str="verify"
+    status_label:str=""
     baggage_type:str=""
     human_explanation:str=""
     placement:str=""
@@ -338,6 +340,9 @@ class BaggageResponse(BaseModel):
     questions:List[str]=Field(default_factory=list)
     authorities:List[str]=Field(default_factory=list)
     missing_information:List[str]=Field(default_factory=list)
+    pieces:Optional[int]=None
+    weight:Optional[float]=None
+    dimensions:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
     next_action:str=""
 
@@ -366,6 +371,7 @@ class PracticeResponse(BaseModel):
     title:str=""
     mode:str="practice"
     official_submission:bool=False
+    notice:str="SIMULACIÓN DE PRÁCTICA — NO ES EL SITIO OFICIAL."
     message:str=""
     next_action:str=""
     completed:List[str]=Field(default_factory=list)
@@ -420,12 +426,14 @@ class SimulationStep(BaseModel):
     help:str=""
     why:str=""
     example:Optional[str]=None
+    options:List[str]=Field(default_factory=list)
+    required:bool=True
 
 class SimulationResponse(BaseModel):
     ok:bool=True
     id:str=""
     title:str=""
-    notice:str=""
+    notice:str="SIMULACIÓN DE PRÁCTICA — NO ES EL SITIO OFICIAL."
     purpose:str=""
     steps:List[SimulationStep]=Field(default_factory=list)
     official_url:Optional[str]=None
@@ -439,22 +447,13 @@ class AirlineResponse(BaseModel):
 
 class PDFRequest(BaseRequest):
     trip:Dict[str,Any]=Field(default_factory=dict)
+    flight:Dict[str,Any]=Field(default_factory=dict)
     baggage:Dict[str,Any]=Field(default_factory=dict)
     items:List[Dict[str,Any]]=Field(default_factory=list)
     documents:List[Dict[str,Any]]=Field(default_factory=list)
     pending:List[str]=Field(default_factory=list)
+    completed:List[str]=Field(default_factory=list)
+    next_action:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
 
-__all__=[
-    "VERSION","BaseRequest","AccessRequest","CheckoutRequest",
-    "FlightRequest","BookingRequest","ConnectionRequest",
-    "BaggageRequest","ItemRequest","CubaRequest","CubaEntryRequest",
-    "VisaRequest","DViajeroRequest","DocumentRequest","PracticeRequest",
-    "AirportRequest","AirlineRequest","SourceRequest","SolveRequest",
-    "GuideRequest","TripState","TripExportRequest","GenericResponse",
-    "SourceResponse","FlightResponse","BookingResponse","ItemResponse",
-    "BaggageResponse","CubaResponse","DocumentResponse","PracticeResponse",
-    "GuideResponse","AccessResponse","CheckoutResponse","HealthResponse",
-    "ErrorResponse","SimulationStep","SimulationResponse",
-    "AirlineResponse","PDFRequest"
-]
+__all__=[k for k in globals() if not k.startswith("_")]
