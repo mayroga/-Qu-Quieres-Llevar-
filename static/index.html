@@ -1,234 +1,53 @@
-<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>¿QUÉ QUIERES LLEVAR? | May Roga LLC</title>
-<meta name="description" content="Preparación y orientación independiente para entender tu vuelo, equipaje, artículos, documentos y procesos de viaje.">
-<style>
-*{box-sizing:border-box}body{margin:0;font-family:Arial,Helvetica,sans-serif;background:#f4f8fc;color:#172033}button,input,select,textarea{font:inherit}button{cursor:pointer}.top{background:#0b3b66;color:white;padding:18px 20px;position:sticky;top:0;z-index:10}.head{max-width:1180px;margin:auto;display:flex;align-items:center;justify-content:space-between;gap:15px}.brand{font-size:22px;font-weight:800}.sub{font-size:12px;opacity:.8;margin-top:4px}.lang{border:1px solid #ffffff55;background:#ffffff18;color:white;border-radius:20px;padding:8px 13px}.wrap{max-width:1180px;margin:auto;padding:22px 16px 50px}.hero{background:white;border-radius:22px;padding:25px;box-shadow:0 4px 20px #163b5d18;margin-bottom:20px}.hero h1{margin:0 0 8px;font-size:31px}.hero p{margin:0;line-height:1.55;color:#526176}.notice{background:#eef6ff;border-left:5px solid #1677d2;padding:13px 15px;border-radius:10px;margin-top:17px;font-size:14px}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}.card{border:0;background:white;border-radius:19px;padding:20px;text-align:left;min-height:170px;box-shadow:0 4px 16px #173b5d12;transition:.15s}.card:hover{transform:translateY(-2px);box-shadow:0 7px 22px #173b5d20}.ico{font-size:31px}.card h3{margin:11px 0 7px;font-size:18px}.card p{margin:0;color:#607087;font-size:13px;line-height:1.4}.panel{display:none;background:white;border-radius:22px;padding:23px;margin-top:20px;box-shadow:0 4px 20px #163b5d18}.panel.active{display:block}.panel h2{margin:0 0 8px}.back{border:0;background:#edf4fa;color:#164d78;border-radius:10px;padding:9px 13px;margin-bottom:15px}.form{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}.field label{display:block;font-size:13px;font-weight:700;margin-bottom:5px}.field input,.field select,.field textarea{width:100%;padding:12px;border:1px solid #cbd7e3;border-radius:10px;background:#fff}.field.full{grid-column:1/-1}.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}.primary,.secondary,.danger{border:0;border-radius:11px;padding:12px 17px;font-weight:700}.primary{background:#0876d1;color:#fff}.secondary{background:#eaf3fb;color:#15547f}.danger{background:#fff0f0;color:#a52121}.result{margin-top:18px;border:1px solid #d6e2ec;border-radius:15px;padding:18px;background:#fbfdff}.result h3{margin:0 0 8px}.status{display:inline-block;padding:7px 10px;border-radius:20px;background:#eaf3fb;color:#145a8d;font-weight:800;font-size:12px;margin:5px 0 12px}.result ul{padding-left:20px}.result li{margin:7px 0}.source{display:block;text-decoration:none;color:#075fa8;background:#eef7ff;padding:10px;border-radius:9px;margin:7px 0;font-weight:700}.step{border:1px solid #d6e2ec;border-radius:14px;padding:15px;margin:10px 0}.step h4{margin:0 0 6px}.step small{color:#5d6d80}.airlines{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:15px}.airline{border:1px solid #d4e0eb;background:#fff;border-radius:12px;padding:13px;text-align:left}.modal{display:none;position:fixed;inset:0;background:#071d31aa;z-index:30;align-items:center;justify-content:center;padding:18px}.modal.open{display:flex}.box{background:white;border-radius:20px;padding:23px;width:min(440px,100%)}.close{float:right;border:0;background:#eee;border-radius:50%;width:30px;height:30px}.footer{text-align:center;color:#68798d;font-size:12px;margin-top:30px;line-height:1.5}@media(max-width:850px){.grid{grid-template-columns:repeat(2,1fr)}.airlines{grid-template-columns:repeat(2,1fr)}}@media(max-width:550px){.grid,.form,.airlines{grid-template-columns:1fr}.hero h1{font-size:25px}.card{min-height:145px}.head{align-items:flex-start}.brand{font-size:18px}}
-</style>
-</head>
-<body>
-<header class="top" id="touchArea">
-<div class="head">
-<div><div class="brand">✈️ ¿QUÉ QUIERES LLEVAR?</div><div class="sub">Preparación independiente para tu viaje · May Roga LLC</div></div>
-<button class="lang" id="langBtn" onclick="toggleLang()">EN</button>
-</div>
-</header>
+<!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>¿QUÉ QUIERES LLEVAR? | May Roga LLC</title><meta name="description" content="Preparación y acompañamiento independiente para viajar, entender vuelos, aerolíneas, equipaje y procesos oficiales."><link rel="stylesheet" href="/static/styles.css"></head><body><header class="top"><div><strong>¿QUÉ QUIERES LLEVAR?</strong><small>May Roga LLC</small></div><div class="top-actions"><button id="langBtn" type="button">EN</button><button id="adminBtn" type="button">ADMIN</button></div></header><main id="app"><div id="appMessage" class="app-message" aria-live="polite"></div>
 
-<main class="wrap">
-<section class="hero">
-<h1 id="heroTitle">Prepárate para viajar sin miedo a equivocarte.</h1>
-<p id="heroText">Entiende tu vuelo, tu escala, tu equipaje, lo que quieres llevar, tus documentos y los pasos que necesitas practicar.</p>
-<div class="notice">La aplicación orienta y enseña. No es una aerolínea, agencia de viajes, gobierno, aeropuerto ni autoridad. Las simulaciones no son trámites oficiales.</div>
-</section>
+<section id="loading" class="screen hidden"><div class="card"><p class="eyebrow">MAY ROGA LLC</p><h1>¿QUÉ QUIERES LLEVAR?</h1><p id="loadingText">Preparando tu viaje...</p></div></section>
 
-<section class="grid" id="home">
-<button class="card" onclick="openPanel('flight')"><div class="ico">✈️</div><h3>Mi vuelo</h3><p>Entiende tu ruta, escalas, conexiones y qué debes comprobar.</p></button>
-<button class="card" onclick="openPanel('baggage')"><div class="ico">🧳</div><h3>Mi equipaje</h3><p>Entiende equipaje de mano, artículo personal y maleta facturada.</p></button>
-<button class="card" onclick="openPanel('item')"><div class="ico">🎒</div><h3>¿Qué quiero llevar?</h3><p>Escribe un artículo y descubre qué debes comprobar.</p></button>
-<button class="card" onclick="openPanel('cuba')"><div class="ico">🇨🇺</div><h3>Viajo a Cuba</h3><p>Organiza documentos, visa, D’Viajeros, equipaje y aduana.</p></button>
-<button class="card" onclick="openPanel('documents')"><div class="ico">📄</div><h3>Mis documentos</h3><p>Crea una lista personalizada de lo que debes revisar.</p></button>
-<button class="card" onclick="openPanel('practice')"><div class="ico">🧠</div><h3>Practicar</h3><p>Practica aeropuerto, conexiones, equipaje, D’Viajeros y visa.</p></button>
-<button class="card" onclick="openPanel('sources')"><div class="ico">🌐</div><h3>Fuentes oficiales</h3><p>Encuentra el sitio oficial que debes consultar.</p></button>
-<button class="card" onclick="openPanel('guide')"><div class="ico">📘</div><h3>Mi guía</h3><p>Reúne tu preparación, pendientes y fuentes en un solo lugar.</p></button>
-</section>
+<section id="home" class="screen hidden"><div class="hero card"><p class="eyebrow">MAY ROGA LLC</p><h1>¿Qué quieres llevar?</h1><p>Te acompañamos paso a paso para entender tu viaje, tu vuelo, tu aerolínea, tu equipaje y los procesos que necesitas completar.</p><div class="status" id="sessionStatus">Sesión no activa</div><button id="startBtn" class="primary" type="button">Empezar</button></div><div class="grid">
+<button class="box" data-action="flight" type="button"><b>✈️</b><span>Mi vuelo</span><small>Entiende tu viaje y tu aerolínea</small></button>
+<button class="box" data-action="practice" type="button"><b>🎓</b><span>Practicar con mi aerolínea</span><small>Aprende el proceso paso a paso</small></button>
+<button class="box" data-action="item" type="button"><b>🧳</b><span>¿Qué llevo?</span><small>Revisa un artículo antes de viajar</small></button>
+<button class="box" data-action="baggage" type="button"><b>🎒</b><span>Equipaje</span><small>Entiende tus maletas y artículos</small></button>
+<button class="box" data-action="cuba" type="button"><b>🇨🇺</b><span>Cuba</span><small>Visa, D’Viajeros y preparación</small></button>
+<button class="box" data-action="guide" type="button"><b>📋</b><span>Mi guía</span><small>Ordena todo lo que debes preparar</small></button>
+<button class="box" data-action="sources" type="button"><b>🔎</b><span>Fuentes oficiales</span><small>Confirma directamente la información</small></button>
+<button class="box" data-action="teach" type="button"><b>💡</b><span>Aprender un término</span><small>Entiende palabras de viaje</small></button>
+<button class="box" data-action="legal" type="button"><b>⚖️</b><span>Aviso legal</span><small>Conoce cómo funciona el servicio</small></button>
+</div></section>
 
-<section class="panel" id="flight">
-<button class="back" onclick="home()">← Volver</button><h2>✈️ Mi vuelo</h2><p>Introduce lo que aparece en tu reserva. No inventaremos datos que no tengas.</p>
-<div class="form">
-<div class="field"><label>Origen</label><input id="f_origin" placeholder="Miami"></div>
-<div class="field"><label>Destino</label><input id="f_dest" placeholder="La Habana"></div>
-<div class="field"><label>Aerolínea</label><select id="f_airline"><option value="">Cargando aerolíneas...</option></select></div>
-<div class="field"><label>Número de vuelo</label><input id="f_number" placeholder="Ej. AA123"></div>
-<div class="field"><label>Fecha de salida</label><input id="f_date" type="date"></div>
-<div class="field"><label>Escalas</label><input id="f_stops" placeholder="Ej. Panamá"></div>
-<div class="field"><label>Cabina</label><select id="f_cabin"><option>Economy</option><option>Premium Economy</option><option>Business</option><option>First</option></select></div>
-<div class="field"><label>Tarifa</label><input id="f_fare" placeholder="Si aparece en tu reserva"></div>
-</div>
-<div class="actions"><button class="primary" onclick="analyzeFlight()">Entender mi vuelo</button><button class="secondary" onclick="openBooking()">Practicar búsqueda de vuelo</button></div>
-<div id="flightResult"></div>
-</section>
+<section id="payment" class="screen hidden"><div class="card"><button class="back" data-action="home" type="button">← Volver</button><p class="eyebrow">ANTES DE PAGAR</p><h2>Primero entiende qué recibes</h2><div class="benefits"><div><b>¿Qué hacemos?</b><p>Te acompañamos para entender tu viaje y practicar procesos que normalmente realizas en sitios y aplicaciones oficiales.</p></div><div><b>¿Qué resolvemos?</b><p>Reducimos la confusión cuando no sabes dónde comenzar, qué información necesitas o qué debes revisar.</p></div><div><b>¿Qué puedes practicar?</b><p>Vuelos, aerolíneas, equipaje, artículos, D’Viajeros y preparación para visa/eVisa de Cuba.</p></div><div><b>¿Qué recibes?</b><p>Una sesión guiada de preparación con pasos claros y fuentes oficiales para confirmar.</p></div></div><div class="notice"><strong>Importante:</strong> las prácticas son simulaciones de aprendizaje de May Roga LLC. No son páginas oficiales y no realizan compras ni envíos de información a autoridades.</div><p><strong>Servicio independiente de May Roga LLC. Pago único de $15.99 para una sesión de preparación.</strong></p><button id="payBtn" class="primary" type="button">Continuar al pago</button><p id="payMsg" class="message"></p></div></section>
 
-<section class="panel" id="baggage">
-<button class="back" onclick="home()">← Volver</button><h2>🧳 Mi equipaje</h2><p>La regla exacta puede depender de la aerolínea, tarifa, cabina, ruta y autoridad correspondiente.</p>
-<div class="form">
-<div class="field"><label>Tipo</label><select id="b_type"><option value="">Selecciona</option><option value="personal_item">Artículo personal</option><option value="carry_on">Equipaje de mano</option><option value="checked">Maleta facturada</option><option value="special">Equipaje especial</option></select></div>
-<div class="field"><label>Aerolínea</label><select id="b_airline"><option value="">Selecciona</option></select></div>
-<div class="field"><label>Origen</label><input id="b_origin"></div>
-<div class="field"><label>Destino</label><input id="b_dest"></div>
-<div class="field"><label>Tarifa</label><input id="b_fare"></div>
-<div class="field"><label>Cabina</label><input id="b_cabin" placeholder="Economy"></div>
-<div class="field"><label>Peso si lo conoces</label><input id="b_weight" type="number"></div>
-<div class="field"><label>Dimensiones si aparecen</label><input id="b_dimensions"></div>
-</div>
-<div class="actions"><button class="primary" onclick="analyzeBaggage()">Revisar equipaje</button><button class="secondary" onclick="official('baggage')">Ver fuente oficial</button></div>
-<div id="baggageResult"></div>
-</section>
+<section id="flight" class="screen hidden"><div class="card"><button class="back" data-action="home" type="button">← Volver</button><p class="eyebrow">MI VIAJE</p><h2>✈️ Mi vuelo</h2><p>Introduce solamente la información necesaria para entender tu ruta.</p><div class="form"><label>Origen<input id="origin" maxlength="80" placeholder="MIA o Miami"></label><label>Destino<input id="destination" maxlength="80" placeholder="HAV o La Habana"></label><label>Fecha de salida<input id="departureDate" type="date"></label><label>Fecha de regreso<input id="returnDate" type="date"></label><label>Aerolínea<input id="airline" maxlength="80" placeholder="Ej.: American Airlines"></label><label>Cabina<input id="cabin" maxlength="30" placeholder="Ej.: Economy"></label><label>Tarifa<input id="fare" maxlength="50" placeholder="Opcional"></label><label>Pasajeros<input id="passengers" type="number" min="1" max="20" value="1"></label><label>Escalas<input id="stops" type="number" min="0" max="10" value="0"></label><button id="flightBtn" class="primary" type="button">Entender mi vuelo</button><button id="practiceAirlineBtn" class="secondary" type="button">🎓 Practicar con mi aerolínea</button></div><div id="flightResult" class="result"></div></div></section>
 
-<section class="panel" id="item">
-<button class="back" onclick="home()">← Volver</button><h2>🎒 ¿Qué quiero llevar?</h2><p>Escribe el artículo como lo llamarías normalmente.</p>
-<div class="form">
-<div class="field full"><label>¿Qué quieres llevar?</label><input id="i_item" placeholder="Ej. power bank, medicina, perfume, comida..."></div>
-<div class="field"><label>Origen</label><input id="i_origin"></div>
-<div class="field"><label>Destino</label><input id="i_dest"></div>
-<div class="field"><label>Aerolínea</label><select id="i_airline"><option value="">Selecciona</option></select></div>
-<div class="field"><label>Tipo de equipaje</label><select id="i_bag"><option value="">Todavía no sé</option><option value="personal_item">Artículo personal</option><option value="carry_on">Equipaje de mano</option><option value="checked">Maleta facturada</option></select></div>
-<div class="field"><label>Cantidad</label><input id="i_qty" type="number"></div>
-<div class="field"><label>Peso aproximado</label><input id="i_weight" type="number"></div>
-</div>
-<div class="actions"><button class="primary" onclick="analyzeItem()">Revisar artículo</button></div>
-<div id="itemResult"></div>
-</section>
+<section id="practice" class="screen hidden"><div class="card"><button class="back" data-action="home" type="button">← Volver</button><p class="eyebrow">SIMULACIÓN</p><h2>🎓 Practicar con mi aerolínea</h2><p>Esta práctica reproduce el orden general de un proceso de reserva para que puedas aprender antes de entrar al sitio real.</p><div class="notice"><strong>SIMULACIÓN DE PRÁCTICA — NO ES EL SITIO OFICIAL.</strong><br>No se compra ningún boleto.</div><div class="form"><label>Aerolínea<select id="practiceAirline"><option value="">Selecciona una aerolínea</option><option>American Airlines</option><option>Delta Air Lines</option><option>United Airlines</option><option>Southwest Airlines</option><option>JetBlue</option><option>Spirit Airlines</option><option>Frontier Airlines</option><option>Copa Airlines</option><option>Avianca</option><option>LATAM</option><option>Aeroméxico</option><option>Volaris</option><option>Otra aerolínea</option></select></label><label>Origen<input id="practiceOrigin" maxlength="80" placeholder="Ej.: Miami"></label><label>Destino<input id="practiceDestination" maxlength="80" placeholder="Ej.: La Habana"></label><label>Fecha<input id="practiceDate" type="date"></label><button id="practiceStartBtn" class="primary" type="button">Comenzar práctica</button></div><div id="practiceResult" class="result"></div></div></section>
 
-<section class="panel" id="cuba">
-<button class="back" onclick="home()">← Volver</button><h2>🇨🇺 Viajo a Cuba</h2>
-<div class="form">
-<div class="field"><label>Origen</label><input id="c_origin"></div>
-<div class="field"><label>Nacionalidad</label><input id="c_nat"></div>
-<div class="field"><label>País del pasaporte</label><input id="c_pass_country"></div>
-<div class="field"><label>Residencia</label><input id="c_res"></div>
-<div class="field"><label>Aerolínea</label><select id="c_airline"><option value="">Selecciona</option></select></div>
-<div class="field"><label>Tipo de vuelo</label><select id="c_type"><option value="">Selecciona</option><option>Comercial</option><option>Charter</option><option>No sé</option></select></div>
-<div class="field"><label>Motivo</label><input id="c_purpose" placeholder="Turismo, visita familiar..."></div>
-<div class="field"><label>Fecha de llegada</label><input id="c_arrival" type="date"></div>
-<div class="field"><label>¿Tienes nacionalidad cubana?</label><select id="c_cuban"><option value="false">No</option><option value="true">Sí</option></select></div>
-<div class="field"><label>¿Tienes doble nacionalidad?</label><select id="c_dual"><option value="false">No</option><option value="true">Sí</option></select></div>
-</div>
-<div class="actions"><button class="primary" onclick="analyzeCuba()">Revisar mi viaje a Cuba</button><button class="secondary" onclick="openPanel('practice');setTimeout(()=>loadPractice('dviajeros'),100)">Practicar D’Viajeros</button><button class="secondary" onclick="visaPractice()">Practicar visa</button></div>
-<div id="cubaResult"></div>
-</section>
+<section id="item" class="screen hidden"><div class="card"><button class="back" data-action="home" type="button">← Volver</button><h2>🧳 ¿Qué llevo?</h2><p>Analiza un artículo y descubre qué debes comprobar antes de viajar.</p><div class="form"><label>Artículo<input id="itemName" maxlength="120" placeholder="Ej.: power bank"></label><label>Cantidad<input id="itemQty" type="number" min="1" max="100" value="1"></label><label>Descripción<textarea id="itemDescription" rows="3" maxlength="1000" placeholder="Describe el artículo"></textarea></label><label>Aerolínea<input id="itemAirline" maxlength="80" placeholder="Opcional"></label><button id="itemBtn" class="primary" type="button">Consultar artículo</button></div><div id="itemResult" class="result"></div></div></section>
 
-<section class="panel" id="documents">
-<button class="back" onclick="home()">← Volver</button><h2>📄 Mis documentos</h2>
-<div class="form">
-<div class="field"><label>Origen</label><input id="d_origin"></div>
-<div class="field"><label>Destino</label><input id="d_dest"></div>
-<div class="field"><label>Nacionalidad</label><input id="d_nat"></div>
-<div class="field"><label>País del pasaporte</label><input id="d_pass"></div>
-<div class="field"><label>Residencia</label><input id="d_res"></div>
-<div class="field"><label>Aerolínea</label><select id="d_airline"><option value="">Selecciona</option></select></div>
-<div class="field"><label>Motivo del viaje</label><input id="d_purpose"></div>
-</div>
-<div class="actions"><button class="primary" onclick="analyzeDocuments()">Crear mi lista</button></div>
-<div id="documentsResult"></div>
-</section>
+<section id="baggage" class="screen hidden"><div class="card"><button class="back" data-action="home" type="button">← Volver</button><h2>🎒 Equipaje</h2><p>Aprende qué significa cada tipo de equipaje y qué debes confirmar con tu aerolínea.</p><div class="grid mini"><button class="box" data-action="item" type="button"><b>🧳</b><span>Revisar un artículo</span><small>Comprueba dónde debe ir</small></button><button class="box" data-action="practice" type="button"><b>🎓</b><span>Practicar con mi aerolínea</span><small>Aprende dónde revisar equipaje</small></button></div><div id="baggageResult" class="result"><div class="next-action"><strong>Recuerda</strong><p>Las condiciones de equipaje pueden depender de la aerolínea, ruta, tarifa y artículo. Confirma siempre la condición aplicable.</p></div></div></div></section>
 
-<section class="panel" id="practice">
-<button class="back" onclick="home()">← Volver</button><h2>🧠 Practicar</h2>
-<p>Estas prácticas enseñan el proceso. <b>No envían información a una autoridad.</b></p>
-<div class="actions">
-<button class="secondary" onclick="loadPractice('airport')">Aeropuerto</button>
-<button class="secondary" onclick="loadPractice('connection')">Conexión</button>
-<button class="secondary" onclick="loadPractice('baggage')">Equipaje</button>
-<button class="secondary" onclick="loadPractice('dviajeros')">D’Viajeros</button>
-<button class="secondary" onclick="loadPractice('visa')">Visa</button>
-</div>
-<div id="practiceResult"></div>
-</section>
+<section id="cuba" class="screen hidden"><div class="card"><button class="back" data-action="home" type="button">← Volver</button><p class="eyebrow">CUBA</p><h2>🇨🇺 Preparación para Cuba</h2><p>Aprende los pasos relacionados con entrada, documentos, visa/eVisa y D’Viajeros antes de realizar el proceso real.</p><div class="grid mini"><button id="cubaVisaBtn" class="box" data-action="cuba-visa" type="button"><b>🛂</b><span>Practicar visa / eVisa</span><small>Simula el orden del proceso</small></button><button id="cubaDviajerosBtn" class="box" data-action="cuba-dviajeros" type="button"><b>📄</b><span>Practicar D’Viajeros</span><small>Practica los datos solicitados</small></button><button id="cubaOfficialBtn" class="box" data-action="cuba-official" type="button"><b>🔎</b><span>Fuentes oficiales</span><small>Confirma antes de viajar</small></button></div><div id="cubaResult" class="result"></div></div></section>
 
-<section class="panel" id="sources">
-<button class="back" onclick="home()">← Volver</button><h2>🌐 Fuentes oficiales</h2>
-<p>Selecciona un tema. Los enlaces llevan al sitio correspondiente.</p>
-<div class="actions">
-<button class="secondary" onclick="loadSources('airline')">Aerolíneas</button>
-<button class="secondary" onclick="loadSources('baggage')">Equipaje</button>
-<button class="secondary" onclick="loadSources('cuba')">Cuba</button>
-<button class="secondary" onclick="loadSources('dviajeros')">D’Viajeros</button>
-<button class="secondary" onclick="loadSources('visa')">Visa</button>
-<button class="secondary" onclick="loadSources('customs')">Aduana</button>
-<button class="secondary" onclick="loadSources('security')">Seguridad</button>
-</div>
-<div id="sourcesResult"></div>
-</section>
+<section id="cubaPractice" class="screen hidden"><div class="card"><button class="back" data-action="cuba" type="button">← Volver</button><p class="eyebrow">SIMULACIÓN DE APRENDIZAJE</p><h2 id="cubaPracticeTitle">🇨🇺 Practicar</h2><div class="notice"><strong>SIMULACIÓN DE PRÁCTICA — NO ES EL SITIO OFICIAL.</strong><br>No envía formularios, no genera visas, no genera códigos QR oficiales y no completa trámites ante autoridades.</div><div id="cubaPracticeResult" class="result"></div></div></section>
 
-<section class="panel" id="guide">
-<button class="back" onclick="home()">← Volver</button><h2>📘 Mi guía</h2>
-<p>La guía se construye con la información que hayas introducido en la aplicación.</p>
-<div class="actions"><button class="primary" onclick="buildGuide()">Preparar mi guía</button><button class="secondary" onclick="downloadPDF()">Descargar PDF</button></div>
-<div id="guideResult"></div>
-</section>
+<section id="guide" class="screen hidden"><div class="card"><button class="back" data-action="home" type="button">← Volver</button><h2>📋 Mi guía</h2><p>Organiza tu preparación en un orden sencillo.</p><button id="guideBtn" class="primary" type="button">Preparar mi guía</button><div id="guideResult" class="result"></div></div></section>
 
-<div class="footer">May Roga LLC · Herramienta independiente de preparación y orientación. Verifica siempre las condiciones actuales con la fuente oficial correspondiente.</div>
-</main>
+<section id="sources" class="screen hidden"><div class="card"><button class="back" data-action="home" type="button">← Volver</button><h2>🔎 Fuentes oficiales</h2><p>Consulta directamente las fuentes oficiales relacionadas con tu viaje.</p><div class="grid mini"><button id="charterBtn" class="box" type="button"><b>✈️</b><span>Charters Cuba</span><small>Operadores y agencias de charter</small></button><button id="officialBtn" class="box" type="button"><b>🏛️</b><span>Fuentes oficiales</span><small>Gobiernos y autoridades</small></button></div><div id="sourcesResult" class="result"></div></div></section>
 
-<div class="modal" id="modal"><div class="box"><button class="close" onclick="closeModal()">×</button><h2 id="modalTitle"></h2><div id="modalBody"></div></div></div>
+<section id="teach" class="screen hidden"><div class="card"><button class="back" data-action="home" type="button">← Volver</button><h2>💡 Aprender un término</h2><div class="form"><label>Término<input id="term" maxlength="100" placeholder="Ej.: equipaje de mano"></label><button id="teachBtn" class="primary" type="button">Explicarme</button></div><div id="teachResult" class="result"></div></div></section>
 
-<script>
-"use strict";
-const APP={trip:JSON.parse(localStorage.getItem("qql_trip")||"{}"),airlines:[],lang:localStorage.getItem("qql_lang")||"es"};
-const $=id=>document.getElementById(id);
-const val=id=>$(id)?.value?.trim()||"";
-const bool=id=>val(id)==="true";
-function save(){localStorage.setItem("qql_trip",JSON.stringify(APP.trip))}
-function setTrip(k,v){if(v!==undefined&&v!=="")APP.trip[k]=v;save()}
-function home(){document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));window.scrollTo({top:0,behavior:"smooth"})}
-function openPanel(id){document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));$(id).classList.add("active");window.scrollTo({top:$(id).offsetTop-70,behavior:"smooth"});if(id==="flight"||id==="baggage"||id==="item"||id==="cuba"||id==="documents")loadAirlines()}
-function toggleLang(){APP.lang=APP.lang==="es"?"en":"es";localStorage.setItem("qql_lang",APP.lang);$("langBtn").textContent=APP.lang==="es"?"EN":"ES";if(APP.lang==="en"){$("heroTitle").textContent="Prepare for your trip without fear of making mistakes.";$("heroText").textContent="Understand your flight, connection, baggage, items and documents."}else{$("heroTitle").textContent="Prepárate para viajar sin miedo a equivocarte.";$("heroText").textContent="Entiende tu vuelo, tu escala, tu equipaje, lo que quieres llevar y tus documentos."}}
-async function api(url,data,method="POST"){
- try{const r=await fetch(url,{method,headers:{"Content-Type":"application/json"},body:method==="GET"?undefined:JSON.stringify(data||{})});const j=await r.json();if(!r.ok&&!j)return{ok:false,message:"No se pudo completar la acción."};return j}
- catch(e){return{ok:false,message:"No se pudo conectar con la aplicación. Comprueba que el servidor esté activo."}}
-}
-function esc(x){return String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
-function sourcesHTML(a){
- if(!Array.isArray(a)||!a.length)return "";
- return `<h4>Fuente(s) para comprobar</h4>${a.map(s=>{let u=s.url||"";return u?`<a class="source" href="${esc(u)}" target="_blank" rel="noopener">${esc(s.name||s.publisher||"Sitio oficial")} ↗</a>`:""}).join("")}`
-}
-function resultHTML(d){
- let h=`<div class="result"><h3>${esc(d.title||"Resultado")}</h3>`;
- if(d.status_label||d.status)h+=`<div class="status">${esc(d.status_label||String(d.status).toUpperCase())}</div>`;
- if(d.notice)h+=`<div class="notice">${esc(d.notice)}</div>`;
- if(d.message)h+=`<p>${esc(d.message)}</p>`;
- if(d.route)h+=`<p><b>Ruta:</b> ${esc(d.route)}</p>`;
- if(d.human_explanation)h+=`<p>${esc(d.human_explanation)}</p>`;
- for(const key of ["details","questions","missing_information","authorities","pending","completed"]){
-  if(Array.isArray(d[key])&&d[key].length)h+=`<h4>${label(key)}</h4><ul>${d[key].map(x=>`<li>${esc(typeof x==="object"?(x.name||x.title||JSON.stringify(x)):x)}</li>`).join("")}</ul>`;
- }
- if(Array.isArray(d.documents)&&d.documents.length)h+=`<h4>Documentos</h4><ul>${d.documents.map(x=>`<li><b>${esc(x.name||"Documento")}</b> — ${esc(x.status||"REVISAR")}${x.action?`<br>${esc(x.action)}`:""}</li>`).join("")}</ul>`;
- if(Array.isArray(d.checklist)&&d.checklist.length)h+=`<h4>Lista</h4>${d.checklist.map(x=>`<div class="step"><b>${esc(x.name)}</b><br><span>${esc(x.status)}</span><br><small>${esc(x.action||"")}</small></div>`).join("")}`;
- if(d.next_action)h+=`<div class="notice"><b>Siguiente acción:</b> ${esc(d.next_action)}</div>`;
- h+=sourcesHTML(d.sources);
- return h+"</div>"
-}
-function label(k){return({details:"Qué debes saber",questions:"Necesitamos comprobar",missing_information:"Información que falta",authorities:"Quién puede controlar esto",pending:"Pendiente",completed:"Completado"})[k]||k}
-function show(id,d){$(id).innerHTML=resultHTML(d);$(id).scrollIntoView({behavior:"smooth",block:"nearest"})}
-async function loadAirlines(){
- if(APP.airlines.length)return;
- const d=await api("/api/airlines",{name:""});
- APP.airlines=d.matches||[];
- ["f_airline","b_airline","i_airline","c_airline","d_airline"].forEach(id=>{const s=$(id);if(!s)return;s.innerHTML='<option value="">Selecciona una aerolínea</option>'+APP.airlines.map(a=>`<option value="${esc(a.name||a.id)}">${esc(a.name||a.id)}</option>`).join("")})
-}
-function flightData(){return{origin:val("f_origin"),destination:val("f_dest"),airline:val("f_airline"),flight_number:val("f_number"),departure:val("f_date"),stops:val("f_stops"),cabin:val("f_cabin"),fare:val("f_fare")}}
-async function analyzeFlight(){const d=flightData();Object.assign(APP.trip,d);save();show("flightResult",await api("/api/flight",d))}
-function openBooking(){openPanel("flight");$("flightResult").innerHTML=`<div class="result"><h3>Práctica de búsqueda de vuelo</h3><p>Esta práctica te enseña el proceso. No compra ni reserva.</p><div class="form"><div class="field"><label>Origen</label><input id="bk_origin" value="${esc(APP.trip.origin||"")}"></div><div class="field"><label>Destino</label><input id="bk_dest" value="${esc(APP.trip.destination||"")}"></div><div class="field"><label>Fecha</label><input id="bk_date" type="date"></div><div class="field"><label>Pasajeros</label><input id="bk_pass" type="number" value="1"></div></div><div class="actions"><button class="primary" onclick="runBooking()">Continuar práctica</button></div></div>`}
-async function runBooking(){show("flightResult",await api("/api/booking",{origin:val("bk_origin"),destination:val("bk_dest"),departure:val("bk_date"),passengers:Number(val("bk_pass")||1),airline:val("f_airline")}))}
-async function analyzeBaggage(){const d={type:val("b_type"),airline:val("b_airline"),origin:val("b_origin"),destination:val("b_dest"),fare:val("b_fare"),cabin:val("b_cabin"),weight:Number(val("b_weight"))||null,dimensions:val("b_dimensions")};APP.trip.baggage=d;APP.trip.baggage_checked=true;save();show("baggageResult",await api("/api/baggage",d))}
-async function analyzeItem(){const d={item:val("i_item"),origin:val("i_origin"),destination:val("i_dest"),airline:val("i_airline"),baggage_type:val("i_bag"),quantity:Number(val("i_qty"))||null,weight:Number(val("i_weight"))||null};APP.trip.items=APP.trip.items||[];if(d.item&&!APP.trip.items.includes(d.item))APP.trip.items.push(d.item);APP.trip.last_item=d.item;save();show("itemResult",await api("/api/item",d))}
-async function analyzeCuba(){const d={origin:val("c_origin"),destination:"Cuba",nationality:val("c_nat"),passport_country:val("c_pass_country"),country_of_residence:val("c_res"),airline:val("c_airline"),flight_type:val("c_type"),purpose:val("c_purpose"),arrival_date:val("c_arrival"),cuban_nationality:bool("c_cuban"),dual_citizen:bool("c_dual"),dviajeros_done:false,visa_checked:false,customs_checked:false,baggage_checked:false,documents_checked:false};Object.assign(APP.trip,d);save();show("cubaResult",await api("/api/cuba",d))}
-async function analyzeDocuments(){const d={origin:val("d_origin"),destination:val("d_dest"),nationality:val("d_nat"),passport_country:val("d_pass"),country_of_residence:val("d_res"),airline:val("d_airline"),purpose:val("d_purpose")};Object.assign(APP.trip,d);save();show("documentsResult",await api("/api/documents",d))}
-function practiceForm(type,d){
- let h=`<div class="result"><h3>${esc(d.title||"Práctica")}</h3><div class="notice">${esc(d.notice||"SIMULACIÓN DE PRÁCTICA — NO ES EL SITIO OFICIAL.")}</div>`;
- if(d.current_step){const s=d.current_step;h+=`<div class="step"><h4>Paso ${esc(s.id)}: ${esc(s.title)}</h4><p>${esc(s.help||"")}</p><small>${esc(s.why||"")}</small>${Array.isArray(s.options)&&s.options.length?`<div class="actions">${s.options.map(x=>`<button class="secondary" onclick="practiceAnswer('${esc(type)}','${esc(x)}',${Number(d.progress||0)})">${esc(x)}</button>`).join("")}</div>`:""}</div>`}
- if(d.progress!==undefined)h+=`<p><b>Progreso:</b> ${esc(d.progress)}%</p>`;
- if(d.completed?.length)h+=`<p>Completado: ${esc(d.completed.join(", "))}</p>`;
- if(d.next_action)h+=`<div class="notice"><b>${esc(d.next_action)}</b></div>`;
- h+=sourcesHTML(d.sources)+"</div>";return h
-}
-let practiceState={};
-async function loadPractice(type){openPanel("practice");practiceState[type]=0;const d=await api("/api/practice",{scenario:type,step:0,data:APP.trip});$("practiceResult").innerHTML=practiceForm(type,d)}
-async function practiceAnswer(type,answer,step){const d=await api("/api/practice",{scenario:type,step:practiceState[type]||0,answer,data:APP.trip});practiceState[type]=(practiceState[type]||0)+1;$("practiceResult").innerHTML=practiceForm(type,d)}
-async function visaPractice(){openPanel("practice");const d=await api("/api/visa",{destination:"Cuba",nationality:APP.trip.nationality||""});$("practiceResult").innerHTML=practiceForm("visa",d)}
-async function loadSources(topic){const d=await api("/api/sources?topic="+encodeURIComponent(topic),"","GET");if(!d.sources?.length){$("sourcesResult").innerHTML='<div class="result"><h3>No se encontró una fuente en ese tema</h3><p>Busca el requisito directamente en la autoridad que aparece en tu reserva o documentación.</p></div>';return}$("sourcesResult").innerHTML='<div class="result"><h3>Fuentes oficiales</h3>'+d.sources.map(s=>`<div class="step"><h4>${esc(s.name)}</h4><small>${esc(s.publisher||"")}</small><p>${esc(s.what_it_covers||"")}</p>${s.limitations?`<small>${esc(s.limitations)}</small>`:""}${s.url?`<a class="source" href="${esc(s.url)}" target="_blank" rel="noopener">ABRIR SITIO OFICIAL ↗</a>`:""}</div>`).join("")+'</div>'}
-function official(topic){openPanel("sources");loadSources(topic)}
-async function buildGuide(){const d=await api("/api/guide",{...APP.trip,items:APP.trip.items||[],baggage:APP.trip.baggage||{}});show("guideResult",d)}
-async function downloadPDF(){const d=await api("/api/guide",{...APP.trip,items:APP.trip.items||[],baggage:APP.trip.baggage||{}});if(!d.ok){show("guideResult",d);return}const payload={trip:d.trip||APP.trip,flight:d.flight||{},baggage:d.baggage||{},items:d.items_reviewed||[],documents:d.documents?.documents||[],pending:d.pending||[],completed:d.completed||[],next_action:d.next_action||"",sources:d.sources||[]};try{const r=await fetch("/api/pdf",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload)});if(!r.ok)throw new Error();const blob=await r.blob();const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="mi-guia-viaje.pdf";a.click();URL.revokeObjectURL(u)}catch(e){show("guideResult",{title:"PDF",message:"No se pudo generar el PDF en este momento.",next_action:"Inténtalo nuevamente."})}}
-let taps=0,timer;
-document.addEventListener("click",e=>{if(e.target.closest("button,input,select,textarea,a"))return;taps++;clearTimeout(timer);timer=setTimeout(()=>taps=0,1200);if(taps>=4){taps=0;openAccess()}})
-function openAccess(){$("modalTitle").textContent="Acceso";$("modalBody").innerHTML='<div class="field"><label>Usuario</label><input id="access_user"></div><div class="field" style="margin-top:10px"><label>Contraseña</label><input id="access_pass" type="password"></div><div class="actions"><button class="primary" onclick="login()">Entrar</button></div><div id="accessMsg"></div>';$("modal").classList.add("open")}
-function closeModal(){$("modal").classList.remove("open")}
-async function login(){const d=await api("/api/access",{username:val("access_user"),password:val("access_pass")});$("accessMsg").innerHTML=`<div class="notice">${esc(d.message||"")}</div>`;if(d.authorized){localStorage.setItem("qql_access",d.token||"");setTimeout(closeModal,500)}}
-(async()=>{await loadAirlines();try{const c=await fetch("/api/config");const j=await c.json();if(!j.ok)console.warn(j)}catch(e){}})();
-</script>
-</body>
-</html>
+<section id="legal" class="screen hidden"><div class="card"><button class="back" data-action="home" type="button">← Volver</button><h2>⚖️ Aviso legal</h2><div id="legalResult" class="result"></div></div></section>
+
+<section id="admin" class="screen hidden"><div class="card"><button class="back" data-action="home" type="button">← Volver</button><h2>ADMIN</h2><div class="form"><label>Usuario<input id="adminUser" autocomplete="username"></label><label>Contraseña<input id="adminPass" type="password" autocomplete="current-password"></label><button id="adminLoginBtn" class="primary" type="button">Entrar</button></div><p id="adminMsg" class="message"></p></div></section>
+
+</main><footer><span>May Roga LLC</span><span>© 2026</span></footer><script src="/static/app.js" defer></script><script>
+document.addEventListener("DOMContentLoaded",()=>{
+const q=s=>document.querySelector(s);
+const action=(id,fn)=>{const e=q(id);if(e)e.addEventListener("click",fn)};
+action("#practiceStartBtn",()=>{const a=q("#practiceAirline")?.value||"";if(!a){if(window.msg)msg("Selecciona una aerolínea.","warn");return}if(window.requirePaid&&!window.requirePaid())return;if(window.APP){APP.practice={type:"airline",airline:a,step:0,origin:q("#practiceOrigin")?.value||"",destination:q("#practiceDestination")?.value||"",date:q("#practiceDate")?.value||""};if(window.renderPractice)renderPractice();else if(window.startAirlinePractice)startAirlinePractice()}});
+action("#cubaVisaBtn",()=>window.startCubaPractice&&startCubaPractice("visa"));
+action("#cubaDviajerosBtn",()=>window.startCubaPractice&&startCubaPractice("dviajeros"));
+action("#cubaOfficialBtn",()=>window.cubaGuide&&cubaGuide());
+action("#charterBtn",()=>window.charterSources&&charterSources());
+action("#officialBtn",()=>window.officialSources&&officialSources());
+document.addEventListener("click",e=>{const b=e.target.closest("[data-action]");if(!b)return;const a=b.dataset.action;if(a==="practice"){if(window.requirePaid&&!window.requirePaid())return;const s=q("#practice");if(s){document.querySelectorAll(".screen").forEach(x=>x.classList.add("hidden"));s.classList.remove("hidden")}}else if(a==="cuba-visa"){window.startCubaPractice&&startCubaPractice("visa")}else if(a==="cuba-dviajeros"){window.startCubaPractice&&startCubaPractice("dviajeros")}else if(a==="cuba-official"){window.cubaGuide&&cubaGuide()}});
+});
+</script></body></html>
