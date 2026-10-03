@@ -24,8 +24,7 @@ class FlightRequest(BaseRequest):
     flight_type:str=""
     stops:Any=""
     departure:str=""
-    return_date:str=""
-    return_:str=Field(default="",validation_alias=AliasChoices("return","return_","return_date"))
+    return_date:str=Field(default="",validation_alias=AliasChoices("return_date","return","return_"))
     passengers:int=Field(default=1,ge=1,le=20)
     cabin:str="Economy"
     fare:str=""
@@ -33,13 +32,14 @@ class FlightRequest(BaseRequest):
     same_ticket:Optional[bool]=None
     checked_bags:int=Field(default=0,ge=0,le=20)
     carry_on:Optional[bool]=None
+    personal_item:Optional[bool]=None
+    charter_operator:str=""
 
 class BookingRequest(BaseRequest):
     origin:str=""
     destination:str=""
     departure:str=""
-    return_date:str=""
-    return_:str=Field(default="",validation_alias=AliasChoices("return","return_","return_date"))
+    return_date:str=Field(default="",validation_alias=AliasChoices("return_date","return","return_"))
     passengers:int=Field(default=1,ge=1,le=20)
     cabin:str="Economy"
     fare:str=""
@@ -47,6 +47,8 @@ class BookingRequest(BaseRequest):
     nonstop:Optional[bool]=None
     flight_type:str=""
     airline:str=""
+    charter_operator:str=""
+    simulation:bool=True
 
 class ConnectionRequest(BaseRequest):
     origin:str=""
@@ -69,6 +71,7 @@ class BaggageRequest(BaseRequest):
     type:str=""
     item:str=""
     airline:str=""
+    charter_operator:str=""
     origin:str=""
     destination:str=""
     flight_number:str=""
@@ -77,6 +80,9 @@ class BaggageRequest(BaseRequest):
     cabin:str=""
     weight:Optional[float]=Field(default=None,ge=0,le=1000)
     dimensions:str=""
+    length:Optional[float]=Field(default=None,ge=0,le=500)
+    width:Optional[float]=Field(default=None,ge=0,le=500)
+    height:Optional[float]=Field(default=None,ge=0,le=500)
     pieces:Optional[int]=Field(default=None,ge=0,le=50)
     personal_item:Optional[bool]=None
     carry_on:Optional[bool]=None
@@ -84,11 +90,16 @@ class BaggageRequest(BaseRequest):
     international:Optional[bool]=None
     country_of_departure:str=""
     country_of_destination:str=""
+    travel_date:str=""
+    ticket_date:str=""
+    fare_family:str=""
+    season:str=""
 
 class ItemRequest(BaseRequest):
     item:str=""
     description:str=""
     airline:str=""
+    charter_operator:str=""
     destination:str=""
     origin:str=""
     baggage_type:str=""
@@ -102,6 +113,8 @@ class ItemRequest(BaseRequest):
     is_medication:Optional[bool]=None
     is_animal:Optional[bool]=None
     is_electronic:Optional[bool]=None
+    is_food:Optional[bool]=None
+    is_restricted:Optional[bool]=None
 
 class CubaRequest(BaseRequest):
     origin:str=""
@@ -114,6 +127,7 @@ class CubaRequest(BaseRequest):
     dual_citizen:bool=False
     flight_type:str=""
     airline:str=""
+    charter_operator:str=""
     flight_number:str=""
     purpose:str=""
     arrival_date:str=""
@@ -126,9 +140,12 @@ class CubaRequest(BaseRequest):
     customs_checked:bool=False
     baggage_checked:bool=False
     documents_checked:bool=False
+    insurance_checked:bool=False
+    return_ticket:Optional[bool]=None
+    entry_airport:str=""
+    items:List[str]=Field(default_factory=list)
 
 class CubaEntryRequest(CubaRequest):
-    entry_airport:str=""
     residence_country:str=""
     return_ticket:Optional[bool]=None
     travel_insurance:Optional[bool]=None
@@ -148,6 +165,10 @@ class VisaRequest(BaseRequest):
     departure_date:str=""
     destination:str="Cuba"
     country_of_residence:str=""
+    entry_airport:str=""
+    airline:str=""
+    flight_number:str=""
+    simulation:bool=True
 
 class DViajeroRequest(BaseRequest):
     given_names:str=""
@@ -163,9 +184,13 @@ class DViajeroRequest(BaseRequest):
     flight:str=""
     arrival_airport:str=""
     departure_airport:str=""
+    airline:str=""
     email:str=""
     phone:str=""
     address_destination:str=""
+    accommodation:str=""
+    purpose_of_trip:str=""
+    simulation:bool=True
 
 class DocumentRequest(BaseRequest):
     origin:str=""
@@ -176,12 +201,17 @@ class DocumentRequest(BaseRequest):
     cuban_nationality:bool=False
     dual_citizen:bool=False
     airline:str=""
+    charter_operator:str=""
     flight_type:str=""
     flight_number:str=""
     purpose:str=""
     arrival_date:str=""
     departure_date:str=""
     passport_valid_until:str=""
+    visa_checked:bool=False
+    dviajeros_done:bool=False
+    customs_checked:bool=False
+    insurance_checked:bool=False
 
 class PracticeRequest(BaseRequest):
     scenario:str=""
@@ -190,6 +220,10 @@ class PracticeRequest(BaseRequest):
     step:int=Field(default=0,ge=0,le=100)
     answer:str=""
     data:Dict[str,Any]=Field(default_factory=dict)
+    airline:str=""
+    charter_operator:str=""
+    simulation_id:str=""
+    language:str="es"
 
 class AirportRequest(BaseRequest):
     state:str=""
@@ -202,6 +236,8 @@ class AirportRequest(BaseRequest):
     connection:bool=False
     arrival_time:str=""
     next_flight:str=""
+    airline:str=""
+    next_airline:str=""
 
 class AirlineRequest(BaseRequest):
     name:str=""
@@ -210,21 +246,36 @@ class AirlineRequest(BaseRequest):
     destination:str=""
     country:str=""
     topic:str=""
+    flight_number:str=""
+    travel_date:str=""
+
+class CharterRequest(BaseRequest):
+    name:str=""
+    operator:str=""
+    origin:str=""
+    destination:str="Cuba"
+    flight_number:str=""
+    travel_date:str=""
+    topic:str="baggage"
 
 class SourceRequest(BaseRequest):
     topic:str="official"
     query:str=""
     country:str=""
     airline:str=""
+    charter_operator:str=""
+    category:str=""
 
 class SolveRequest(BaseRequest):
     question:str=""
     data:Dict[str,Any]=Field(default_factory=dict)
+    language:str="es"
 
 class GuideRequest(BaseRequest):
     origin:str=""
     destination:str=""
     airline:str=""
+    charter_operator:str=""
     flight_number:str=""
     flight_type:str=""
     stops:Any=""
@@ -246,12 +297,14 @@ class GuideRequest(BaseRequest):
     current_state:str=""
     last_item:str=""
     next_action:str=""
+    language:str="es"
 
 class TripState(BaseModel):
     model_config=ConfigDict(extra="allow",str_strip_whitespace=True)
     origin:str=""
     destination:str=""
     airline:str=""
+    charter_operator:str=""
     flight_number:str=""
     flight_type:str=""
     stops:Any=""
@@ -270,9 +323,11 @@ class TripState(BaseModel):
     customs_checked:bool=False
     documents_checked:bool=False
     baggage_checked:bool=False
+    insurance_checked:bool=False
     current_state:str=""
     last_item:str=""
     next_action:str=""
+    language:str="es"
 
 class TripExportRequest(BaseRequest):
     data:TripState=Field(default_factory=TripState)
@@ -286,6 +341,9 @@ class SourceResponse(BaseModel):
     ok:bool=True
     sources:List[Dict[str,Any]]=Field(default_factory=list)
     topic:str="official"
+    query:str=""
+    message:str=""
+    next_action:str=""
 
 class FlightResponse(BaseModel):
     ok:bool=True
@@ -299,6 +357,7 @@ class FlightResponse(BaseModel):
     questions:List[str]=Field(default_factory=list)
     next_action:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
+    official_urls:List[str]=Field(default_factory=list)
 
 class BookingResponse(BaseModel):
     ok:bool=True
@@ -307,11 +366,13 @@ class BookingResponse(BaseModel):
     real_booking:bool=False
     payment:bool=False
     message:str=""
+    notice:str="SIMULACIÓN DE PRÁCTICA — NO ES EL SITIO OFICIAL."
     search:Dict[str,Any]=Field(default_factory=dict)
     fields:List[Dict[str,Any]]=Field(default_factory=list)
     steps:List[Dict[str,Any]]=Field(default_factory=list)
     next_action:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
+    official_url:Optional[str]=None
 
 class ItemResponse(BaseModel):
     ok:bool=True
@@ -327,6 +388,8 @@ class ItemResponse(BaseModel):
     missing_information:List[str]=Field(default_factory=list)
     sources:List[Dict[str,Any]]=Field(default_factory=list)
     next_action:str=""
+    official_urls:List[str]=Field(default_factory=list)
+    ai_assisted:bool=False
 
 class BaggageResponse(BaseModel):
     ok:bool=True
@@ -346,6 +409,9 @@ class BaggageResponse(BaseModel):
     dimensions:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
     next_action:str=""
+    official_urls:List[str]=Field(default_factory=list)
+    verified_date:str=""
+    ai_assisted:bool=False
 
 class CubaResponse(BaseModel):
     ok:bool=True
@@ -358,6 +424,9 @@ class CubaResponse(BaseModel):
     questions:List[str]=Field(default_factory=list)
     next_action:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
+    official_urls:List[str]=Field(default_factory=list)
+    simulation:bool=False
+    official_submission:bool=False
 
 class DocumentResponse(BaseModel):
     ok:bool=True
@@ -366,6 +435,7 @@ class DocumentResponse(BaseModel):
     documents:List[Dict[str,Any]]=Field(default_factory=list)
     next_action:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
+    official_urls:List[str]=Field(default_factory=list)
 
 class PracticeResponse(BaseModel):
     ok:bool=True
@@ -381,6 +451,9 @@ class PracticeResponse(BaseModel):
     sources:List[Dict[str,Any]]=Field(default_factory=list)
     scenarios:List[Dict[str,Any]]=Field(default_factory=list)
     current_step:Optional[Dict[str,Any]]=None
+    official_url:Optional[str]=None
+    simulation_id:str=""
+    ai_assisted:bool=False
 
 class GuideResponse(BaseModel):
     ok:bool=True
@@ -395,6 +468,8 @@ class GuideResponse(BaseModel):
     next_action:str=""
     message:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
+    official_urls:List[str]=Field(default_factory=list)
+    ai_assisted:bool=False
 
 class AccessResponse(BaseModel):
     ok:bool=True
@@ -413,6 +488,7 @@ class HealthResponse(BaseModel):
     app:str="¿QUÉ QUIERES LLEVAR?"
     version:str=VERSION
     status:str="ready"
+    ai_available:bool=False
 
 class ErrorResponse(BaseModel):
     ok:bool=False
@@ -429,6 +505,7 @@ class SimulationStep(BaseModel):
     example:Optional[str]=None
     options:List[str]=Field(default_factory=list)
     required:bool=True
+    official_url:Optional[str]=None
 
 class SimulationResponse(BaseModel):
     ok:bool=True
@@ -438,6 +515,7 @@ class SimulationResponse(BaseModel):
     purpose:str=""
     steps:List[SimulationStep]=Field(default_factory=list)
     official_url:Optional[str]=None
+    official_submission:bool=False
 
 class AirlineResponse(BaseModel):
     ok:bool=True
@@ -445,6 +523,14 @@ class AirlineResponse(BaseModel):
     matches:List[Dict[str,Any]]=Field(default_factory=list)
     message:str=""
     next_action:str=""
+
+class CharterResponse(BaseModel):
+    ok:bool=True
+    query:str=""
+    matches:List[Dict[str,Any]]=Field(default_factory=list)
+    message:str=""
+    next_action:str=""
+    official_submission:bool=False
 
 class PDFRequest(BaseRequest):
     trip:Dict[str,Any]=Field(default_factory=dict)
@@ -456,5 +542,6 @@ class PDFRequest(BaseRequest):
     completed:List[str]=Field(default_factory=list)
     next_action:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
+    language:str="es"
 
 __all__=[k for k in globals() if not k.startswith("_")]
