@@ -1,881 +1,495 @@
-# cuba_engine.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v11.0.0
+# cuba_engine.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v12.0.0
 from __future__ import annotations
 from typing import Any,Dict,List
 import re
 
-VERSION="11.0.0"
+VERSION="12.0.0"
 
-CUBA_TERMS={
-    "cuba","cu","republica de cuba","república de cuba",
-    "havana","habana","la habana"
-}
-
-def s(v:Any)->str:
+def _text(v):
     return str(v or "").strip()
 
-def low(v:Any)->str:
-    return s(v).lower()
+def _low(v):
+    return _text(v).lower()
 
-def truth(v:Any)->bool:
-    if isinstance(v,bool):
-        return v
-    return low(v) in {"1","true","yes","si","sí","y","on"}
-
-def is_cuba(v:Any)->bool:
-    x=low(v)
-    return x in CUBA_TERMS or "cuba" in x
-
-def unique(items:List[str])->List[str]:
-    out=[]
-    for x in items:
-        if x and x not in out:
-            out.append(x)
-    return out
-
-def _sources(topic:str="",query:str="")->List[Dict[str,Any]]:
+def _sources(topic="",query=""):
     try:
-        import source_registry as SR
-        for name in ("get_sources","sources_for","find_sources","official_sources"):
-            fn=getattr(SR,name,None)
-            if callable(fn):
+        import source_registry as r
+        for n in ("get_sources","sources_for","find_sources","official_sources"):
+            f=getattr(r,n,None)
+            if callable(f):
                 try:
-                    r=fn(topic,query)
-                    if isinstance(r,dict):
-                        r=r.get("sources") or r.get("official") or []
-                    if isinstance(r,list):
-                        return r
-                except Exception:
-                    pass
+                    x=f(topic=topic,query=query)
+                except TypeError:
+                    try:x=f(topic,query)
+                    except Exception:continue
+                except Exception:continue
+                if isinstance(x,dict): x=x.get("sources",[])
+                if isinstance(x,list): return x
     except Exception:
         pass
     return []
 
-def _source(topic:str,query:str="")->List[Dict[str,Any]]:
-    return _sources(topic,query)
+def _base(title,message="",**kw):
+    d={"ok":True,"title":title,"message":message}
+    d.update(kw)
+    return d
 
-def cuba_profile(data:Dict[str,Any])->str:
-    cuban=truth(data.get("cuban_nationality"))
-    dual=truth(data.get("dual_citizen"))
-    nationality=s(data.get("nationality"))
-    passport=s(data.get("passport_country"))
+def cuba_profile(data:Dict[str,Any]):
+    cuban=bool(data.get("cuban_nationality"))
+    dual=bool(data.get("dual_citizen"))
     if cuban and dual:
-        return "Ciudadano cubano con doble nacionalidad"
+        return "Persona con nacionalidad cubana y otra nacionalidad"
     if cuban:
-        return "Ciudadano cubano"
-    if dual:
-        return "Viajero con doble nacionalidad"
-    if nationality:
-        return f"Viajero de nacionalidad {nationality}"
-    if passport:
-        return f"Viajero con pasaporte de {passport}"
-    return "Perfil de viajero pendiente de confirmar"
+        return "Persona con nacionalidad cubana"
+    return "Persona que viaja a Cuba con otra nacionalidad"
 
-def cuba_check(data:Dict[str,Any])->Dict[str,Any]:
-    nationality=s(data.get("nationality"))
-    passport=s(data.get("passport_country"))
-    origin=s(data.get("origin"))
-    airline=s(data.get("airline"))
-    flight_type=s(data.get("flight_type"))
-    cuban=truth(data.get("cuban_nationality"))
-    dual=truth(data.get("dual_citizen"))
-    checklist=[
-        {
-            "id":"identity",
-            "title":"Nacionalidad y pasaporte",
-            "status":"done" if nationality or passport else "pending",
-            "explanation":"Primero debemos saber qué nacionalidad tienes y con qué documento viajarás."
-        },
-        {
-            "id":"passport",
-            "title":"Documento de viaje",
-            "status":"done" if passport else "pending",
-            "explanation":"Revisa el documento con el que realizarás el viaje y las condiciones oficiales que le correspondan."
-        },
-        {
-            "id":"entry",
-            "title":"Entrada a Cuba",
-            "status":"pending",
-            "explanation":"La necesidad de determinados documentos depende de la situación concreta del viajero y de las reglas oficiales vigentes."
-        },
-        {
-            "id":"visa",
-            "title":"Visa/eVisa cuando corresponda",
-            "status":"done" if truth(data.get("visa_checked")) else "pending",
-            "explanation":"No se debe asumir que todos los viajeros tienen el mismo requisito."
-        },
-        {
-            "id":"dviajeros",
-            "title":"D’Viajeros",
-            "status":"done" if truth(data.get("dviajeros_done")) else "pending",
-            "explanation":"La aplicación puede ayudarte a practicar y entender la información antes de utilizar el sitio oficial."
-        },
-        {
-            "id":"customs",
-            "title":"Aduana y artículos",
-            "status":"done" if truth(data.get("customs_checked")) else "pending",
-            "explanation":"Lo que puedes transportar y lo que puedes introducir en el país no siempre es exactamente la misma pregunta."
-        }
+def cuba_check(data:Dict[str,Any]):
+    profile=cuba_profile(data)
+    checks=[
+        ("Identidad y nacionalidad",bool(data.get("nationality") or data.get("passport_country")),"Indica la nacionalidad y el país del pasaporte que usarás."),
+        ("Pasaporte",bool(data.get("passport_country")),"Comprueba la vigencia y las condiciones aplicables en la fuente oficial."),
+        ("Entrada a Cuba",bool(data.get("origin")),"Indica desde qué país viajas para revisar qué requisitos pueden depender de tu origen."),
+        ("Visa o autorización de entrada",bool(data.get("visa_checked")),"Comprueba si tu nacionalidad y motivo de viaje requieren visa u otra autorización."),
+        ("D’Viajeros",bool(data.get("dviajeros_done")),"Practica el formulario y después completa el proceso en el sitio oficial."),
+        ("Aduana y equipaje",bool(data.get("customs_checked") and data.get("baggage_checked")),"Revisa qué debes declarar y las reglas aplicables a tus artículos."),
+        ("Documentos",bool(data.get("documents_checked")),"Revisa tu lista personalizada antes de viajar.")
     ]
-    details=[
-        "Cuba no se debe tratar como una sola pregunta. Hay que separar documentación, entrada, vuelo, equipaje, artículos, D’Viajeros y aduana.",
-        "La nacionalidad y el documento con el que viajas pueden cambiar qué información necesitas comprobar.",
-        "Si tienes nacionalidad cubana o doble nacionalidad, revisa específicamente la información oficial aplicable a tu situación.",
-        "La aerolínea también puede tener condiciones propias para aceptar pasajeros y equipaje.",
-        "La aplicación organiza las verificaciones; no sustituye la decisión de una autoridad."
-    ]
-    if origin:
-        details.append(f"Origen indicado: {origin}.")
-    if airline:
-        details.append(f"Aerolínea indicada: {airline}.")
-    if flight_type:
-        details.append(f"Tipo de vuelo indicado: {flight_type}.")
-    if nationality:
-        details.append(f"Nacionalidad indicada: {nationality}.")
-    if passport:
-        details.append(f"Pasaporte indicado: {passport}.")
-    if cuban or dual:
-        details.append("Tu situación incluye nacionalidad cubana o doble nacionalidad; no conviene aplicar automáticamente las reglas de otro viajero.")
-    pending=[x["title"] for x in checklist if x["status"]=="pending"]
-    return {
-        "ok":True,
-        "title":"Preparación para Cuba",
-        "message":"Vamos a separar tu viaje en pasos pequeños para que puedas saber exactamente qué revisar.",
-        "status":"verify" if pending else "ready",
-        "traveler_profile":cuba_profile(data),
-        "details":details,
-        "checklist":checklist,
-        "questions":[
-            "¿Con qué pasaporte viajarás?",
-            "¿Tienes nacionalidad cubana?",
-            "¿Tienes doble nacionalidad?",
-            "¿Necesitas verificar visa/eVisa?",
-            "¿Ya revisaste D’Viajeros?",
-            "¿Ya revisaste qué artículos llevarás?"
+    checklist=[]
+    pending=[]
+    completed=[]
+    for name,ok,action in checks:
+        status="COMPLETADO" if ok else "PENDIENTE"
+        checklist.append({"name":name,"status":status,"action":action})
+        (completed if ok else pending).append(name)
+    sources=_sources("cuba",_text(data.get("origin")))
+    return _base(
+        "Viajo a Cuba",
+        f"Perfil: {profile}. Esta revisión organiza lo que debes comprobar; no certifica que puedas entrar ni sustituye a una autoridad.",
+        status="review" if pending else "ready",
+        traveler_profile=profile,
+        details=[
+            "Las condiciones pueden depender de nacionalidad, pasaporte, motivo del viaje y país desde el que viajas.",
+            "Si tienes doble nacionalidad, comprueba específicamente qué documento corresponde a tu situación.",
+            "No damos por confirmado ningún requisito que no esté respaldado por una fuente oficial."
         ],
-        "next_action":pending[0] if pending else "Confirma nuevamente las fuentes oficiales antes del viaje.",
-        "sources":_source("cuba")
-    }
+        checklist=checklist,
+        questions=pending,
+        next_action=("Completa primero: "+pending[0]) if pending else "Haz una última comprobación en las fuentes oficiales antes de viajar.",
+        sources=sources
+    )
 
 analyze_cuba=cuba_check
 cuba_analysis=cuba_check
 cuba_entry_check=cuba_check
 
-def baggage_type_name(value:str)->str:
-    x=low(value)
-    if any(k in x for k in ["personal","artículo personal","articulo personal","personal item"]):
-        return "Artículo personal"
-    if any(k in x for k in ["carry","cabina","mano","hand"]):
-        return "Equipaje de cabina"
-    if any(k in x for k in ["checked","documentado","facturado","registrado","bodega"]):
-        return "Equipaje documentado"
-    return "Tipo de equipaje no confirmado"
-
-def baggage_type_explanation(value:str)->str:
-    name=baggage_type_name(value)
-    if name=="Artículo personal":
-        return "Es el objeto pequeño que la aerolínea permite llevar como artículo personal. No debe confundirse con una maleta de cabina."
-    if name=="Equipaje de cabina":
-        return "Es la maleta o pieza que la aerolínea permite llevar contigo en la cabina, si tu tarifa y sus condiciones la incluyen."
-    if name=="Equipaje documentado":
-        return "Es la maleta que entregas a la aerolínea antes de pasar a la zona de embarque y que viaja en la bodega del avión."
-    return "Primero necesitamos saber si hablas de una pieza que llevas contigo o de una que entregas a la aerolínea."
-
-def baggage_rules(data:Dict[str,Any])->Dict[str,Any]:
-    typ=baggage_type_name(s(data.get("type")))
-    item=s(data.get("item"))
-    airline=s(data.get("airline"))
-    fare=s(data.get("fare"))
-    cabin=s(data.get("cabin"))
-    destination=s(data.get("destination"))
-    details=[
-        baggage_type_explanation(s(data.get("type"))),
-        "El nombre del equipaje no determina por sí solo cuántas piezas puedes llevar.",
-        "La cantidad, peso y medidas pueden depender de la aerolínea, tarifa, cabina y ruta.",
-        "Una regla de la aerolínea no sustituye las reglas de seguridad.",
-        "Las reglas para transportar un artículo y las reglas para introducirlo en otro país pueden ser diferentes."
-    ]
-    missing=[]
-    if not airline:
-        missing.append("Aerolínea")
-    if not fare:
-        missing.append("Tarifa")
-    if not cabin:
-        missing.append("Cabina")
-    if not destination:
-        missing.append("Destino")
-    if item:
-        details.append(f"Artículo asociado: {item}.")
-    if fare:
-        details.append(f"Tarifa indicada: {fare}.")
-    if cabin:
-        details.append(f"Cabina indicada: {cabin}.")
-    if data.get("weight") not in (None,""):
-        details.append(f"Peso indicado: {data.get('weight')}. Debe compararse con el límite oficial aplicable.")
-    if s(data.get("dimensions")):
-        details.append(f"Medidas indicadas: {s(data.get('dimensions'))}. Deben compararse con las medidas oficiales.")
-    return {
-        "ok":True,
-        "title":"Entiende tu equipaje",
-        "message":"Antes de empacar, necesitamos separar tres preguntas: qué tipo de equipaje tienes, qué permite tu tarifa y si el artículo tiene reglas especiales.",
-        "status":"verify" if missing else "verify",
-        "baggage_type":typ,
-        "human_explanation":baggage_type_explanation(s(data.get("type"))),
-        "placement":"Según el tipo seleccionado, puede ir contigo en cabina o entregarse antes del embarque. La ubicación exacta debe confirmarse con la aerolínea.",
-        "details":details,
-        "questions":[
-            "¿Es una mochila pequeña o una maleta?",
-            "¿La quieres llevar contigo dentro del avión?",
-            "¿La vas a entregar antes de subir?",
-            "¿Tu tarifa incluye esa pieza?",
-            "¿Cuánto pesa y cuánto mide?"
-        ],
-        "authorities":["Aerolínea","Seguridad del transporte","Autoridad del destino cuando corresponda"],
-        "missing_information":missing,
-        "sources":_source("baggage",airline),
-        "next_action":"Busca la sección oficial de equipaje de tu aerolínea y compara tu tarifa, piezas, peso y medidas."
+def baggage_type_name(t):
+    m={
+        "personal_item":"Artículo personal",
+        "personal":"Artículo personal",
+        "carry_on":"Equipaje de mano",
+        "cabin":"Equipaje de mano",
+        "checked":"Maleta facturada",
+        "checked_bag":"Maleta facturada",
+        "special":"Equipaje especial"
     }
+    return m.get(_low(t),_text(t) or "Equipaje")
+
+def baggage_type_explanation(t):
+    k=_low(t)
+    if k in ("personal_item","personal"):
+        return "Es el objeto pequeño que la aerolínea permite llevar contigo en la cabina y que normalmente debe colocarse en el espacio indicado por la aerolínea."
+    if k in ("carry_on","cabin"):
+        return "Es la maleta que llevas contigo durante el embarque y que debe cumplir las condiciones de la aerolínea y de tu tarifa."
+    if k in ("checked","checked_bag"):
+        return "Es la maleta que entregas a la aerolínea antes de pasar al área de embarque; la aerolínea determina sus condiciones según el vuelo y la tarifa."
+    return "La forma de transportar este equipaje depende del artículo, la aerolínea, la ruta y las reglas aplicables."
+
+def baggage_rules(data:Dict[str,Any]):
+    typ=baggage_type_name(data.get("type"))
+    airline=_text(data.get("airline"))
+    fare=_text(data.get("fare"))
+    destination=_text(data.get("destination"))
+    missing=[]
+    if not airline: missing.append("aerolínea")
+    if not destination: missing.append("destino")
+    if not fare: missing.append("tarifa")
+    if not _text(data.get("type")): missing.append("tipo de equipaje")
+    details=[
+        baggage_type_explanation(data.get("type")),
+        "El peso, las dimensiones y el número de piezas no deben inventarse: deben comprobarse para tu vuelo y tarifa.",
+        "Si hay conexión, también debes revisar si el equipaje continúa al destino o si existe un paso adicional indicado por la aerolínea o las autoridades."
+    ]
+    status="verify" if missing else "review"
+    label="REVISA ESTO ANTES DE VIAJAR"
+    if missing:
+        next_action="Completa primero: "+", ".join(missing)+"."
+    else:
+        next_action="Busca en la página oficial de equipaje de tu aerolínea las condiciones de tu tarifa y vuelo."
+    return _base(
+        "Mi equipaje",
+        f"{typ}: {baggage_type_explanation(data.get('type'))}",
+        status=status,
+        status_label=label,
+        baggage_type=typ,
+        human_explanation=baggage_type_explanation(data.get("type")),
+        placement="Consulta la condición específica de tu aerolínea y tarifa antes de preparar la maleta.",
+        details=details,
+        questions=missing,
+        authorities=["Aerolínea","Seguridad aeroportuaria","Aduana cuando corresponda"],
+        missing_information=missing,
+        pieces=data.get("pieces"),
+        weight=data.get("weight"),
+        dimensions=_text(data.get("dimensions")),
+        sources=_sources("baggage",airline),
+        next_action=next_action
+    )
 
 analyze_baggage=baggage_rules
 baggage_analysis=baggage_rules
 check_baggage=baggage_rules
 baggage_check=baggage_rules
 
-def _contains(text:str,words:List[str])->bool:
-    x=low(text)
-    return any(w in x for w in words)
-
-def item_analysis(data:Dict[str,Any])->Dict[str,Any]:
-    item=s(data.get("item"))
-    description=s(data.get("description"))
-    airline=s(data.get("airline"))
-    destination=s(data.get("destination"))
-    baggage=s(data.get("baggage_type"))
-    text=f"{item} {description}".lower()
-    if not item:
-        return {
-            "ok":False,
-            "title":"Dime qué quieres llevar",
-            "message":"Escribe el artículo con palabras sencillas.",
-            "next_action":"Por ejemplo: perfume, medicamentos, comida, laptop, batería, cámara o herramienta."
-        }
-    category="Artículo por verificar"
-    status="verify"
-    placement="Debe determinarse después de revisar las reglas aplicables."
-    authorities=["Aerolínea"]
-    details=[]
+def item_analysis(data:Dict[str,Any]):
+    item=_text(data.get("item")) or _text(data.get("description"))
+    q=_low(item)
+    category="OTRO"
+    authorities=[]
     missing=[]
-    if _contains(text,["medic","medicine","pill","pastilla","tableta","fármaco","farmaco"]):
-        category="Medicamentos"
-        authorities+=["Seguridad del transporte","Reglas de entrada del destino"]
-        placement="No decidas todavía si va en cabina o documentado solo por el tamaño. Primero revisa las reglas aplicables al medicamento y al transporte."
-        details=[
-            "No todos los medicamentos deben tratarse de la misma manera.",
-            "El transporte y la entrada al país son preguntas diferentes.",
-            "Si existe una condición especial para el medicamento, debes confirmarla antes del viaje."
-        ]
-        missing+=["Nombre exacto del medicamento","Destino","Regla oficial del destino"]
-    elif _contains(text,["power bank","bater","batería","litio","lithium"]):
-        category="Baterías"
-        authorities+=["Seguridad del transporte"]
-        placement="La ubicación de una batería depende del tipo y de las reglas aplicables. No la coloques automáticamente en el equipaje documentado."
-        details=[
-            "Las baterías requieren una revisión específica.",
-            "El tamaño o capacidad puede ser relevante.",
-            "La regla puede distinguir entre una batería instalada y una batería de repuesto."
-        ]
-        missing+=["Tipo de batería","Capacidad o especificación","Aerolínea"]
-    elif _contains(text,["líquido","liquido","liquid","perfume","shampoo","champú","gel","aerosol","spray"]):
-        category="Líquidos/aerosoles"
-        authorities+=["Seguridad del transporte"]
-        placement="La respuesta depende del producto, cantidad, recipiente y reglas de seguridad aplicables."
-        details=[
-            "No confundas la regla de seguridad con la regla de equipaje de la aerolínea.",
-            "Un producto puede tener condiciones diferentes según cantidad y forma de transporte."
-        ]
-        missing+=["Cantidad","Tipo de producto","Tipo de equipaje"]
-    elif _contains(text,["comida","food","carne","meat","fruta","fruit","vegetal","vegetable","queso","cheese","semilla","seed"]):
-        category="Alimentos/productos de origen"
-        authorities+=["Seguridad del transporte","Aduana/autoridad del destino"]
-        placement="Que un alimento pueda viajar en el avión no significa automáticamente que pueda entrar al país."
-        details=[
-            "Primero revisa si puede transportarse.",
-            "Después revisa si puede introducirse en el destino.",
-            "Los alimentos y productos de origen animal o vegetal pueden tener controles adicionales."
-        ]
-        missing+=["País de destino","Tipo exacto de alimento","Cantidad"]
-    elif _contains(text,["animal","perro","gato","mascota","pet"]):
-        category="Animal/mascota"
-        authorities+=["Seguridad del transporte","Aerolínea","Autoridad de entrada del destino"]
-        placement="No decidas el transporte del animal sin revisar primero las condiciones de la aerolínea y del destino."
-        details=[
-            "Puede haber requisitos de transporte y requisitos de entrada separados.",
-            "La aerolínea puede exigir procedimientos previos."
-        ]
-        missing+=["Tipo de animal","Destino","Aerolínea"]
-    elif _contains(text,["arma","weapon","munición","munition","cuchillo","knife","explosivo"]):
-        category="Artículo restringido"
-        authorities+=["Seguridad del transporte","Autoridades competentes"]
-        status="review"
-        placement="No lo coloques en ningún equipaje hasta comprobar la regla específica."
-        details=[
-            "No se debe asumir que un artículo restringido puede transportarse simplemente porque cabe en una maleta.",
-            "Las reglas pueden variar según el objeto, país y situación."
-        ]
-    elif _contains(text,["laptop","computadora","ordenador","tablet","teléfono","telefono","phone","cámara","camara","camera"]):
-        category="Electrónico"
-        authorities+=["Seguridad del transporte"]
-        placement="Puede requerir una revisión específica según el equipo, batería y procedimiento de seguridad."
-        details=[
-            "El equipo y su batería deben considerarse por separado cuando corresponda.",
-            "Revisa las instrucciones de seguridad del aeropuerto y la aerolínea."
-        ]
-    elif _contains(text,["herramienta","tool","taladro","drill","martillo","hammer","tijera","scissors"]):
-        category="Herramienta/objeto especial"
-        authorities+=["Seguridad del transporte","Aerolínea"]
-        placement="No decidas el tipo de equipaje únicamente por el tamaño."
-        details=[
-            "Las herramientas pueden tener restricciones específicas.",
-            "La seguridad aeroportuaria determina si un objeto puede pasar al área de embarque."
-        ]
-    elif _contains(text,["dinero","cash","efectivo"]):
-        category="Dinero/efectivo"
-        authorities+=["Aduana/autoridad del destino"]
-        details=[
-            "Transportar dinero y declararlo cuando corresponda son cuestiones diferentes.",
-            "Los requisitos pueden depender del país de salida, tránsito y destino."
-        ]
-        missing+=["Cantidad aproximada","Países de la ruta"]
+    status="verify"
+    label="REVISA ESTO ANTES DE VIAJAR"
+    placement="No determines el lugar del artículo hasta comprobar las reglas aplicables."
+
+    if any(x in q for x in ("medicina","medicamento","medicine","pill","pastilla","prescription")):
+        category="MEDICAMENTOS"
+        authorities=["Seguridad aeroportuaria","Aerolínea","País de origen","País de destino"]
+        placement="Conserva los medicamentos de forma que puedas identificarlos y lleva la documentación que corresponda a tu caso."
+        missing.append("tipo y cantidad del medicamento")
+    elif any(x in q for x in ("power bank","batería externa","bateria externa","lithium","litio","battery","batería")):
+        category="BATERÍAS"
+        authorities=["Seguridad aeroportuaria","Aerolínea"]
+        placement="Comprueba específicamente si debe viajar contigo en cabina o si tiene una condición especial."
+        missing.append("tipo/capacidad de la batería")
+    elif any(x in q for x in ("perfume","liquid","líquido","shampoo","champú","aerosol","spray")):
+        category="LÍQUIDOS O AEROSOLES"
+        authorities=["Seguridad aeroportuaria","Aerolínea","País de destino"]
+        placement="La forma permitida depende del producto, cantidad, recipiente, equipaje y ruta."
+        missing.append("cantidad y tipo de producto")
+    elif any(x in q for x in ("comida","food","carne","meat","queso","cheese","fruta","fruit","vegetal","vegetable")):
+        category="ALIMENTOS"
+        authorities=["Seguridad aeroportuaria","Aduana","País de destino"]
+        placement="Aunque un artículo pueda pasar seguridad, el país de destino puede tener reglas distintas de entrada."
+        missing.append("tipo exacto y destino")
+    elif any(x in q for x in ("animal","perro","gato","dog","cat","mascota","pet")):
+        category="ANIMALES"
+        authorities=["Aerolínea","País de origen","País de destino"]
+        placement="No prepares el viaje del animal hasta comprobar los requisitos específicos de la aerolínea y de entrada."
+        missing.append("especie y país de destino")
+    elif any(x in q for x in ("taladro","drill","herramienta","tool","knife","cuchillo","martillo","hammer")):
+        category="HERRAMIENTAS"
+        authorities=["Seguridad aeroportuaria","Aerolínea"]
+        placement="Comprueba si el artículo puede viajar en equipaje facturado o si existe una prohibición."
+        missing.append("tipo exacto de herramienta")
+    elif any(x in q for x in ("laptop","computadora","ordenador","phone","teléfono","tablet","electrónico","electronic")):
+        category="ELECTRÓNICOS"
+        authorities=["Seguridad aeroportuaria","Aerolínea"]
+        placement="Comprueba las reglas para dispositivos y baterías antes de decidir dónde colocarlo."
+        missing.append("si contiene batería de litio")
+    elif any(x in q for x in ("dinero","cash","efectivo","money")):
+        category="DINERO"
+        authorities=["País de salida","País de destino","Aduana cuando corresponda"]
+        placement="Las obligaciones de declaración pueden depender del importe y de la ruta."
+        missing.append("importe y moneda")
+
+    if not item:
+        missing=["artículo que quieres llevar"]
+        message="Escribe el artículo y te indicaré qué reglas debes comprobar."
     else:
+        message=f"Has indicado: {item}. La categoría detectada es {category}. La aplicación no convierte esta orientación en una autorización automática."
+
+    if missing:
+        next_action="Necesito comprobar: "+", ".join(missing)+"."
+    else:
+        next_action="Comprueba las reglas de la autoridad indicada y la página oficial de tu aerolínea."
+
+    return _base(
+        "¿Qué quiero llevar?",
+        message,
+        item=item,
+        category=category,
+        status=status,
+        status_label=label,
+        placement=placement,
         details=[
-            "Primero identifica qué tipo de objeto es.",
-            "Después determina si la pregunta es sobre transporte aéreo, seguridad o entrada al destino.",
-            "No todas las reglas se aplican a todos los artículos.",
-            "Si falta un dato que cambia la respuesta, la aplicación debe pedirlo antes de dar una conclusión."
-        ]
-    if not destination:
-        missing.append("Destino")
-    if not baggage:
-        missing.append("Tipo de equipaje")
-    if not airline:
-        missing.append("Aerolínea")
-    authorities=unique(authorities)
-    details.insert(0,f"Artículo: {item}.")
-    if baggage:
-        details.append(f"Tipo de equipaje indicado: {baggage_type_name(baggage)}.")
-    if destination:
-        details.append(f"Destino indicado: {destination}.")
-    if airline:
-        details.append(f"Aerolínea indicada: {airline}.")
-    return {
-        "ok":True,
-        "title":f"Revisemos: {item}",
-        "item":item,
-        "category":category,
-        "status":status,
-        "placement":placement,
-        "message":"La aplicación no inventa una autorización. Primero identifica qué regla controla tu artículo y después te indica qué debes confirmar.",
-        "details":details,
-        "authorities":authorities,
-        "missing_information":unique(missing),
-        "sources":_source("items",item),
-        "next_action":"Confirma la regla específica antes de empacar."
-    }
+            "Una regla puede depender de la aerolínea, seguridad, aduana, país de salida o país de destino.",
+            "No uses una regla general como si fuera universal.",
+            "Si una fuente oficial contradice una orientación general, sigue la fuente oficial aplicable."
+        ],
+        authorities=authorities,
+        missing_information=missing,
+        sources=_sources("items",f"{category} {item}"),
+        next_action=next_action
+    )
 
 analyze_item=item_analysis
 check_item=item_analysis
 item_check=item_analysis
 
-def connection_analysis(data:Dict[str,Any])->Dict[str,Any]:
-    airport=s(data.get("airport"))
+def connection_analysis(data:Dict[str,Any]):
+    airport=_text(data.get("airport"))
+    next_flight=_text(data.get("next_flight"))
     same=data.get("same_ticket")
-    bag=data.get("baggage")
-    recheck=data.get("bag_recheck")
-    country_change=data.get("country_change")
+    baggage=data.get("baggage")
     details=[
-        "Una conexión significa que tu viaje continúa en otro tramo.",
-        "Lo primero es identificar el siguiente vuelo y su puerta.",
-        "Después debes saber si cambias de avión o permaneces en el mismo.",
-        "También debes confirmar qué ocurre con tu equipaje.",
-        "Si existe un cambio de país, pueden existir controles adicionales.",
-        "No todas las conexiones requieren los mismos pasos."
+        "Una escala significa que tu viaje continúa después de llegar al primer aeropuerto.",
+        "Una conexión puede implicar buscar otra puerta, revisar seguridad o seguir instrucciones de inmigración/aduana según el itinerario.",
+        "No todas las conexiones funcionan igual; depende del aeropuerto, países involucrados, billete y equipaje."
     ]
-    questions=[
-        "¿Cambio de avión?",
-        "¿Cambio de terminal?",
-        "¿Dónde está la puerta del siguiente vuelo?",
-        "¿Tengo que pasar seguridad nuevamente?",
-        "¿Tengo que recoger mi equipaje?",
-        "¿Los vuelos están en el mismo boleto?"
-    ]
-    if same is True:
-        details.append("Indicaste que los vuelos están en el mismo boleto. Aun así, confirma con la aerolínea cómo se manejará el equipaje y la conexión concreta.")
-    elif same is False:
-        details.append("Indicaste que los vuelos no están en el mismo boleto. Confirma especialmente la responsabilidad sobre equipaje y cambios entre vuelos.")
-    if bag is True:
-        details.append("Indicaste que llevas equipaje.")
-    if recheck is True:
-        details.append("Indicaste que debes volver a entregar el equipaje. Confírmalo con la aerolínea.")
-    if country_change is True:
-        details.append("Indicaste un cambio de país. Revisa qué controles aplican en ese punto concreto.")
-    return {
-        "ok":True,
-        "title":"Entiende tu conexión",
-        "message":"No necesitas memorizar procedimientos. La clave es saber qué vuelo tomas después, dónde debes ir y qué debes hacer con tu equipaje.",
-        "details":details,
-        "questions":questions,
-        "next_action":"Confirma cada punto con la información oficial de tu itinerario.",
-        "sources":_source("connection",airport)
-    }
+    missing=[]
+    if not airport: missing.append("aeropuerto de conexión")
+    if not next_flight: missing.append("siguiente vuelo")
+    if same is None: missing.append("si los vuelos están en la misma reserva")
+    if baggage is None: missing.append("cómo aparece indicado el equipaje en la reserva")
+    return _base(
+        "Mi escala",
+        "Tu escala debe entenderse paso a paso. La aplicación no inventará un procedimiento específico del aeropuerto.",
+        status="verify" if missing else "review",
+        details=details,
+        questions=missing,
+        next_action=("Completa: "+", ".join(missing)+".") if missing else "Comprueba las instrucciones del aeropuerto y de la aerolínea para tu conexión.",
+        sources=_sources("connections",airport)
+    )
 
 analyze_connection=connection_analysis
 
-def analyze_flight(data:Dict[str,Any])->Dict[str,Any]:
-    origin=s(data.get("origin"))
-    destination=s(data.get("destination"))
-    airline=s(data.get("airline"))
-    number=s(data.get("flight_number"))
-    stops=data.get("stops","")
-    route=[]
-    if isinstance(stops,list):
-        route=[origin]+[s(x) for x in stops if s(x)]+[destination]
-    elif s(stops):
-        parts=[x.strip() for x in re.split(r"[,;>→]+",s(stops)) if x.strip()]
-        route=[origin]+parts+[destination]
+def _segments(data):
+    origin=_text(data.get("origin"))
+    destination=_text(data.get("destination"))
+    raw=data.get("stops")
+    stops=[]
+    if isinstance(raw,list):
+        stops=[_text(x) for x in raw if _text(x)]
+    elif isinstance(raw,str):
+        stops=[x.strip() for x in re.split(r"[,;>→]+",raw) if x.strip()]
+    points=[origin]+stops+[destination]
+    points=[x for i,x in enumerate(points) if x and (i==0 or x!=points[i-1])]
+    return [{"number":i+1,"from":points[i],"to":points[i+1],"kind":"connection" if i<len(points)-2 else "final"} for i in range(len(points)-1)]
+
+def analyze_flight(data:Dict[str,Any]):
+    seg=_segments(data)
+    conn=max(0,len(seg)-1)
+    route=" → ".join([x["from"] for x in seg]+([seg[-1]["to"]] if seg else []))
+    if not route:
+        route="Indica origen y destino"
+    details=["Este análisis organiza el itinerario introducido por ti; no verifica en tiempo real que el vuelo exista o esté operando."]
+    if conn:
+        details.append(f"El itinerario contiene {conn} conexión(es). Revisa la puerta, siguiente vuelo y las instrucciones del aeropuerto.")
     else:
-        route=[origin,destination]
-    route=[x for i,x in enumerate(route) if x and x not in route[:i]]
-    connections=max(0,len(route)-2)
-    segments=[]
-    for i in range(len(route)-1):
-        segments.append({
-            "number":i+1,
-            "from":route[i],
-            "to":route[i+1],
-            "airline":airline,
-            "flight_number":number if i==0 else ""
-        })
-    details=[]
-    if connections:
-        details.append(f"Tu ruta tiene {connections} punto(s) intermedio(s) indicado(s).")
-        details.append("Una escala no significa automáticamente que tengas que recoger tu maleta ni pasar inmigración.")
-        details.append("Eso depende del aeropuerto, ruta, boleto, aerolíneas y controles aplicables.")
-    else:
-        details.append("Has indicado una ruta sin escala intermedia.")
-    if airline:
-        details.append(f"Aerolínea indicada: {airline}.")
-    if number:
-        details.append(f"Número de vuelo indicado: {number}.")
-    return {
-        "ok":True,
-        "title":"Así funciona tu itinerario",
-        "route":" → ".join(route),
-        "segments":segments,
-        "connections":connections,
-        "has_connection":connections>0,
-        "message":"Vamos a convertir tu itinerario en pasos humanos: dónde empiezas, qué avión tomas, dónde bajas y qué debes confirmar antes de continuar.",
-        "details":details,
-        "questions":[
-            "¿Es el mismo avión?",
-            "¿Tengo que cambiar de avión?",
-            "¿Tengo que cambiar de terminal?",
-            "¿Qué pasa con mi equipaje?",
-            "¿Dónde encuentro la siguiente puerta?"
-        ],
-        "next_action":"Revisa ahora equipaje y conexión.",
-        "sources":_source("flight",airline)
-    }
+        details.append("Con los datos introducidos no aparece una conexión intermedia.")
+    missing=[]
+    if not _text(data.get("origin")): missing.append("origen")
+    if not _text(data.get("destination")): missing.append("destino")
+    return _base(
+        "Mi vuelo",
+        "Así se entiende el itinerario que introdujiste.",
+        route=route,
+        segments=seg,
+        connections=conn,
+        has_connection=bool(conn),
+        details=details,
+        questions=missing,
+        next_action=("Completa "+", ".join(missing)+".") if missing else "Comprueba el itinerario en la reserva o sitio oficial de la aerolínea.",
+        sources=_sources("flight",_text(data.get("airline")))
+    )
 
 flight_analysis=analyze_flight
 understand_flight=analyze_flight
 
-def booking_simulation(data:Dict[str,Any])->Dict[str,Any]:
-    return {
-        "ok":True,
-        "title":"Practicar una búsqueda de vuelo",
-        "simulation":True,
-        "real_booking":False,
-        "payment":False,
-        "message":"Esta práctica enseña qué mirar antes de comprar un vuelo. No vende, reserva ni cobra.",
-        "fields":[
-            {"id":"origin","title":"¿Desde dónde sales?","help":"Escribe la ciudad o aeropuerto.","why":"Necesitamos conocer el punto de salida."},
-            {"id":"destination","title":"¿A dónde vas?","help":"Escribe la ciudad o aeropuerto.","why":"Determina la ruta que debes revisar."},
-            {"id":"departure","title":"¿Cuándo viajas?","help":"Selecciona la fecha.","why":"Las opciones dependen de la fecha."},
-            {"id":"passengers","title":"¿Cuántas personas viajan?","help":"Indica la cantidad.","why":"Puede cambiar la búsqueda y el precio mostrado por el sitio oficial."},
-            {"id":"cabin","title":"¿Qué cabina buscas?","help":"Por ejemplo, económica.","why":"Las condiciones pueden cambiar según la cabina."},
-            {"id":"bags","title":"¿Llevas equipaje?","help":"Indica qué necesitas llevar.","why":"La tarifa puede tratar el equipaje de forma diferente."}
+def booking_simulation(data:Dict[str,Any]):
+    fields=[
+        {"id":"origin","label":"Origen","example":"Miami","required":True},
+        {"id":"destination","label":"Destino","example":"La Habana","required":True},
+        {"id":"departure","label":"Fecha de salida","example":"MM/DD/AAAA","required":True},
+        {"id":"passengers","label":"Pasajeros","example":"1","required":True},
+        {"id":"cabin","label":"Cabina","example":"Economy","required":True},
+        {"id":"airline","label":"Aerolínea","example":"Selecciona una aerolínea","required":False},
+        {"id":"fare","label":"Tarifa","example":"Revisa qué incluye","required":False}
+    ]
+    return _base(
+        "Práctica de búsqueda de vuelo",
+        "Esta pantalla reproduce el proceso de búsqueda para enseñarte qué datos debes revisar. No compra, reserva ni cobra un vuelo.",
+        simulation=True,
+        real_booking=False,
+        payment=False,
+        search=data,
+        fields=fields,
+        steps=[
+            {"step":1,"title":"Introduce origen y destino"},
+            {"step":2,"title":"Elige la fecha y pasajeros"},
+            {"step":3,"title":"Revisa aerolínea, horario y escalas"},
+            {"step":4,"title":"Revisa tarifa y equipaje"},
+            {"step":5,"title":"Confirma los datos en el sitio oficial"}
         ],
-        "search":data,
-        "next_action":"Cuando practiques, revisa especialmente tarifa, equipaje, cambios y conexiones.",
-        "sources":_source("airlines")
-    }
+        next_action="Completa los campos de práctica y después verifica la información directamente con la aerolínea.",
+        sources=_sources("booking",_text(data.get("airline")))
+    )
 
 flight_search_simulation=booking_simulation
 simulate_booking=booking_simulation
 
-def document_analysis(data:Dict[str,Any])->Dict[str,Any]:
-    destination=s(data.get("destination"))
-    nationality=s(data.get("nationality"))
-    passport=s(data.get("passport_country"))
+def document_analysis(data:Dict[str,Any]):
     docs=[
-        {
-            "name":"Pasaporte/documento de viaje",
-            "status":"pending" if not passport else "review",
-            "why":"Debes identificar el documento con el que viajarás y comprobar las condiciones oficiales aplicables."
-        },
-        {
-            "name":"Requisitos de entrada",
-            "status":"pending",
-            "why":"Dependen del destino y pueden depender de la nacionalidad."
-        },
-        {
-            "name":"Condiciones de la aerolínea",
-            "status":"pending",
-            "why":"La aerolínea puede exigir condiciones de viaje y documentación propias."
-        }
+        {"name":"Pasaporte","status":"COMPLETADO" if data.get("passport_country") else "PENDIENTE"},
+        {"name":"Requisitos de entrada","status":"REVISAR"},
+        {"name":"Visa o autorización","status":"COMPLETADO" if data.get("purpose") and data.get("destination") else "REVISAR"},
+        {"name":"D’Viajeros","status":"COMPLETADO" if data.get("destination","").lower()=="cuba" and data.get("dviajeros_done") else ("REVISAR" if data.get("destination","").lower()=="cuba" else "NO APLICA AUTOMÁTICAMENTE")},
+        {"name":"Equipaje","status":"COMPLETADO" if data.get("airline") else "PENDIENTE"},
+        {"name":"Documentos adicionales","status":"REVISAR"}
     ]
-    if is_cuba(destination):
-        docs.extend([
-            {
-                "name":"Visa/eVisa cuando corresponda",
-                "status":"done" if truth(data.get("visa_checked")) else "pending",
-                "why":"La necesidad depende de la situación del viajero y la información oficial vigente."
-            },
-            {
-                "name":"D’Viajeros",
-                "status":"done" if truth(data.get("dviajeros_done")) else "pending",
-                "why":"La aplicación puede ayudarte a practicar antes de utilizar el sitio oficial."
-            },
-            {
-                "name":"Aduana",
-                "status":"done" if truth(data.get("customs_checked")) else "pending",
-                "why":"Revisa qué artículos y declaraciones pueden corresponder."
-            }
-        ])
-    if nationality:
-        docs.append({
-            "name":"Reglas específicas de tu nacionalidad",
-            "status":"pending",
-            "why":f"Confirma las condiciones aplicables a viajeros con nacionalidad {nationality}."
-        })
-    return {
-        "ok":True,
-        "title":"Tus documentos",
-        "message":"Esta lista no certifica que puedas viajar. Te ayuda a descubrir qué necesitas comprobar.",
-        "documents":docs,
-        "next_action":"Revisa cada documento en su fuente oficial.",
-        "sources":_source("documents",destination)
-    }
+    pending=[x["name"] for x in docs if x["status"] in ("PENDIENTE","REVISAR")]
+    return _base(
+        "Mis documentos",
+        "Esta lista es una preparación orientativa y no certifica que tengas derecho a viajar o entrar a un país.",
+        documents=docs,
+        next_action=("Revisa: "+", ".join(pending[:2])+".") if pending else "Haz una comprobación final en las fuentes oficiales.",
+        sources=_sources("documents",_text(data.get("destination")))
+    )
 
 document_check=document_analysis
 documents_check=document_analysis
 
-def practice_scenario(data:Dict[str,Any])->Dict[str,Any]:
-    scenario=low(data.get("scenario")) or "airport"
-    scenarios={
-        "airport":{
-            "title":"Estoy en el aeropuerto",
-            "steps":[
-                "Busca tu número de vuelo en las pantallas.",
-                "Confirma destino y hora.",
-                "Busca la puerta indicada.",
-                "Si la puerta cambia, vuelve a comprobarla.",
-                "Si tienes una duda, pregunta al personal correspondiente."
-            ]
-        },
-        "connection":{
-            "title":"Tengo una conexión",
-            "steps":[
-                "Localiza el siguiente vuelo.",
-                "Confirma la puerta.",
-                "Confirma la terminal.",
-                "Averigua qué ocurre con tu equipaje.",
-                "Sigue las señales de conexiones."
-            ]
-        },
-        "baggage":{
-            "title":"Mi maleta no aparece",
-            "steps":[
-                "Comprueba la pantalla de equipaje.",
-                "Confirma que estás en la zona correcta.",
-                "Busca el mostrador de equipaje de la aerolínea.",
-                "Conserva el comprobante de equipaje.",
-                "Sigue las instrucciones oficiales."
-            ]
-        },
-        "gate":{
-            "title":"No encuentro mi puerta",
-            "steps":[
-                "Busca el número de vuelo.",
-                "Confirma la puerta en las pantallas.",
-                "Mira si cambió la terminal.",
-                "Sigue las señales del aeropuerto."
-            ]
-        },
-        "dviajeros":{
-            "title":"Practicar D’Viajeros",
-            "steps":[
-                "Prepara tus datos personales.",
-                "Prepara los datos del viaje.",
-                "Identifica vuelo y aeropuerto.",
-                "Revisa antes de enviar cualquier información.",
-                "La práctica de May Roga no envía datos al sitio oficial."
-            ]
-        },
-        "baggage_item":{
-            "title":"No sé dónde poner algo",
-            "steps":[
-                "Identifica el artículo.",
-                "Pregunta qué tipo de equipaje quieres utilizar.",
-                "Revisa la aerolínea.",
-                "Revisa seguridad.",
-                "Revisa el destino cuando corresponda."
-            ]
-        }
-    }
-    if "escala" in scenario or "conex" in scenario:
-        key="connection"
-    elif "maleta" in scenario or "equipaje" in scenario:
-        key="baggage"
-    elif "puerta" in scenario:
-        key="gate"
-    elif "dviajero" in scenario:
-        key="dviajeros"
-    elif "llevar" in scenario or "artículo" in scenario:
-        key="baggage_item"
-    else:
-        key=scenario if scenario in scenarios else "airport"
-    obj=scenarios[key]
+def practice_scenario(data:Dict[str,Any]):
+    scenario=_low(data.get("scenario")) or "airport"
     step=int(data.get("step") or 0)
-    completed=obj["steps"][:step]
-    pending=obj["steps"][step:]
-    progress=int((len(completed)/len(obj["steps"]))*100)
-    return {
-        "ok":True,
-        "title":obj["title"],
-        "mode":"practice",
-        "official_submission":False,
-        "message":"Esta es una práctica educativa. No realiza el procedimiento real.",
-        "next_action":pending[0] if pending else "Terminaste esta práctica. Ahora confirma la información en la fuente oficial.",
-        "completed":completed,
-        "pending":pending,
-        "progress":progress,
-        "current_step":{"number":step+1,"total":len(obj["steps"]),"instruction":pending[0] if pending else "Práctica completada"},
-        "scenarios":[
-            {"id":k,"title":v["title"]}
-            for k,v in scenarios.items()
+    answer=_text(data.get("answer"))
+    scenarios={
+        "airport":[
+            {"id":"1","title":"Encuentra tu vuelo","help":"Busca en las pantallas el número de vuelo y destino.","why":"Te permite saber dónde continuar.","options":["Número de vuelo","Destino","Puerta"]},
+            {"id":"2","title":"Comprueba la puerta","help":"Compara la puerta de tu tarjeta de embarque con la pantalla.","why":"La puerta puede cambiar.","options":["Puerta","Terminal","Hora"]},
+            {"id":"3","title":"Prepárate para embarcar","help":"Ten listos los documentos que la aerolínea indique.","why":"El embarque depende de los requisitos de tu viaje.","options":["Documentos","Equipaje","Ambos"]}
         ],
-        "sources":_source("practice")
+        "connection":[
+            {"id":"1","title":"Baja del primer avión","help":"Busca las señales de conexiones o el siguiente vuelo.","why":"No todas las conexiones usan el mismo recorrido.","options":["Connections","Baggage","Exit"]},
+            {"id":"2","title":"Busca el siguiente vuelo","help":"Comprueba número de vuelo, destino y puerta.","why":"Tu siguiente avión puede salir de otra zona.","options":["Vuelo","Puerta","Ambos"]},
+            {"id":"3","title":"Comprueba el equipaje","help":"Mira las instrucciones de tu reserva y aeropuerto.","why":"No todas las conexiones manejan el equipaje igual.","options":["Confirmarlo","Suponerlo"]}
+        ],
+        "baggage":[
+            {"id":"1","title":"Identifica tu equipaje","help":"Distingue artículo personal, equipaje de mano y maleta facturada.","why":"Cada uno puede tener reglas diferentes.","options":["Personal","Mano","Facturado"]},
+            {"id":"2","title":"Comprueba tu tarifa","help":"Busca qué equipaje incluye tu tarifa.","why":"La tarifa puede cambiar las condiciones.","options":["En la reserva","En redes sociales","Suponerlo"]},
+            {"id":"3","title":"Confirma la regla","help":"Usa la página oficial de equipaje de tu aerolínea.","why":"Las condiciones pueden cambiar.","options":["Fuente oficial","Un comentario","Una regla antigua"]}
+        ],
+        "dviajeros":[
+            {"id":"1","title":"Datos personales","help":"Practica cómo identificar nombre, apellidos y nacionalidad.","why":"Debes reconocer cada campo antes de completar el formulario real.","options":["Nombre","Apellidos","Nacionalidad"]},
+            {"id":"2","title":"Datos del viaje","help":"Identifica vuelo, fecha y aeropuerto.","why":"Estos datos relacionan el formulario con el viaje.","options":["Vuelo","Fecha","Aeropuerto"]},
+            {"id":"3","title":"Revisión final","help":"Antes de enviar, revisa que los datos coincidan con tus documentos.","why":"Una diferencia puede requerir corrección.","options":["Revisar","Enviar sin revisar"]}
+        ],
+        "visa":[
+            {"id":"1","title":"Identifica tu nacionalidad","help":"Practica dónde aparece la nacionalidad y el pasaporte.","why":"Los requisitos pueden depender de la nacionalidad.","options":["Nacionalidad","Pasaporte"]},
+            {"id":"2","title":"Motivo del viaje","help":"Identifica el propósito que corresponde a tu viaje.","why":"El propósito puede cambiar el trámite.","options":["Turismo","Otro","No sé"]},
+            {"id":"3","title":"Revisión","help":"Comprueba la información en el sitio oficial antes de realizar cualquier trámite.","why":"La simulación no es una solicitud oficial.","options":["Revisar fuente","Enviar simulación"]}
+        ]
     }
+    key=next((k for k in scenarios if k in scenario), "airport")
+    steps=scenarios[key]
+    idx=min(step,len(steps)-1)
+    completed=[x["title"] for x in steps[:idx]]
+    if answer and idx<len(steps):
+        completed.append(steps[idx]["title"])
+        idx=min(idx+1,len(steps)-1)
+    progress=round((len(completed)/len(steps))*100)
+    current=steps[idx] if completed.__len__()<len(steps) else None
+    return _base(
+        "Práctica: "+key.title(),
+        "SIMULACIÓN DE PRÁCTICA — NO ES EL SITIO OFICIAL.",
+        mode="practice",
+        official_submission=False,
+        notice="SIMULACIÓN DE PRÁCTICA — NO ES EL SITIO OFICIAL.",
+        completed=completed,
+        pending=[x["title"] for x in steps if x["title"] not in completed],
+        progress=progress,
+        current_step=current,
+        scenarios=steps,
+        next_action="Responde el paso actual." if current else "Terminaste la práctica. Ahora comprueba el proceso real en la fuente oficial.",
+        sources=_sources(key,key)
+    )
 
 practice=practice_scenario
 run_practice=practice_scenario
 
-def build_guide(data:Dict[str,Any])->Dict[str,Any]:
-    pending=[]
-    completed=[]
-    origin=s(data.get("origin"))
-    destination=s(data.get("destination"))
-    if origin:
-        completed.append("Origen identificado")
-    else:
-        pending.append("Completar origen")
-    if destination:
-        completed.append("Destino identificado")
-    else:
-        pending.append("Completar destino")
-    if s(data.get("airline")):
-        completed.append("Aerolínea identificada")
-    else:
-        pending.append("Identificar aerolínea")
-    if s(data.get("nationality")):
-        completed.append("Nacionalidad revisada")
-    else:
-        pending.append("Revisar nacionalidad")
-    if s(data.get("passport_country")):
-        completed.append("Pasaporte identificado")
-    else:
-        pending.append("Identificar pasaporte")
-    if data.get("items"):
-        completed.append("Artículos revisados")
-    else:
-        pending.append("Revisar qué quieres llevar")
-    if data.get("baggage"):
-        completed.append("Equipaje revisado")
-    else:
-        pending.append("Revisar equipaje")
-    if is_cuba(destination):
-        if truth(data.get("visa_checked")):
-            completed.append("Visa/eVisa revisada")
-        else:
-            pending.append("Verificar visa/eVisa cuando corresponda")
-        if truth(data.get("dviajeros_done")):
-            completed.append("D’Viajeros revisado")
-        else:
-            pending.append("Practicar/revisar D’Viajeros")
-        if truth(data.get("customs_checked")):
-            completed.append("Aduana revisada")
-        else:
-            pending.append("Revisar aduana")
-    next_action=pending[0] if pending else "Confirmar nuevamente las fuentes oficiales antes de viajar."
+def dviajeros_simulation(data:Dict[str,Any]):
     return {
-        "ok":True,
-        "title":"Mi guía",
-        "trip":{
-            k:data.get(k,"")
-            for k in [
-                "origin","destination","airline","flight_number",
-                "flight_type","stops","nationality","passport_country",
-                "country_of_residence","cuban_nationality","dual_citizen",
-                "purpose","arrival_date","departure_date","current_state"
-            ]
-        },
-        "flight":{
-            "airline":s(data.get("airline")),
-            "flight_number":s(data.get("flight_number")),
-            "stops":data.get("stops","")
-        },
-        "baggage":data.get("baggage") or {},
-        "documents":{
-            "dviajeros":truth(data.get("dviajeros_done")),
-            "visa":truth(data.get("visa_checked")),
-            "customs":truth(data.get("customs_checked")),
-            "documents_checked":truth(data.get("documents_checked"))
-        },
-        "items_reviewed":[
-            {"name":s(x),"status":"reviewed"}
-            for x in (data.get("items") or [])
-            if s(x)
-        ],
-        "pending":pending,
-        "completed":completed,
-        "next_action":next_action,
-        "message":"Esta guía organiza tu preparación. La confirmación final siempre debe hacerse con las fuentes oficiales.",
-        "sources":_source("guide")
-    }
-
-make_guide=build_guide
-guide=build_guide
-
-def dviajeros_simulation(data:Dict[str,Any]=None)->Dict[str,Any]:
-    return {
-        "ok":True,
-        "id":"dviajeros",
-        "title":"Practicar D’Viajeros",
-        "notice":"PRÁCTICA DE MAY ROGA — NO SE ENVÍA INFORMACIÓN A D’VIAJEROS",
-        "purpose":"Aprender qué información debes preparar y entender el orden general del proceso antes de entrar al sitio oficial.",
+        "ok":True,"id":"dviajeros","title":"Práctica D’Viajeros",
+        "notice":"SIMULACIÓN DE PRÁCTICA — NO ES EL SITIO OFICIAL.",
+        "purpose":"Aprender qué información debes tener preparada antes de completar el proceso real.",
         "steps":[
-            {
-                "id":"traveler",
-                "title":"Datos del viajero",
-                "fields":["given_names","surnames","birth_date","nationality","sex"],
-                "help":"Prepara los datos personales que el formulario pueda solicitar.",
-                "why":"Identificar al viajero."
-            },
-            {
-                "id":"passport",
-                "title":"Documento de viaje",
-                "fields":["passport_number","passport_country"],
-                "help":"Usa datos de práctica dentro de esta simulación.",
-                "why":"Relacionar el viaje con el documento utilizado."
-            },
-            {
-                "id":"trip",
-                "title":"Datos del viaje",
-                "fields":["arrival_date","flight","arrival_airport"],
-                "help":"Busca estos datos en tu reserva o información de vuelo.",
-                "why":"Identificar el viaje."
-            },
-            {
-                "id":"contact",
-                "title":"Información adicional",
-                "fields":["email","phone","address_destination"],
-                "help":"La información concreta que se solicite debe comprobarse en el sitio oficial.",
-                "why":"Preparar la información requerida."
-            },
-            {
-                "id":"review",
-                "title":"Revisión",
-                "fields":[],
-                "help":"Comprueba que entiendes cada dato antes de utilizar el sitio oficial.",
-                "why":"Evitar errores antes de continuar."
-            }
+            {"id":"personal","title":"Datos personales","fields":["given_names","surnames","birth_date","nationality","sex"],"help":"Practica con los datos de tu documento.","why":"Estos campos identifican al viajero.","example":"Usa tus datos reales solamente en el sitio oficial."},
+            {"id":"passport","title":"Pasaporte","fields":["passport_number","passport_country"],"help":"Identifica el número y país del pasaporte.","why":"El documento debe coincidir con tu viaje.","example":"No compartas el número aquí si no es necesario."},
+            {"id":"trip","title":"Viaje","fields":["arrival_date","departure_date","flight","arrival_airport","departure_airport"],"help":"Practica identificando estos datos en tu reserva.","why":"Relacionan el formulario con el viaje.","example":"Comprueba la reserva."},
+            {"id":"contact","title":"Contacto y destino","fields":["email","phone","address_destination"],"help":"Practica qué información debes tener preparada.","why":"El formulario puede solicitar datos adicionales.","example":"Revisa la fuente oficial para confirmar los campos actuales."}
         ],
-        "official_url":None
+        "official_url":(_sources("dviajeros","")[0].get("url") if _sources("dviajeros","") and isinstance(_sources("dviajeros","")[0],dict) else None)
     }
 
 simulate_dviajeros=dviajeros_simulation
 
-def visa_simulation(data:Dict[str,Any]=None)->Dict[str,Any]:
+def visa_simulation(data:Dict[str,Any]):
     return {
-        "ok":True,
-        "id":"visa",
-        "title":"Practicar visa/eVisa",
-        "notice":"PRÁCTICA DE MAY ROGA — NO SE ENVÍA NINGUNA SOLICITUD REAL",
-        "purpose":"Aprender qué información puede ser necesaria y cómo revisar una solicitud antes de utilizar el sitio oficial.",
+        "ok":True,"id":"visa","title":"Práctica de visa",
+        "notice":"SIMULACIÓN DE PRÁCTICA — NO ES UNA SOLICITUD OFICIAL.",
+        "purpose":"Aprender qué información debes preparar y qué debes comprobar antes de iniciar un trámite real.",
         "steps":[
-            {
-                "id":"nationality",
-                "title":"Nacionalidad",
-                "fields":["nationality","country_of_residence"],
-                "help":"La nacionalidad puede cambiar el requisito aplicable.",
-                "why":"Determinar qué información oficial debes comprobar."
-            },
-            {
-                "id":"identity",
-                "title":"Identidad",
-                "fields":["given_names","surname","birth_date","sex"],
-                "help":"Utiliza datos de práctica.",
-                "why":"Preparar la identificación del viajero."
-            },
-            {
-                "id":"passport",
-                "title":"Pasaporte",
-                "fields":["passport_country","passport_number"],
-                "help":"No introduzcas aquí credenciales ni códigos de seguridad.",
-                "why":"Relacionar el trámite con el documento."
-            },
-            {
-                "id":"trip",
-                "title":"Datos del viaje",
-                "fields":["purpose","arrival_date","departure_date","destination"],
-                "help":"Usa los datos que aparecen en tu planificación.",
-                "why":"Identificar el propósito y viaje."
-            },
-            {
-                "id":"review",
-                "title":"Revisión",
-                "fields":[],
-                "help":"La práctica termina aquí y no presenta una solicitud real.",
-                "why":"Prepararte para utilizar la fuente oficial."
-            }
+            {"id":"identity","title":"Identidad","fields":["surname","given_names","birth_date","sex","nationality"],"help":"Practica con los datos de tu documento.","why":"La identidad debe coincidir con tus documentos.","example":"No envíes esta práctica como solicitud."},
+            {"id":"passport","title":"Pasaporte","fields":["passport_number","passport_country"],"help":"Identifica el documento que usarás.","why":"El trámite real puede depender del documento."},
+            {"id":"travel","title":"Viaje","fields":["purpose","arrival_date","departure_date","country_of_residence"],"help":"Practica los datos básicos del viaje.","why":"El propósito y las fechas pueden afectar el trámite."},
+            {"id":"contact","title":"Contacto","fields":["email","phone"],"help":"Prepara los datos solicitados por el sitio oficial.","why":"Los datos de contacto dependen del trámite real."}
         ],
-        "official_url":None
+        "official_url":(_sources("visa","Cuba")[0].get("url") if _sources("visa","Cuba") and isinstance(_sources("visa","Cuba")[0],dict) else None)
     }
 
 simulate_visa=visa_simulation
 
-def create_travel_pdf(data:Dict[str,Any])->Dict[str,Any]:
-    return {
-        "ok":False,
-        "message":"El generador PDF se ejecuta desde main.py para mantener la creación del archivo separada del motor de reglas."
-    }
+def build_guide(data:Dict[str,Any]):
+    trip=dict(data)
+    completed=[]
+    pending=[]
+    if data.get("origin") and data.get("destination"): completed.append("Datos básicos del viaje")
+    else: pending.append("Completar origen y destino")
+    if data.get("airline"): completed.append("Aerolínea")
+    else: pending.append("Seleccionar o confirmar aerolínea")
+    if data.get("flight_number"): completed.append("Número de vuelo")
+    else: pending.append("Confirmar número de vuelo")
+    if data.get("baggage_checked"): completed.append("Equipaje revisado")
+    else: pending.append("Revisar equipaje")
+    if data.get("documents_checked"): completed.append("Documentos revisados")
+    else: pending.append("Revisar documentos")
+    if data.get("destination","").lower()=="cuba":
+        if data.get("dviajeros_done"): completed.append("D’Viajeros practicado/completado")
+        else: pending.append("Practicar y comprobar D’Viajeros")
+        if data.get("visa_checked"): completed.append("Visa revisada")
+        else: pending.append("Comprobar visa o autorización aplicable")
+    if data.get("items"):
+        completed.append("Artículos revisados")
+    else:
+        pending.append("Revisar lo que quieres llevar")
+    next_action=pending[0] if pending else "Haz una comprobación final en las fuentes oficiales."
+    return _base(
+        "Mi guía",
+        "Esta guía reúne la preparación que has realizado y los puntos que todavía debes comprobar.",
+        trip=trip,
+        flight={"origin":data.get("origin",""),"destination":data.get("destination",""),"airline":data.get("airline",""),"flight_number":data.get("flight_number",""),"flight_type":data.get("flight_type",""),"stops":data.get("stops","")},
+        baggage=data.get("baggage",{}),
+        documents={"dviajeros_done":data.get("dviajeros_done",False),"visa_checked":data.get("visa_checked",False),"documents_checked":data.get("documents_checked",False)},
+        items_reviewed=[{"item":x,"status":"REVISADO"} for x in data.get("items",[])],
+        pending=pending,
+        completed=completed,
+        next_action=next_action,
+        sources=_sources("guide",_text(data.get("destination")))
+    )
+
+make_guide=build_guide
+guide=build_guide
+
+def create_travel_pdf(data:Dict[str,Any]):
+    return {"ok":False,"message":"El PDF se genera desde main.py.","data":data}
 
 generate_pdf=create_travel_pdf
 travel_pdf=create_travel_pdf
-
-__all__=[
-    "VERSION",
-    "cuba_profile","cuba_check","cuba_analysis","analyze_cuba","cuba_entry_check",
-    "baggage_type_name","baggage_type_explanation","baggage_rules",
-    "analyze_baggage","baggage_analysis","check_baggage","baggage_check",
-    "item_analysis","analyze_item","check_item","item_check",
-    "connection_analysis","analyze_connection",
-    "analyze_flight","flight_analysis","understand_flight",
-    "booking_simulation","flight_search_simulation","simulate_booking",
-    "document_analysis","document_check","documents_check",
-    "practice_scenario","practice","run_practice",
-    "build_guide","make_guide","guide",
-    "dviajeros_simulation","simulate_dviajeros",
-    "visa_simulation","simulate_visa",
-    "create_travel_pdf","generate_pdf","travel_pdf"
-]
