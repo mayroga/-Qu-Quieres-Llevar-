@@ -1,8 +1,9 @@
-# schemas.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v12.0.0
+# schemas.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v12.1.0
 from __future__ import annotations
 from typing import Any,Dict,List,Optional
 from pydantic import BaseModel,Field,ConfigDict,AliasChoices
-VERSION="12.0.0"
+
+VERSION="12.1.0"
 
 class BaseRequest(BaseModel):
     model_config=ConfigDict(extra="allow",str_strip_whitespace=True)
