@@ -176,7 +176,7 @@ Question: {q}
 Verified context: {json.dumps(data,ensure_ascii=False)[:12000]}
 """
     url=f"https://generativelanguage.googleapis.com/v1beta/models/{quote_plus(GEMINI_MODEL)}:generateContent?key={quote_plus(GEMINI_API_KEY)}"
-    body={"contents":[{"parts":[{"text":prompt}]}],"generationConfig":{"temperature":0.1,"maxOutputTokens":700}}}
+    body={"contents":[{"parts":[{"text":prompt}]}],"generationConfig":{"temperature":0.1,"maxOutputTokens":700}}
     try:
         req=urllib.request.Request(url,data=json.dumps(body).encode("utf-8"),headers={"Content-Type":"application/json"},method="POST")
         with urllib.request.urlopen(req,timeout=20) as response:
