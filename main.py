@@ -1,759 +1,757 @@
 # main.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v12.1.0
 from __future__ import annotations
-import hmac,json,os,secrets,time
+import hmac,json,os,secrets,time,urllib.error,urllib.request
 from pathlib import Path
-from typing import Any,Dict
+from typing import Any,Dict,Optional
 from urllib.parse import quote_plus
 import stripe
 from fastapi import FastAPI,HTTPException,Request
 from fastapi.responses import FileResponse,JSONResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel,ConfigDict
-from cuba_engine import engine as cuba_engine,is_cuba_route
+from pydantic import BaseModel
+from cuba_engine import engine as cuba_engine
 from source_registry import SOURCES,AIRLINES,CHARTERS,get_sources,get_airlines,get_charters,get_official_sources,official_url
 
 APP_NAME="¿QUÉ QUIERES LLEVAR?"
 APP_VERSION="12.1.0"
 BASE_DIR=Path(__file__).resolve().parent
 STATIC_DIR=BASE_DIR/"static"
-
+GEMINI_API_KEY=os.getenv("GEMINI_API_KEY","").strip()
+GEMINI_MODEL=os.getenv("GEMINI_MODEL","gemini-2.5-flash").strip()
+STRIPE_SECRET_KEY=os.getenv("STRIPE_SECRET_KEY","").strip()
+STRIPE_PUBLISHABLE_KEY=os.getenv("STRIPE_PUBLISHABLE_KEY","").strip()
+STRIPE_PRICE_ID1=os.getenv("STRIPE_PRICE_ID1","").strip()
+STRIPE_WEBHOOK_SECRET=os.getenv("STRIPE_WEBHOOK_SECRET","").strip()
 ADMIN_USERNAME=os.getenv("ADMIN_USERNAME","").strip()
 ADMIN_PASSWORD=os.getenv("ADMIN_PASSWORD","").strip()
-GEMINI_API_KEY=os.getenv("GEMINI_API_KEY","").strip()
-STRIPE_PRICE_ID1=os.getenv("STRIPE_PRICE_ID1","").strip()
-STRIPE_PUBLISHABLE_KEY=os.getenv("STRIPE_PUBLISHABLE_KEY","").strip()
-STRIPE_SECRET_KEY=os.getenv("STRIPE_SECRET_KEY","").strip()
-STRIPE_WEBHOOK_SECRET=os.getenv("STRIPE_WEBHOOK_SECRET","").strip()
+PRICE=15.99
+CURRENCY="USD"
+SESSION_MINUTES=15
 
 if STRIPE_SECRET_KEY:
     stripe.api_key=STRIPE_SECRET_KEY
 
-app=FastAPI(
-    title=APP_NAME,
-    version=APP_VERSION,
-    description="Preparación y orientación independiente para viajes, vuelos, aerolíneas, equipaje y procesos oficiales.",
-    docs_url="/docs",
-    redoc_url="/redoc"
-)
-
+app=FastAPI(title=APP_NAME,version=APP_VERSION)
 if STATIC_DIR.exists():
     app.mount("/static",StaticFiles(directory=str(STATIC_DIR)),name="static")
 
-PAID_SESSIONS:Dict[str,Dict[str,Any]]={}
+PAID_SESSIONS:Dict[str,float]={}
 ADMIN_SESSIONS:Dict[str,float]={}
-SESSION_TTL=24*60*60
 
-class Body(BaseModel):
-    model_config=ConfigDict(extra="allow",str_strip_whitespace=True)
+def now()->float:
+    return time.time()
 
-class LoginRequest(Body):
-    username:str=""
-    password:str=""
+def clean(v:Any)->str:
+    return str(v or "").strip()
 
-class CheckoutRequest(Body):
-    price_type:str="1"
+def lang(v:Any)->str:
+    return "en" if clean(v).lower().startswith("en") else "es"
 
-def lang(value:Any="es")->str:
-    return "en" if str(value or "").strip().lower()=="en" else "es"
-
-def text(value:Any)->str:
-    return str(value or "").strip()
-
-def clean(value:Any,max_len:int=1000)->str:
-    return text(value)[:max_len]
-
-def token(prefix:str="tok")->str:
-    return f"{prefix}_{secrets.token_urlsafe(24)}"
-
-def localized(es:str,en:str,language:str="es")->str:
-    return en if lang(language)=="en" else es
-
-def source_dict(value:Any)->Dict[str,Any]:
-    if hasattr(value,"model_dump"):
-        try:return value.model_dump()
-        except Exception:pass
-    if hasattr(value,"__dict__"):
-        return dict(value.__dict__)
-    if isinstance(value,dict):
-        return dict(value)
-    return {"name":text(value)}
+def source_dict(x:Any)->Dict[str,Any]:
+    if isinstance(x,dict):
+        return dict(x)
+    if hasattr(x,"__dataclass_fields__"):
+        from dataclasses import asdict
+        return asdict(x)
+    if hasattr(x,"__dict__"):
+        return dict(x.__dict__)
+    return {"name":clean(x)}
 
 def source_list(items:Any)->list:
-    return [source_dict(x) for x in (items or [])]
+    if items is None:return []
+    if isinstance(items,dict):return [source_dict(items)]
+    try:return [source_dict(x) for x in items]
+    except Exception:return []
 
-def access_ok(value:Any)->bool:
-    t=text(value)
-    if not t:return False
-    row=PAID_SESSIONS.get(t)
-    if row and float(row.get("expires",0))>time.time():
-        return True
-    if t in ADMIN_SESSIONS and ADMIN_SESSIONS[t]>time.time():
-        return True
-    PAID_SESSIONS.pop(t,None)
-    ADMIN_SESSIONS.pop(t,None)
-    return False
+def source_url(x:Any)->str:
+    d=source_dict(x)
+    return clean(d.get("url") or d.get("official_url"))
 
-def require_access(request:Request)->str:
-    auth=request.headers.get("authorization","")
-    t=auth[7:].strip() if auth.lower().startswith("bearer ") else ""
-    if not access_ok(t):
-        raise HTTPException(401,"Acceso requerido.")
-    return t
+def normalize_airline(value:str)->Optional[Dict[str,Any]]:
+    q=clean(value).lower()
+    if not q:return None
+    rows=source_list(get_airlines(""))
+    exact=[]
+    for x in rows:
+        blob=" ".join([clean(x.get("id")),clean(x.get("name")),clean(x.get("publisher")),clean(x.get("country"))," ".join(x.get("topics") or [])]).lower()
+        if q==clean(x.get("id")).lower() or q==clean(x.get("name")).lower():
+            exact.append(x)
+        elif q in blob:
+            exact.append(x)
+    return exact[0] if exact else None
 
-def flight_steps(language:str="es")->list:
-    return [
-        localized("Confirma origen y destino.","Confirm origin and destination.",language),
-        localized("Confirma la fecha del viaje.","Confirm the travel date.",language),
-        localized("Revisa la aerolínea, aeropuerto y número de vuelo en tu reserva.","Review the airline, airport and flight number in your reservation.",language),
-        localized("Comprueba si tienes escalas o conexiones.","Check whether you have stops or connections.",language),
-        localized("Revisa la tarifa y las condiciones de equipaje.","Review the fare and baggage conditions.",language),
-        localized("Confirma la información directamente con la fuente oficial.","Confirm the information directly with the official source.",language)
-    ]
+def airline_sources(value:str)->list:
+    a=normalize_airline(value)
+    if not a:return []
+    sid=clean(a.get("id"))
+    out=[]
+    for x in source_list(SOURCES):
+        if sid and (sid==clean(x.get("id")) or sid in [clean(t) for t in x.get("topics",[])]):
+            out.append(x)
+    if not out:
+        out=[a]
+    return out
 
-def airline_matches(query:str="",language:str="es")->list:
-    q=text(query).lower()
-    items=get_airlines(q) if q else AIRLINES
-    return source_list(items)
+def official_airline_url(value:str)->str:
+    a=normalize_airline(value)
+    return source_url(a) if a else ""
 
-def guide_data(data:Dict[str,Any])->Dict[str,Any]:
-    language=lang(data.get("language"))
-    origin=clean(data.get("origin"),100)
-    destination=clean(data.get("destination"),100)
-    cuba=is_cuba_route(origin,destination)
-    steps=flight_steps(language)
-    cuba_steps=[]
-    if cuba:
-        cuba_steps=[
-            localized("Confirma los requisitos aplicables a tu nacionalidad.","Confirm the requirements applicable to your nationality.",language),
-            localized("Revisa el pasaporte y su vigencia.","Review your passport and its validity.",language),
-            localized("Comprueba si corresponde visa o eVisa.","Check whether a visa or eVisa applies.",language),
-            localized("Practica D’Viajeros antes de realizar el formulario real.","Practice D’Viajeros before completing the real form.",language),
-            localized("Revisa las reglas oficiales de Aduana y equipaje.","Review the official Customs and baggage rules.",language),
-            localized("Confirma todo nuevamente antes de viajar.","Confirm everything again before traveling.",language)
+def is_cuba_route(origin:str,destination:str)->bool:
+    blob=(clean(origin)+" "+clean(destination)).lower()
+    return any(x in blob for x in [
+        "cuba","hav","havana","holguin","hol","santiago","scu","camaguey",
+        "cayo coco","ccc","cayo largo","vra","varadero","santa clara","snu",
+        "mia","tpa","fll"
+    ]) and any(x in blob for x in ["cuba","hav","havana","hol","scu","camaguey","ccc","vra","snu"])
+
+def active_token(token:str)->bool:
+    token=clean(token)
+    if not token:return False
+    exp=PAID_SESSIONS.get(token,0)
+    if exp<=now():
+        PAID_SESSIONS.pop(token,None)
+        return False
+    return True
+
+def admin_token_ok(token:str)->bool:
+    token=clean(token)
+    exp=ADMIN_SESSIONS.get(token,0)
+    if exp<=now():
+        ADMIN_SESSIONS.pop(token,None)
+        return False
+    return True
+
+def bearer(request:Request)->str:
+    value=clean(request.headers.get("authorization"))
+    if value.lower().startswith("bearer "):
+        return value[7:].strip()
+    return clean(request.headers.get("x-session-token"))
+
+def grant_session()->str:
+    token=secrets.token_urlsafe(32)
+    PAID_SESSIONS[token]=now()+SESSION_MINUTES*60
+    return token
+
+def fallback_teach(term:str,language:str="es")->Dict[str,Any]:
+    t=clean(term).lower()
+    es={
+        "equipaje de mano":"Es la maleta o bolso que llevas contigo en la cabina. El tamaño, peso y cantidad dependen de la aerolínea y del boleto.",
+        "equipaje facturado":"Es la maleta que entregas en el mostrador para que viaje en la bodega del avión. La cantidad, peso y precio dependen del boleto y la ruta.",
+        "booking":"Es el proceso de buscar y reservar un vuelo. La compra real siempre debe hacerse en el sitio oficial correspondiente.",
+        "check-in":"Es el proceso mediante el cual confirmas tu viaje antes del vuelo y, cuando corresponde, obtienes tu pase de abordar.",
+        "d'viajeros":"Es el formulario oficial de viaje de Cuba. Debes comprobar los requisitos y realizar el proceso en el sitio oficial.",
+        "visa":"Es una autorización de entrada que puede ser necesaria según la nacionalidad, propósito y situación del viajero. Cuba tiene reglas específicas.",
+        "escala":"Es una parada intermedia entre el origen y el destino final. Puede requerir revisar aeropuerto, tiempo disponible y requisitos del país de conexión.",
+        "artículo personal":"Es un objeto pequeño que puede colocarse en el espacio permitido para artículos personales. La definición exacta depende de la aerolínea."
+    }
+    en={
+        "carry-on baggage":"A bag or item you take into the aircraft cabin. Size, weight and quantity depend on the airline and ticket.",
+        "checked baggage":"A bag you hand over at the airport counter to travel in the aircraft hold. Allowance and fees depend on the ticket and route.",
+        "booking":"The process of searching for and reserving a flight. The real purchase must always be completed on the official site.",
+        "check-in":"The process of confirming your trip before the flight and, when available, obtaining your boarding pass.",
+        "d'viajeros":"Cuba's official travel form. Always verify requirements and complete the process on the official website.",
+        "visa":"An authorization that may be required depending on nationality, purpose and traveler circumstances. Cuba has specific rules.",
+        "connection":"An intermediate stop between origin and final destination. Airport, connection time and entry requirements may need to be checked.",
+        "personal item":"A small item allowed in the personal-item space. The exact definition depends on the airline."
+    }
+    table=en if language=="en" else es
+    return {"term":term,"explanation":table.get(t,"Consulta el término en la fuente oficial correspondiente y revisa cómo aparece en tu boleto o proceso.")}
+
+def gemini(question:str,data:Dict[str,Any],language:str="es")->Dict[str,Any]:
+    if not GEMINI_API_KEY:
+        return {"success":False,"answer":"","reason":"GEMINI_API_KEY no configurada"}
+    q=clean(question)
+    if not q:return {"success":False,"answer":""}
+    language_name="English" if language=="en" else "Spanish"
+    prompt=f"""You are the limited AI assistant inside ¿QUÉ QUIERES LLEVAR? by May Roga LLC.
+Your ONLY function is to help identify whether a travel item may be allowed, restricted, prohibited, or requires official verification for air travel.
+Answer in {language_name}.
+Do NOT invent airline, TSA, CBP, customs, Cuba, airport or government rules.
+Do NOT make assumptions when the information is incomplete.
+Do NOT provide booking, visa, D'Viajeros or immigration instructions as if you were an authority.
+If you cannot establish the answer from the supplied verified information, clearly say that it must be checked on the official source.
+Never request passwords, CVV, bank credentials, authentication codes or airline account credentials.
+Separate confirmed information from uncertainty.
+Question: {q}
+Verified context: {json.dumps(data,ensure_ascii=False)[:12000]}
+"""
+    url=f"https://generativelanguage.googleapis.com/v1beta/models/{quote_plus(GEMINI_MODEL)}:generateContent?key={quote_plus(GEMINI_API_KEY)}"
+    body={"contents":[{"parts":[{"text":prompt}]}],"generationConfig":{"temperature":0.1,"maxOutputTokens":700}}}
+    try:
+        req=urllib.request.Request(url,data=json.dumps(body).encode("utf-8"),headers={"Content-Type":"application/json"},method="POST")
+        with urllib.request.urlopen(req,timeout=20) as response:
+            result=json.loads(response.read().decode("utf-8"))
+        text=""
+        for candidate in result.get("candidates",[]):
+            for part in candidate.get("content",{}).get("parts",[]):
+                if part.get("text"):
+                    text+=part["text"]
+        return {"success":bool(text.strip()),"answer":text.strip()}
+    except Exception as e:
+        return {"success":False,"answer":"","reason":"No fue posible consultar la IA en este momento."}
+
+def booking_steps(language:str="es")->list:
+    if language=="en":
+        return [
+            {"step":1,"id":"route","title":"1. Your trip","description":"Check origin, destination and date.","instruction":"Enter the route exactly as you want to travel."},
+            {"step":2,"id":"flight","title":"2. Find the flight","description":"Compare the available flights shown by the airline.","instruction":"Check the flight number, time and airports."},
+            {"step":3,"id":"passenger","title":"3. Passenger information","description":"Enter the information requested by the airline.","instruction":"Use your real travel document when completing the official process."},
+            {"step":4,"id":"baggage","title":"4. Baggage","description":"Check what your ticket includes.","instruction":"Confirm carry-on, personal item and checked baggage."},
+            {"step":5,"id":"review","title":"5. Review","description":"Review every field before paying.","instruction":"Check names, dates, route, baggage and price."},
+            {"step":6,"id":"official","title":"6. Official booking","description":"Now use the airline's official website.","instruction":"The simulation ends here. Complete the real booking only on the official site."}
         ]
-    return {
-        "success":True,
-        "next_action":localized("Sigue estos pasos en orden.","Follow these steps in order.",language),
-        "steps":steps,
-        "cuba_route":cuba,
-        "cuba_steps":cuba_steps,
-        "official_sources":source_list(get_official_sources(language)),
-        "charter_sources":source_list(get_charters(language))
-    }
-
-def build_flight_response(data:Dict[str,Any])->Dict[str,Any]:
-    language=lang(data.get("language"))
-    origin=clean(data.get("origin"),100)
-    destination=clean(data.get("destination"),100)
-    airline=clean(data.get("airline"),100)
-    departure=clean(data.get("departure_date") or data.get("departure"),40)
-    return_date=clean(data.get("return_date") or data.get("return"),40)
-    cabin=clean(data.get("cabin"),50)
-    fare=clean(data.get("fare"),100)
-    flight_number=clean(data.get("flight_number"),50)
-    stops=data.get("stops",0)
-    passengers=data.get("passengers",1)
-    cuba=is_cuba_route(origin,destination)
-    matches=airline_matches(airline,language) if airline else source_list(AIRLINES)
-    charter=source_list(get_charters(language)) if cuba else []
-    return {
-        "success":True,
-        "origin":origin,
-        "destination":destination,
-        "departure_date":departure,
-        "return_date":return_date,
-        "airline":airline,
-        "flight_number":flight_number,
-        "cabin":cabin,
-        "fare":fare,
-        "passengers":passengers,
-        "stops":stops,
-        "cuba_route":cuba,
-        "understood":localized(
-            "Aquí organizamos la información de tu viaje para que sepas qué revisar. Los datos actuales del vuelo deben confirmarse directamente con la aerolínea o fuente correspondiente.",
-            "Here we organize your trip information so you know what to check. Current flight information must be confirmed directly with the airline or applicable source.",
-            language
-        ),
-        "steps":flight_steps(language),
-        "airline_sources":matches,
-        "charter_sources":charter,
-        "google_flights_url":f"https://www.google.com/travel/flights?q={quote_plus((origin+' '+destination).strip())}" if origin and destination else ""
-    }
-
-def item_result(data:Dict[str,Any])->Dict[str,Any]:
-    language=lang(data.get("language"))
-    item=clean(data.get("item") or data.get("item_name") or data.get("item_description"),160)
-    description=clean(data.get("description"),1000)
-    airline=clean(data.get("airline"),100)
-    destination=clean(data.get("destination"),100)
-    quantity=data.get("quantity",1)
-    low=item.lower()
-
-    status="verify"
-    category="REVISA ESTO ANTES DE VIAJAR"
-    if any(x in low for x in ("arma de fuego","munición","municion","explosivo","granada")):
-        status="restricted"
-        category="NO PUEDES ASUMIR QUE PUEDES LLEVARLO"
-    elif any(x in low for x in ("power bank","powerbank","batería externa","bateria externa")):
-        status="verify"
-        category="PUEDE TENER CONDICIONES ESPECIALES"
-    elif any(x in low for x in ("ropa","camiseta","pantalon","pantalón","zapato","zapatos")):
-        status="general"
-        category="NORMALMENTE ES UN ARTÍCULO PERSONAL"
-    elif any(x in low for x in ("medicamento","medicina","medication")):
-        status="verify"
-        category="REVISA ESTO ANTES DE VIAJAR"
-    elif any(x in low for x in ("liquido","líquido","aerosol","perfume","shampoo","champú")):
-        status="verify"
-        category="PUEDE TENER CONDICIONES ESPECIALES"
-
-    links=[
-        {"title":"TSA","url":"https://www.tsa.gov/travel/security-screening/whatcanibring/all"},
-        {"title":"FAA","url":"https://www.faa.gov/hazmat/packsafe"},
-        {"title":"IATA Travel Centre","url":"https://www.iatatravelcentre.com/"}
+    return [
+        {"step":1,"id":"route","title":"1. Tu viaje","description":"Revisa origen, destino y fecha.","instruction":"Escribe la ruta exactamente como quieres viajar."},
+        {"step":2,"id":"flight","title":"2. Buscar el vuelo","description":"Revisa los vuelos que muestra la aerolínea.","instruction":"Comprueba número de vuelo, horario y aeropuertos."},
+        {"step":3,"id":"passenger","title":"3. Datos del pasajero","description":"Mira qué información solicita la aerolínea.","instruction":"En el proceso oficial usarás tu documento real."},
+        {"step":4,"id":"baggage","title":"4. Equipaje","description":"Comprueba qué incluye tu boleto.","instruction":"Revisa equipaje de mano, artículo personal y equipaje facturado."},
+        {"step":5,"id":"review","title":"5. Revisar","description":"Revisa todos los datos antes de pagar.","instruction":"Comprueba nombres, fechas, ruta, equipaje y precio."},
+        {"step":6,"id":"official","title":"6. Booking oficial","description":"Ahora pasa al sitio oficial de la aerolínea.","instruction":"La simulación termina aquí. El booking real se hace únicamente en el sitio oficial."}
     ]
 
-    if is_cuba_route("",destination):
-        links.append({"title":"Aduana de Cuba","url":"https://www.aduana.gob.cu/"})
+def charter_rows(language:str="es")->list:
+    try:
+        rows=source_list(get_charters(""))
+    except Exception:
+        rows=[]
+    try:
+        cuba_rows=source_list(cuba_engine.get_charter_sources(language))
+    except Exception:
+        cuba_rows=[]
+    merged=[]
+    seen=set()
+    for x in rows+cuba_rows:
+        sid=clean(x.get("id") or x.get("name")).lower()
+        if sid not in seen:
+            seen.add(sid)
+            merged.append(x)
+    return merged
 
-    return {
-        "success":True,
-        "status":status,
-        "status_category":category,
-        "short_answer":localized(
-            "Revisa las condiciones antes de empacarlo.",
-            "Review the conditions before packing it.",
-            language
-        ),
-        "details":localized(
-            f"El artículo identificado es “{item}”. La condición exacta puede depender de la aerolínea, ruta, tipo de equipaje y características del artículo. No se presenta una autorización universal.",
-            f"The identified item is “{item}”. The exact condition may depend on the airline, route, baggage type and item characteristics. No universal authorization is presented.",
-            language
-        ),
-        "item":item,
-        "description":description,
-        "quantity":quantity,
-        "airline":airline,
-        "destination":destination,
-        "official_links":links,
-        "source_reference":localized(
-            "Confirma la regla aplicable directamente con la fuente oficial correspondiente.",
-            "Confirm the applicable rule directly with the corresponding official source.",
-            language
-        )
-    }
+def charter_baggage(name:str)->Dict[str,Any]:
+    n=clean(name).lower()
+    if "xael" in n:
+        return {"carry_on":"Generalmente 1 pieza incluida; algunas condiciones pueden indicar hasta 35 lb según temporada.","checked":"Tarifa por libra que puede variar según la maleta; el límite por bulto suele rondar 70 lb.","note":"Confirma el boleto y las condiciones actuales con Xael Charters."}
+    if "aerocuba" in n:
+        return {"carry_on":"1 pieza de mano; pueden existir franquicias promocionales de hasta 35 lb.","checked":"Puede cobrarse por peso o por libra según ruta y condiciones.","note":"Confirma el boleto y las condiciones actuales con Aerocuba."}
+    if "cubazul" in n:
+        return {"carry_on":"Incluido según los términos del boleto adquirido.","checked":"Pueden existir piezas de hasta 70 lb y tarifas por libra para piezas adicionales.","note":"Confirma el boleto y las condiciones actuales con Cubazul Air Charter."}
+    if "cuballama" in n:
+        return {"carry_on":"Depende del operador y boleto.","checked":"Depende del operador, ruta y boleto.","note":"Confirma directamente las condiciones del vuelo adquirido."}
+    return {"carry_on":"Verificar","checked":"Verificar","note":"Consulta el operador oficial."}
 
-def teach_result(term:str,language:str="es")->Dict[str,Any]:
-    t=clean(term,100)
-    k=t.lower()
-    definitions={
-        "equipaje de mano":(
-            "La maleta pequeña que llevas contigo dentro del avión.",
-            "The small bag you take with you inside the aircraft."
-        ),
-        "carry-on":(
-            "Equipaje que normalmente viaja contigo en la cabina, sujeto a las condiciones de la aerolínea.",
-            "Baggage that normally travels with you in the cabin, subject to the airline's conditions."
-        ),
-        "equipaje documentado":(
-            "La maleta que entregas antes de pasar a la zona de embarque y que viaja en la bodega.",
-            "The bag you check before boarding and that travels in the aircraft hold."
-        ),
-        "checked baggage":(
-            "Equipaje que entregas para que viaje en la bodega del avión.",
-            "Baggage you check to travel in the aircraft hold."
-        ),
-        "escala":(
-            "Una parada del itinerario entre tu origen y destino. Puede implicar cambio de avión o no.",
-            "A stop between your origin and destination. It may or may not involve changing aircraft."
-        ),
-        "conexión":(
-            "Cuando continúas el viaje utilizando otro vuelo después de una parada.",
-            "When you continue your trip on another flight after a stop."
-        ),
-        "tarifa":(
-            "El tipo de boleto comprado y las condiciones que vienen asociadas a él.",
-            "The type of ticket purchased and its associated conditions."
-        )
-    }
-    es,en=definitions.get(
-        k,
-        (
-            f"“{t}” es un término cuyo significado debes entender según el contexto de tu viaje.",
-            f"“{t}” is a term whose meaning should be understood according to your travel context."
-        )
-    )
-    return {
-        "success":True,
-        "title":t,
-        "explanation":en if language=="en" else es,
-        "next_action":localized(
-            "Confirma el significado y la condición concreta en la fuente oficial aplicable.",
-            "Confirm the meaning and specific condition with the applicable official source.",
-            language
-        )
-    }
+def item_result(item:str,airline:str="",origin:str="",destination:str="",language:str="es")->Dict[str,Any]:
+    text=clean(item)
+    low=text.lower()
+    warnings=[]
+    restricted_terms=["gasolina","gasoline","fuel","petróleo","petroleo","sosa caustica","sodium hydroxide","explosivo","explosive","dinamita","gas","butano"]
+    food_terms=["carne","meat","jamon","jamón","yogurt","leche","milk","agua","water","refresco","soda","uva","uvas","guayaba","semilla","semillas","cooked food","comida cocinada"]
+    battery_terms=["bateria","batería","battery","power bank","litio","lithium"]
+    if any(x in low for x in restricted_terms):
+        status="verify"
+        result="Artículo que requiere verificación oficial antes de viajar."
+        warnings.append("No lo lleves al aeropuerto asumiendo que está permitido.")
+    elif any(x in low for x in battery_terms):
+        status="verify"
+        result="Los dispositivos y baterías pueden tener reglas específicas de seguridad, ubicación y capacidad."
+        warnings.append("Verifica las reglas de la aerolínea y la autoridad de seguridad antes de empacarlo.")
+    elif any(x in low for x in food_terms):
+        status="verify"
+        result="Los alimentos pueden estar sujetos a reglas diferentes de seguridad aérea y de importación del destino."
+        warnings.append("Si viajas a Cuba, también debes comprobar las reglas de Aduana de Cuba.")
+    else:
+        status="verify"
+        result="No se debe determinar el permiso únicamente por el nombre del artículo. Debe comprobarse según la naturaleza del artículo, cantidad, presentación, equipaje y destino."
+        warnings.append("Si existe duda, consulta la fuente oficial antes de viajar.")
+    sources=[]
+    if airline:
+        sources+=airline_sources(airline)
+    official=[source_dict(x) for x in source_list(SOURCES) if clean(x.get("category")) in {"government","security","aviation"}]
+    for x in official:
+        if x not in sources:sources.append(x)
+    if is_cuba_route(origin,destination):
+        try:
+            for x in source_list(cuba_engine.get_official_sources(language)):
+                if x not in sources:sources.append(x)
+        except Exception:pass
+    return {"success":True,"item":text,"status":status,"result":result,"explanation":fallback_teach("equipaje de mano",language)["explanation"],"warnings":warnings,"sources":sources[:12],"official_url":official_airline_url(airline),"next_action":"Revisa la fuente oficial antes de empacar el artículo."}
 
-def legal_data(language:str="es")->Dict[str,Any]:
-    return {
-        "success":True,
-        "short_notice":localized(
-            "Servicio independiente de May Roga LLC.",
-            "Independent service provided by May Roga LLC.",
-            language
-        ),
-        "full_notice":localized(
-            "¿QUÉ QUIERES LLEVAR? no es una aerolínea, agencia de viajes, aeropuerto, gobierno, consulado ni autoridad. No vende ni reserva vuelos. Las simulaciones son de práctica y no presentan formularios oficiales como enviados.",
-            "¿QUÉ QUIERES LLEVAR? is not an airline, travel agency, airport, government, consulate or authority. It does not sell or book flights. Simulations are for practice and do not present official forms as submitted.",
-            language
-        ),
-        "user_guidance":localized(
-            "Las reglas, horarios, tarifas, requisitos y disponibilidad pueden cambiar. Confirma la información final directamente con la fuente oficial correspondiente.",
-            "Rules, schedules, fares, requirements and availability can change. Confirm final information directly with the applicable official source.",
-            language
-        ),
-        "source_notice":localized(
-            "Cuando una respuesta depende de una autoridad o proveedor, la aplicación muestra una fuente para que puedas verificarla.",
-            "When an answer depends on an authority or provider, the application provides a source so you can verify it.",
-            language
-        )
-    }
-
-def practice_data(data:Dict[str,Any])->Dict[str,Any]:
-    language=lang(data.get("language"))
-    airline=clean(data.get("airline"),100)
-    origin=clean(data.get("origin"),100)
-    destination=clean(data.get("destination"),100)
-    date=clean(data.get("date") or data.get("departure_date"),40)
-    passengers=data.get("passengers",1)
-    cabin=clean(data.get("cabin"),40)
-    cuba=is_cuba_route(origin,destination)
-
-    steps=[
-        {"step":1,"title":localized("Buscar vuelo","Search for a flight",language),"instruction":localized("Introduce origen, destino y fecha.","Enter origin, destination and date.",language)},
-        {"step":2,"title":localized("Elegir vuelo","Choose a flight",language),"instruction":localized("Compara las opciones que aparezcan en el proceso real de la aerolínea.","Review the options that appear in the airline's real process.",language)},
-        {"step":3,"title":localized("Revisar pasajeros","Review passengers",language),"instruction":localized("Practica cómo se solicitan los datos del pasajero. No introduzcas contraseñas, códigos de seguridad ni datos innecesarios.","Practice how passenger information is requested. Do not enter passwords, security codes or unnecessary data.",language)},
-        {"step":4,"title":localized("Revisar tarifa","Review fare",language),"instruction":localized("Identifica qué tarifa y condiciones aparecen.","Identify the fare and conditions shown.",language)},
-        {"step":5,"title":localized("Revisar equipaje","Review baggage",language),"instruction":localized("Comprueba qué equipaje corresponde a esa tarifa en la fuente oficial.","Check what baggage applies to that fare on the official source.",language)},
-        {"step":6,"title":localized("Revisar antes de comprar","Review before purchase",language),"instruction":localized("En la práctica no se realiza ninguna compra.","No purchase is made in this practice.",language)}
-    ]
-
-    if cuba:
-        steps.append({
-            "step":7,
-            "title":localized("Preparación para Cuba","Cuba preparation",language),
-            "instruction":localized("Después de practicar el vuelo, revisa documentos, visa/eVisa, D’Viajeros, aduana y equipaje con las fuentes correspondientes.","After practicing the flight, review documents, visa/eVisa, D’Viajeros, customs and baggage with the applicable sources.",language)
-        })
-
-    return {
-        "success":True,
-        "mode":"airline_practice",
-        "simulation":True,
-        "official_submission":False,
-        "payment":False,
-        "notice":localized(
-            "SIMULACIÓN DE PRÁCTICA — NO ES EL SITIO OFICIAL.",
-            "PRACTICE SIMULATION — NOT THE OFFICIAL SITE.",
-            language
-        ),
-        "airline":airline,
-        "origin":origin,
-        "destination":destination,
-        "date":date,
-        "passengers":passengers,
-        "cabin":cabin,
-        "cuba_route":cuba,
-        "steps":steps,
-        "official_source":next((source_dict(x) for x in AIRLINES if text(getattr(x,"name","")).lower()==airline.lower()),None),
-        "charter_sources":source_list(get_charters(language)) if cuba else []
-    }
-
-@app.get("/",include_in_schema=False)
+@app.get("/")
 async def root():
-    index=STATIC_DIR/"index.html"
-    if not index.exists():
-        raise HTTPException(404,"Application interface not found.")
-    return FileResponse(str(index))
+    return FileResponse(str(STATIC_DIR/"index.html"))
 
 @app.get("/health")
 async def health():
-    return {
-        "status":"ok",
-        "app":APP_NAME,
-        "version":APP_VERSION,
-        "stripe_configured":bool(STRIPE_SECRET_KEY and STRIPE_PRICE_ID1),
-        "gemini_configured":bool(GEMINI_API_KEY),
-        "airlines":len(AIRLINES),
-        "charters":len(CHARTERS)
-    }
+    return {"status":"ok","app":APP_NAME,"version":APP_VERSION,"brain_loaded":True,"stripe_configured":bool(STRIPE_SECRET_KEY and STRIPE_PRICE_ID1),"gemini_configured":bool(GEMINI_API_KEY)}
 
-@app.get("/ping",include_in_schema=False)
-async def ping():
-    return {"status":"ok","version":APP_VERSION}
+@app.get("/api/v1/health")
+async def api_health():
+    return await health()
 
 @app.get("/api/config")
-async def config(language:str="es"):
-    language=lang(language)
-    return {
-        "success":True,
-        "app":{"name":APP_NAME,"version":APP_VERSION},
-        "stripe":{
-            "enabled":bool(STRIPE_SECRET_KEY and STRIPE_PRICE_ID1),
-            "publishable_key":STRIPE_PUBLISHABLE_KEY,
-            "price":15.99,
-            "currency":"USD"
-        },
-        "cuba":cuba_engine.public_config(language),
-        "airlines":source_list(AIRLINES),
-        "charters":source_list(CHARTERS),
-        "legal":legal_data(language)
-    }
+async def config():
+    return {"success":True,"name":APP_NAME,"version":APP_VERSION,"price":PRICE,"currency":CURRENCY,"session_minutes":SESSION_MINUTES,"stripe_publishable_key":STRIPE_PUBLISHABLE_KEY,"airlines":source_list(get_airlines("")),"charters":charter_rows("es")}
 
 @app.get("/api/v1/config")
-async def config_v1(language:str="es"):
-    return await config(language)
-
-@app.post("/api/v1/admin/login")
-async def admin_login(payload:LoginRequest):
-    if not ADMIN_USERNAME or not ADMIN_PASSWORD:
-        raise HTTPException(503,"Admin credentials are not configured.")
-    if not hmac.compare_digest(payload.username,ADMIN_USERNAME) or not hmac.compare_digest(payload.password,ADMIN_PASSWORD):
-        raise HTTPException(401,"Credenciales inválidas.")
-    t=token("admin")
-    ADMIN_SESSIONS[t]=time.time()+SESSION_TTL
-    return {
-        "status":"success",
-        "access":"granted",
-        "session_token":t,
-        "role":"admin",
-        "expires_in":SESSION_TTL
-    }
-
-@app.post("/login-admin")
-async def login_admin(payload:LoginRequest):
-    return await admin_login(payload)
-
-@app.get("/api/v1/sources/charter")
-async def charter_sources(language:str="es"):
-    return {
-        "success":True,
-        "sources":source_list(get_charters(lang(language)))
-    }
-
-@app.get("/api/v1/sources/official")
-async def official_sources(language:str="es"):
-    return {
-        "success":True,
-        "sources":source_list(get_official_sources(lang(language)))
-    }
-
-@app.post("/api/v1/flight/sources")
-async def flight_sources(payload:Body):
-    d=payload.model_dump()
-    language=lang(d.get("language"))
-    airline=clean(d.get("airline"),100)
-    destination=clean(d.get("destination"),100)
-    origin=clean(d.get("origin"),100)
-    cuba=is_cuba_route(origin,destination)
-    return {
-        "success":True,
-        "airline_sources":airline_matches(airline,language),
-        "charter_sources":source_list(get_charters(language)) if cuba else []
-    }
-
-@app.get("/api/v1/airlines")
-async def airlines(q:str=""):
-    return {
-        "success":True,
-        "airlines":airline_matches(q)
-    }
-
-@app.get("/api/v1/airlines/{airline_id}")
-async def airline(airline_id:str):
-    aid=text(airline_id).lower()
-    matches=[
-        source_dict(x) for x in AIRLINES
-        if text(getattr(x,"id","")).lower()==aid
-    ]
-    if not matches:
-        raise HTTPException(404,"Airline not found.")
-    return {"success":True,"airline":matches[0]}
-
-@app.post("/api/v1/flight/understand")
-async def understand_flight(payload:Body):
-    return build_flight_response(payload.model_dump())
-
-@app.post("/api/v1/flight/search-external")
-async def search_external(payload:Body):
-    d=payload.model_dump()
-    q=clean(d.get("natural_query") or d.get("query"),300)
-    matches=airline_matches(q)
-    return {
-        "status":"success",
-        "query":q,
-        "flights":[
-            {
-                "airline":x.get("name",""),
-                "route":q,
-                "status":"Fuente de referencia; confirma la ruta actual directamente.",
-                "booking_url":x.get("url","")
-            }
-            for x in matches
-        ],
-        "charter_sources":source_list(get_charters(lang(d.get("language"))))
-    }
-
-@app.post("/api/v1/airline/practice")
-async def airline_practice(payload:Body):
-    return practice_data(payload.model_dump())
-
-@app.post("/api/v1/practice/airline")
-async def airline_practice_legacy(payload:Body):
-    return practice_data(payload.model_dump())
-
-@app.post("/api/v1/practice")
-async def practice(payload:Body):
-    return practice_data(payload.model_dump())
-
-@app.post("/api/v1/consultar-articulo")
-async def consultar_articulo(payload:Body):
-    return item_result(payload.model_dump())
-
-@app.post("/api/v1/item/teach")
-async def item_teach(payload:Body):
-    d=payload.model_dump()
-    return teach_result(d.get("term",""),lang(d.get("language")))
-
-@app.post("/api/v1/cuba/visa")
-async def cuba_visa(payload:Body):
-    return cuba_engine.evaluate_visa(payload)
-
-@app.post("/api/v1/cuba/dviajeros")
-async def cuba_dviajeros(payload:Body):
-    return cuba_engine.evaluate_dviajeros(payload)
-
-@app.get("/api/v1/cuba/visa")
-async def cuba_visa_info(language:str="es"):
-    return {
-        **cuba_engine.visa_information(lang(language)),
-        "official_submission":False
-    }
-
-@app.get("/api/v1/cuba/dviajeros")
-async def cuba_dviajeros_info(language:str="es"):
-    return {
-        **cuba_engine.dviajeros_information(lang(language)),
-        "official_submission":False
-    }
-
-@app.get("/api/v1/cuba/official")
-async def cuba_official(language:str="es"):
-    return cuba_engine.official_information(lang(language))
-
-@app.post("/api/v1/cuba/simulation")
-async def cuba_simulation(payload:Body):
-    d=payload.model_dump()
-    return cuba_engine.simulation(
-        clean(d.get("mode") or "visa",40),
-        lang(d.get("language"))
-    )
-
-@app.post("/api/v1/cuba/practice")
-async def cuba_practice(payload:Body):
-    d=payload.model_dump()
-    return cuba_engine.simulation(
-        clean(d.get("mode") or "visa",40),
-        lang(d.get("language"))
-    )
-
-@app.post("/api/v1/guide")
-async def guide(payload:Body):
-    return guide_data(payload.model_dump())
-
-@app.get("/api/v1/legal")
-async def legal(language:str="es"):
-    return legal_data(lang(language))
-
-@app.post("/api/v1/sources/search")
-async def sources_search(payload:Body):
-    d=payload.model_dump()
-    q=clean(d.get("query"),200)
-    language=lang(d.get("language"))
-    return {
-        "success":True,
-        "sources":source_list(get_sources("official",q)),
-        "airlines":airline_matches(q,language),
-        "charters":source_list(get_charters(language))
-    }
-
-@app.get("/api/v1/charters")
-async def charters(q:str="",language:str="es"):
-    items=get_charters(q) if q else get_charters(language)
-    return {
-        "success":True,
-        "matches":source_list(items)
-    }
-
-@app.get("/api/v1/cuba/charters")
-async def cuba_charters(language:str="es"):
-    return {
-        "success":True,
-        "matches":source_list(get_charters(language))
-    }
-
-@app.get("/api/v1/stripe/public")
-async def stripe_public():
-    return {
-        "enabled":bool(STRIPE_PUBLISHABLE_KEY and STRIPE_PRICE_ID1),
-        "publishable_key":STRIPE_PUBLISHABLE_KEY,
-        "price":15.99,
-        "currency":"USD"
-    }
+async def config_v1():
+    return await config()
 
 @app.get("/api/v1/access/check")
 async def access_check(request:Request):
-    auth=request.headers.get("authorization","")
-    t=auth[7:].strip() if auth.lower().startswith("bearer ") else ""
-    return {
-        "status":"success",
-        "access":"granted" if access_ok(t) else "denied"
-    }
+    token=bearer(request)
+    active=active_token(token)
+    return {"success":True,"active":active,"token":token if active else "","expires_at":PAID_SESSIONS.get(token) if active else None}
 
 @app.post("/api/v1/create-checkout-session")
-async def create_checkout(payload:CheckoutRequest,request:Request):
+async def create_checkout_session(request:Request):
     if not STRIPE_SECRET_KEY or not STRIPE_PRICE_ID1:
-        raise HTTPException(503,"Stripe is not configured.")
-    base=str(request.base_url).rstrip("/")
+        raise HTTPException(503,"Pago no configurado.")
     try:
-        checkout=stripe.checkout.Session.create(
+        body=await request.json()
+    except Exception:
+        body={}
+    origin=clean(request.headers.get("origin")) or clean(body.get("origin"))
+    if not origin:
+        origin=f"https://{clean(request.headers.get('host'))}"
+    success_url=clean(body.get("success_url")) or origin+"/?payment=success&session_id={CHECKOUT_SESSION_ID}"
+    cancel_url=clean(body.get("cancel_url")) or origin+"/?payment=cancelled"
+    try:
+        session=stripe.checkout.Session.create(
             mode="subscription",
             line_items=[{"price":STRIPE_PRICE_ID1,"quantity":1}],
-            success_url=f"{base}/?payment=success&session_id={{CHECKOUT_SESSION_ID}}",
-            cancel_url=f"{base}/?payment=cancelled",
-            allow_promotion_codes=True
+            success_url=success_url,
+            cancel_url=cancel_url,
+            metadata={"app":APP_NAME,"version":APP_VERSION}
         )
-        return {
-            "success":True,
-            "url":checkout.url,
-            "session_id":checkout.id
-        }
-    except Exception:
-        raise HTTPException(502,"Unable to create the payment session.")
+        return {"success":True,"checkout_url":session.url,"session_id":session.id,"publishable_key":STRIPE_PUBLISHABLE_KEY,"price":PRICE,"currency":CURRENCY,"period":"1_month"}
+    except Exception as e:
+        raise HTTPException(500,"No fue posible iniciar el pago.")
 
-@app.post("/api/create-checkout-session")
-async def create_checkout_legacy(payload:CheckoutRequest,request:Request):
-    return await create_checkout(payload,request)
-
-@app.get("/api/v1/payment-success")
-async def payment_success(session_id:str):
-    if not stripe.api_key:
-        raise HTTPException(503,"Stripe is not configured.")
+@app.post("/api/v1/payment-success")
+async def payment_success(request:Request):
     try:
-        session=stripe.checkout.Session.retrieve(session_id)
-        paid=getattr(session,"payment_status","")
-        if paid!="paid":
-            raise HTTPException(402,"Payment has not been confirmed.")
-        t=token("access")
-        PAID_SESSIONS[t]={
-            "created":time.time(),
-            "expires":time.time()+SESSION_TTL,
-            "stripe_session":session_id
-        }
-        return {
-            "status":"success",
-            "access":"granted",
-            "token":t,
-            "expires_in":SESSION_TTL
-        }
-    except HTTPException:
-        raise
+        body=await request.json()
     except Exception:
-        raise HTTPException(400,"Unable to verify payment.")
-
-@app.get("/api/payment-success")
-async def payment_success_legacy(session_id:str):
-    return await payment_success(session_id)
+        body={}
+    sid=clean(body.get("session_id") or body.get("sessionId"))
+    if not sid or not STRIPE_SECRET_KEY:
+        raise HTTPException(400,"Sesión de pago no válida.")
+    try:
+        session=stripe.checkout.Session.retrieve(sid)
+        if clean(getattr(session,"status",""))!="complete":
+            raise HTTPException(402,"El pago todavía no aparece completado.")
+        payment_status=clean(getattr(session,"payment_status",""))
+        if payment_status not in {"paid","no_payment_required"}:
+            raise HTTPException(402,"El pago no aparece confirmado.")
+        token=grant_session()
+        return {"success":True,"active":True,"token":token,"expires_at":PAID_SESSIONS[token],"message":"Sesión activada."}
+    except HTTPException:raise
+    except Exception:
+        raise HTTPException(400,"No fue posible verificar el pago.")
 
 @app.post("/api/v1/stripe/webhook")
 async def stripe_webhook(request:Request):
     payload=await request.body()
     signature=request.headers.get("stripe-signature","")
-    if STRIPE_WEBHOOK_SECRET:
-        try:
-            event=stripe.Webhook.construct_event(
-                payload,
-                signature,
-                STRIPE_WEBHOOK_SECRET
-            )
-        except Exception:
-            raise HTTPException(400,"Invalid webhook signature.")
-    else:
-        try:
+    try:
+        if STRIPE_WEBHOOK_SECRET:
+            event=stripe.Webhook.construct_event(payload,signature,STRIPE_WEBHOOK_SECRET)
+        else:
             event=json.loads(payload.decode("utf-8"))
-        except Exception:
-            return {"status":"ignored"}
-
+    except Exception:
+        raise HTTPException(400,"Webhook inválido.")
+    obj=event.get("data",{}).get("object",{})
     if event.get("type")=="checkout.session.completed":
-        obj=event.get("data",{}).get("object",{})
-        sid=obj.get("id")
-        if sid:
-            t=token("access")
-            PAID_SESSIONS[t]={
-                "created":time.time(),
-                "expires":time.time()+SESSION_TTL,
-                "stripe_session":sid
-            }
+        status=clean(obj.get("payment_status"))
+        if status in {"paid","no_payment_required"}:
+            grant_session()
+    return {"received":True}
 
-    return {"status":"success"}
+@app.post("/api/v1/admin/login")
+async def admin_login(request:Request):
+    try:
+        body=await request.json()
+    except Exception:
+        body={}
+    user=clean(body.get("username"))
+    password=clean(body.get("password"))
+    if not ADMIN_USERNAME or not ADMIN_PASSWORD or not hmac.compare_digest(user,ADMIN_USERNAME) or not hmac.compare_digest(password,ADMIN_PASSWORD):
+        raise HTTPException(401,"Credenciales no válidas.")
+    token=secrets.token_urlsafe(32)
+    ADMIN_SESSIONS[token]=now()+3600
+    return {"success":True,"token":token,"expires_at":ADMIN_SESSIONS[token]}
 
-@app.get("/api/v1/pdf")
-async def pdf_info(language:str="es"):
+@app.get("/api/v1/admin/status")
+async def admin_status(request:Request):
+    return {"success":True,"active":admin_token_ok(bearer(request))}
+
+@app.get("/api/v1/airlines")
+async def airlines(query:str=""):
+    return {"success":True,"airlines":source_list(get_airlines(query))}
+
+@app.post("/api/v1/airline")
+async def airline(request:Request):
+    body=await request.json()
+    name=clean(body.get("airline"))
+    a=normalize_airline(name)
+    if not a:
+        return {"success":False,"airline":{},"sources":[],"official_url":"","next_action":"Selecciona una aerolínea disponible."}
+    return {"success":True,"airline":a,"sources":airline_sources(name),"official_url":source_url(a),"next_action":"Revisa primero la información de tu boleto y después confirma en el sitio oficial."}
+
+@app.get("/api/v1/charters")
+async def charters(language:str="es"):
+    return {"success":True,"charters":charter_rows(lang(language))}
+
+@app.post("/api/v1/charter")
+async def charter(request:Request):
+    body=await request.json()
+    name=clean(body.get("charter_operator") or body.get("charter"))
+    rows=charter_rows(lang(body.get("language","es")))
+    found=None
+    for x in rows:
+        if name.lower() in (clean(x.get("name"))+" "+clean(x.get("id"))).lower():
+            found=x
+            break
+    if not found:return {"success":False,"charter":{},"sources":rows,"baggage":{},"next_action":"Selecciona un operador."}
+    return {"success":True,"charter":found,"sources":[found],"baggage":charter_baggage(clean(found.get("name"))),"official_url":source_url(found),"next_action":"Confirma las condiciones actuales directamente con el operador."}
+
+@app.get("/api/v1/sources/search")
+async def sources_search(q:str="",topic:str="all"):
+    rows=source_list(get_sources("all",q))
+    return {"success":True,"sources":rows[:50],"query":q}
+
+@app.post("/api/v1/sources/search")
+async def sources_search_post(request:Request):
+    body=await request.json()
+    q=clean(body.get("query") or body.get("q"))
+    rows=source_list(get_sources("all",q))
+    return {"success":True,"sources":rows[:50],"query":q}
+
+@app.get("/api/v1/sources/official")
+async def official_sources(language:str="es",query:str=""):
+    rows=source_list(get_official_sources("",query))
+    rows=[x for x in rows if clean(x.get("category")) not in {"airline","charter"}]
+    return {"success":True,"sources":rows[:50]}
+
+@app.get("/api/v1/cuba/official")
+async def cuba_official(language:str="es"):
+    try:
+        rows=source_list(cuba_engine.get_official_sources(lang(language)))
+    except Exception:
+        rows=[]
+    return {"success":True,"sources":rows,"official":True}
+
+@app.get("/api/v1/cuba/charters")
+async def cuba_charters(language:str="es"):
+    return {"success":True,"charters":charter_rows(lang(language))}
+
+@app.post("/api/v1/flight")
+async def flight(request:Request):
+    body=await request.json()
+    origin=clean(body.get("origin"))
+    destination=clean(body.get("destination"))
+    airline=clean(body.get("airline"))
+    date=clean(body.get("departure_date") or body.get("date"))
+    passengers=max(1,int(body.get("passengers") or 1))
+    language=lang(body.get("language"))
+    a=normalize_airline(airline)
+    sources=airline_sources(airline) if a else []
+    cuba=is_cuba_route(origin,destination)
+    if cuba:
+        try:sources+=source_list(cuba_engine.get_official_sources(language))
+        except Exception:pass
     return {
         "success":True,
-        "available":False,
-        "message":localized(
-            "La guía puede prepararse con los datos de la sesión; la generación final del PDF requiere el módulo PDF.",
-            "The guide can be prepared from session data; final PDF generation requires the PDF module.",
-            language
-        )
+        "flight":{"origin":origin,"destination":destination,"departure_date":date,"airline":airline,"passengers":passengers,"cuba_route":cuba},
+        "sources":sources[:15],
+        "official_url":source_url(a) if a else "",
+        "notice":"La aplicación orienta y enseña. No muestra inventario de vuelos ni realiza una reserva real.",
+        "next_action":"Ahora revisa la aerolínea y después practica el booking."
     }
+
+@app.post("/api/v1/flight/search")
+async def flight_search(request:Request):
+    return await flight(request)
+
+@app.post("/api/v1/booking/simulation")
+async def booking_simulation(request:Request):
+    body=await request.json()
+    language=lang(body.get("language"))
+    airline=clean(body.get("airline"))
+    steps=booking_steps(language)
+    a=normalize_airline(airline)
+    sid=secrets.token_urlsafe(18)
+    fields=[
+        {"id":"origin","label":"Origen","value":clean(body.get("origin"))},
+        {"id":"destination","label":"Destino","value":clean(body.get("destination"))},
+        {"id":"departure_date","label":"Fecha","value":clean(body.get("departure_date") or body.get("date"))},
+        {"id":"passengers","label":"Pasajeros","value":body.get("passengers") or 1},
+        {"id":"airline","label":"Aerolínea","value":airline}
+    ]
+    return {
+        "success":True,
+        "simulation":True,
+        "real_booking":False,
+        "payment":False,
+        "notice":"SIMULACIÓN: no reserva, no cobra y no envía datos a la aerolínea.",
+        "search":{"airline":airline,"origin":clean(body.get("origin")),"destination":clean(body.get("destination"))},
+        "fields":fields,
+        "steps":steps,
+        "next_action":steps[0]["instruction"],
+        "sources":airline_sources(airline),
+        "official_url":source_url(a) if a else "",
+        "simulation_id":sid
+    }
+
+@app.post("/api/v1/booking")
+async def booking(request:Request):
+    return await booking_simulation(request)
+
+@app.post("/api/v1/practice/start")
+async def practice_start(request:Request):
+    body=await request.json()
+    language=lang(body.get("language"))
+    scenario=clean(body.get("scenario")) or "airline_booking"
+    airline=clean(body.get("airline"))
+    sid=secrets.token_urlsafe(18)
+    if scenario in {"cuba","cuba_booking","cuba_dviajeros","cuba_visa"}:
+        try:
+            sim=cuba_engine.simulation("dviajeros" if "viajero" in scenario else "visa",language)
+            steps=sim.get("steps",[]) if isinstance(sim,dict) else []
+        except Exception:
+            steps=[]
+    else:
+        steps=booking_steps(language)
+    if not steps:steps=booking_steps(language)
+    return {
+        "success":True,"mode":scenario,"official_submission":False,
+        "notice":"SIMULACIÓN DE MAY ROGA LLC. No es un sitio oficial y no envía información.",
+        "completed":False,"pending":[str(x.get("title","")) for x in steps],
+        "progress":0,"sources":airline_sources(airline),
+        "scenarios":[{"id":"airline_booking","title":"Booking de aerolínea"},{"id":"cuba_visa","title":"Visa / eVisa de Cuba"},{"id":"cuba_dviajeros","title":"D’Viajeros"}],
+        "current_step":steps[0] if steps else {},
+        "official_url":official_airline_url(airline),
+        "simulation_id":sid,"ai_assisted":False
+    }
+
+@app.post("/api/v1/practice/step")
+async def practice_step(request:Request):
+    body=await request.json()
+    language=lang(body.get("language"))
+    scenario=clean(body.get("scenario")) or "airline_booking"
+    step=max(1,int(body.get("step") or 1))
+    airline=clean(body.get("airline"))
+    steps=booking_steps(language)
+    if scenario in {"cuba","cuba_booking","cuba_dviajeros","cuba_visa"}:
+        try:
+            sim=cuba_engine.simulation("dviajeros" if "viajero" in scenario else "visa",language)
+            csteps=sim.get("steps",[]) if isinstance(sim,dict) else []
+            if csteps:steps=csteps
+        except Exception:pass
+    total=len(steps)
+    step=min(step,total)
+    completed=step>=total
+    current=steps[step-1] if steps else {}
+    progress=100 if completed else int((step-1)*100/total)
+    next_action=("Práctica terminada. Ahora revisa la fuente oficial y realiza el proceso real allí." if completed else clean(current.get("instruction")))
+    return {
+        "success":True,"mode":scenario,"official_submission":False,
+        "notice":"SIMULACIÓN: nada de lo escrito aquí se envía a la aerolínea o autoridad.",
+        "completed":completed,"pending":[] if completed else [clean(x.get("title")) for x in steps[step:]],
+        "progress":progress,"sources":airline_sources(airline),
+        "scenarios":[],"current_step":current,
+        "official_url":official_airline_url(airline),
+        "simulation_id":clean(body.get("simulation_id")) or secrets.token_urlsafe(18),
+        "ai_assisted":False
+    }
+
+@app.post("/api/v1/practice")
+async def practice(request:Request):
+    body=await request.json()
+    if body.get("step") and body.get("simulation_id"):
+        return await practice_step(request)
+    return await practice_start(request)
+
+@app.post("/api/v1/item")
+async def item(request:Request):
+    body=await request.json()
+    return item_result(
+        clean(body.get("item") or body.get("item_name") or body.get("name")),
+        clean(body.get("airline")),
+        clean(body.get("origin")),
+        clean(body.get("destination")),
+        lang(body.get("language"))
+    )
+
+@app.post("/api/v1/item/teach")
+async def item_teach(request:Request):
+    body=await request.json()
+    term=clean(body.get("item") or body.get("term") or body.get("question"))
+    language=lang(body.get("language"))
+    result=item_result(term,clean(body.get("airline")),clean(body.get("origin")),clean(body.get("destination")),language)
+    return result
+
+@app.post("/api/v1/baggage")
+async def baggage(request:Request):
+    body=await request.json()
+    airline=clean(body.get("airline"))
+    language=lang(body.get("language"))
+    sources=airline_sources(airline)
+    if is_cuba_route(clean(body.get("origin")),clean(body.get("destination"))):
+        try:sources+=source_list(cuba_engine.get_official_sources(language))
+        except Exception:pass
+    return {
+        "success":True,"airline":airline,"status":"verify",
+        "baggage":{
+            "carry_on":"Debe comprobarse según la aerolínea, tarifa y ruta.",
+            "personal_item":"Debe comprobarse según la aerolínea.",
+            "checked":"Debe comprobarse según la tarifa, ruta, temporada y condiciones del boleto.",
+            "weight":body.get("weight"),
+            "pieces":body.get("pieces") or 1
+        },
+        "explanation":"No existe una franquicia universal para todos los vuelos. La condición exacta debe comprobarse en el sitio oficial de la aerolínea.",
+        "warnings":["No pagues sobrepeso sin comprobar primero qué incluye tu boleto.","Pesa tus maletas antes de ir al aeropuerto."],
+        "sources":sources[:15],
+        "official_url":official_airline_url(airline),
+        "next_action":"Abre la fuente oficial de tu aerolínea y comprueba tu boleto."
+    }
+
+@app.post("/api/v1/cuba/visa")
+async def cuba_visa(request:Request):
+    body=await request.json()
+    language=lang(body.get("language"))
+    data={
+        "travel_purpose":clean(body.get("travel_purpose") or body.get("purpose") or body.get("purpose_of_trip")),
+        "entry_type":clean(body.get("entry_type") or "air"),
+        "has_passport":bool(body.get("has_passport")),
+        "passport_valid":bool(body.get("passport_valid")),
+        "dual_nationality":bool(body.get("dual_nationality") or body.get("dual_citizen")),
+        "nationality":clean(body.get("nationality")),
+        "passport_country":clean(body.get("passport_country")),
+        "cuban_nationality":bool(body.get("cuban_nationality"))
+    }
+    try:result=cuba_engine.evaluate_visa(data,language)
+    except Exception as e:result={"status":"review","message":"Revisa los requisitos oficiales de Cuba antes de continuar.","error":False}
+    try:sources=source_list(cuba_engine.get_official_sources(language))
+    except Exception:sources=[]
+    return {"success":True,"status":clean(result.get("status")) or "review","result":result,"notice":"La práctica no solicita ni envía una visa real.","official_url":clean(getattr(cuba_engine,"OFFICIAL_VISA_URL","")),"sources":sources,"next_action":"Después de practicar, abre el sitio oficial para realizar el proceso real."}
+
+@app.post("/api/v1/cuba/dviajeros")
+async def cuba_dviajeros(request:Request):
+    body=await request.json()
+    language=lang(body.get("language"))
+    data={
+        "first_name":clean(body.get("first_name") or body.get("given_names")),
+        "last_name":clean(body.get("last_name") or body.get("surnames")),
+        "nationality":clean(body.get("nationality")),
+        "date_of_birth":clean(body.get("date_of_birth") or body.get("birth_date")),
+        "passport_country":clean(body.get("passport_country")),
+        "arrival_date":clean(body.get("arrival_date")),
+        "airline":clean(body.get("airline")),
+        "accommodation":clean(body.get("accommodation")),
+        "purpose_of_trip":clean(body.get("purpose_of_trip") or body.get("purpose"))
+    }
+    try:result=cuba_engine.evaluate_dviajeros(data,language)
+    except Exception:result={"status":"review","message":"Completa y confirma el proceso en el sitio oficial de D’Viajeros."}
+    try:sources=source_list(cuba_engine.get_official_sources(language))
+    except Exception:sources=[]
+    return {"success":True,"status":clean(result.get("status")) or "review","result":result,"notice":"SIMULACIÓN: no genera un QR oficial ni envía datos a D’Viajeros.","official_url":clean(getattr(cuba_engine,"OFFICIAL_DVIAJEROS_URL","")),"sources":sources,"next_action":"Cuando termines la práctica, abre D’Viajeros oficial y completa el proceso real."}
+
+@app.post("/api/v1/cuba/practice")
+async def cuba_practice(request:Request):
+    body=await request.json()
+    language=lang(body.get("language"))
+    mode=clean(body.get("mode") or body.get("scenario") or "dviajeros").lower()
+    mode="visa" if "visa" in mode else "dviajeros"
+    try:sim=cuba_engine.simulation(mode,language)
+    except Exception:sim={}
+    steps=sim.get("steps",[]) if isinstance(sim,dict) else []
+    sid=clean(body.get("simulation_id")) or secrets.token_urlsafe(18)
+    return {"success":True,"simulation":True,"official_submission":False,"mode":mode,"simulation_id":sid,"current_step":1,"total_steps":len(steps),"progress":0,"completed":False,"notice":"Esta simulación no crea una visa, no genera un QR oficial y no envía datos.","steps":steps,"official_url":clean(getattr(cuba_engine,"OFFICIAL_VISA_URL" if mode=="visa" else "OFFICIAL_DVIAJEROS_URL","")),"next_action":clean(steps[0].get("instruction") if steps else "Comienza por el primer paso.")}
+
+@app.post("/api/v1/cuba")
+async def cuba(request:Request):
+    body=await request.json()
+    return await cuba_visa(request) if body.get("mode")=="visa" or body.get("purpose") else await cuba_dviajeros(request)
+
+@app.post("/api/v1/guide")
+async def guide(request:Request):
+    body=await request.json()
+    language=lang(body.get("language"))
+    airline=clean(body.get("airline"))
+    origin=clean(body.get("origin"))
+    destination=clean(body.get("destination"))
+    cuba=is_cuba_route(origin,destination)
+    steps=[
+        {"id":"flight","number":1,"title":"Entender mi vuelo","done":False},
+        {"id":"airline","number":2,"title":"Revisar mi aerolínea","done":False},
+        {"id":"baggage","number":3,"title":"Revisar mi equipaje","done":False},
+        {"id":"items","number":4,"title":"Revisar lo que llevo","done":False},
+        {"id":"practice","number":5,"title":"Practicar antes del proceso real","done":False}
+    ]
+    if cuba:
+        steps+=[
+            {"id":"visa","number":6,"title":"Revisar visa / eVisa de Cuba","done":False},
+            {"id":"dviajeros","number":7,"title":"Practicar D’Viajeros","done":False}
+        ]
+    steps.append({"id":"official","number":len(steps)+1,"title":"Confirmar todo en las fuentes oficiales","done":False})
+    sources=airline_sources(airline)
+    try:sources+=source_list(cuba_engine.get_official_sources(language)) if cuba else []
+    except Exception:pass
+    official_urls=[source_url(x) for x in sources if source_url(x)]
+    return {
+        "success":True,
+        "guide":{"origin":origin,"destination":destination,"airline":airline,"departure_date":clean(body.get("departure_date")),"passengers":body.get("passengers") or 1,"cuba_route":cuba},
+        "steps":steps,"completed_steps":[],"next_action":steps[0]["title"] if steps else "",
+        "sources":sources[:20],"official_urls":list(dict.fromkeys(official_urls))
+    }
+
+@app.post("/api/v1/solve")
+async def solve(request:Request):
+    body=await request.json()
+    question=clean(body.get("question"))
+    language=lang(body.get("language"))
+    data=body.get("data") if isinstance(body.get("data"),dict) else {}
+    result=gemini(question,data,language)
+    if result.get("success"):
+        return {"success":True,"answer":result["answer"],"ai_assisted":True,"official_required":True,"next_action":"Si la respuesta no está confirmada, consulta la fuente oficial."}
+    return {"success":True,"answer":"","ai_assisted":False,"official_required":True,"next_action":"No hay una respuesta verificada disponible. Consulta la fuente oficial correspondiente."}
+
+@app.post("/api/v1/ai/interpret")
+async def ai_interpret(request:Request):
+    return await solve(request)
+
+@app.post("/api/v1/teach")
+async def teach(request:Request):
+    body=await request.json()
+    term=clean(body.get("term") or body.get("question"))
+    language=lang(body.get("language"))
+    return {"success":True,**fallback_teach(term,language),"ai_assisted":False}
 
 @app.post("/api/v1/pdf")
-async def pdf_prepare(payload:Body):
-    d=payload.model_dump()
-    language=lang(d.get("language"))
+async def pdf(request:Request):
+    body=await request.json()
+    state=body.get("state") if isinstance(body.get("state"),dict) else {}
+    language=lang(body.get("language"))
     return {
         "success":True,
-        "format":"PDF",
-        "ready":True,
-        "data":d,
-        "message":localized(
-            "Resumen preparado para generar PDF.",
-            "Summary prepared for PDF generation.",
-            language
-        )
+        "format":"pdf-ready",
+        "notice":"Resumen preparado con la información introducida por el cliente. No es un documento oficial.",
+        "sections":{
+            "trip":{"origin":clean(state.get("origin")),"destination":clean(state.get("destination")),"airline":clean(state.get("airline"))},
+            "booking":state.get("booking",{}),
+            "baggage":state.get("baggage",{}),
+            "visa":state.get("visa",{}),
+            "dviajeros":state.get("dviajeros",{})
+        },
+        "next_action":"Usa este resumen como guía para comprobar la información en los sitios oficiales."
     }
 
-@app.get("/api/v1/health")
-async def health_v1():
-    return await health()
-
-@app.exception_handler(HTTPException)
-async def http_error(request:Request,exc:HTTPException):
-    return JSONResponse(
-        status_code=exc.status_code,
-        content={
-            "success":False,
-            "detail":exc.detail
-        }
-    )
-
 @app.exception_handler(Exception)
-async def general_error(request:Request,exc:Exception):
-    return JSONResponse(
-        status_code=500,
-        content={
-            "success":False,
-            "detail":"Error interno del servidor."
-        }
-    )
+async def unhandled(request:Request,exc:Exception):
+    return JSONResponse(status_code=500,content={"success":False,"error":"server_error","message":"Ocurrió un error interno. Intenta nuevamente."})
+
+@app.get("/favicon.ico")
+async def favicon():
+    f=STATIC_DIR/"favicon.ico"
+    if f.exists():return FileResponse(str(f))
+    raise HTTPException(404,"Not found")
