@@ -8,7 +8,8 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.exceptions import RequestValidationError
 from pydantic import BaseModel
 from reportlab.lib.pagesizes import letter
-from reportlab.lib.styles import getSampleStyleSheet,Paragraph
+from reportlab.lib.styles import getSampleStyleSheet
+from reportlab.platypus import Paragraph
 from reportlab.lib.enums import TA_CENTER
 from reportlab.platypus import SimpleDocTemplate,Paragraph,Spacer,Table,TableStyle
 from reportlab.lib import colors
