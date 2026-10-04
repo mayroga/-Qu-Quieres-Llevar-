@@ -397,7 +397,7 @@ function renderSimData(target,d,type,data){
  h+=`<div class="sim-actions">`;
  if(Number(d.step||0)>0)h+=`<button class="alt" onclick="simulationStep('${escAttr(type)}',${Number(d.step)-1})">← Anterior</button>`;
  else h+=`<button class="alt" onclick="openPanel('${type==="visa"?"visa":"dviajeros"}')">← Atrás</button>`;
- if(Number(d.step||0)<Number(d.total_steps||1)-1)h+=`<button onclick="simulationStep('${escAttr(type)}',${Number(d.step||0)+1)">Siguiente →</button>`;
+ if(Number(d.step||0)<Number(d.total_steps||1)-1)h+=`<button onclick="simulationStep('${escAttr(type)}',${Number(d.step||0)+1})">Siguiente →</button>`;
  else if(d.official_url)h+=`<a class="btn" href="${escAttr(d.official_url)}" target="_blank" rel="noopener">Abrir sitio oficial</a>`;
  h+=`</div>`;
  if(d.sources?.length)h+=`<details class="curtain"><summary>Fuentes oficiales</summary><div>${sourceLinks(d.sources)}</div></details>`;
