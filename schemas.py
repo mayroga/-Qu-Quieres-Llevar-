@@ -1,9 +1,9 @@
-# schemas.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v14.0.0
+# schemas.py — ¿QUÉ QUIERES LLEVAR? | May Roga LLC | v15.0.0
 from __future__ import annotations
-from typing import Any,Dict,List
+from typing import Any,Dict,List,Optional
 from pydantic import BaseModel,Field,ConfigDict,AliasChoices
 
-VERSION="14.0.0"
+VERSION="15.0.0"
 
 class BaseRequest(BaseModel):
     model_config=ConfigDict(extra="allow",str_strip_whitespace=True)
@@ -17,7 +17,6 @@ class FlightRequest(BaseRequest):
     stops:Any=0
     departure:str=""
     return_date:str=""
-    return_:str=Field("",validation_alias=AliasChoices("return_date","return"))
     passengers:Any=1
     cabin:str=""
     fare:str=""
@@ -32,7 +31,6 @@ class BookingRequest(BaseRequest):
     destination:str=""
     departure:str=""
     return_date:str=""
-    return_:str=Field("",validation_alias=AliasChoices("return_date","return"))
     passengers:Any=1
     cabin:str=""
     fare:str=""
@@ -101,6 +99,11 @@ class ItemRequest(BaseRequest):
     is_medication:bool=False
     is_animal:bool=False
     is_electronic:bool=False
+    country_of_departure:str=""
+    country_of_destination:str=""
+    cabin:str=""
+    flight_number:str=""
+    language:str="es"
 
 class CubaRequest(BaseRequest):
     origin:str=""
@@ -217,6 +220,7 @@ class PracticeRequest(BaseRequest):
     state:str=""
     step:Any=0
     answer:str=""
+    language:str="es"
     data:Dict[str,Any]=Field(default_factory=dict)
 
 class AirportRequest(BaseRequest):
@@ -247,11 +251,12 @@ class SourceRequest(BaseRequest):
 
 class SolveRequest(BaseRequest):
     question:str=""
+    language:str="es"
     data:Dict[str,Any]=Field(default_factory=dict)
 
 class GuideRequest(BaseRequest):
     origin:str=""
-    destination:str=""
+    destination:str="Cuba"
     airline:str=""
     flight_number:str=""
     flight_type:str=""
@@ -341,10 +346,13 @@ class TripState(BaseModel):
     health_status:str=""
     items:List[Any]=Field(default_factory=list)
     baggage:Dict[str,Any]=Field(default_factory=dict)
+    item_consultations:List[Dict[str,Any]]=Field(default_factory=list)
+    flight_searches:List[Dict[str,Any]]=Field(default_factory=list)
+    practice:Dict[str,Any]=Field(default_factory=dict)
     current_state:str=""
     last_item:str=""
     next_action:str=""
-    practice:Dict[str,Any]=Field(default_factory=dict)
+    pending:List[str]=Field(default_factory=list)
     updated_at:str=""
 
 class TripExportRequest(BaseRequest):
@@ -369,12 +377,14 @@ class GenericResponse(BaseModel):
     next_action:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
     data:Dict[str,Any]=Field(default_factory=dict)
+    version:str=VERSION
 
 class SourceResponse(BaseModel):
     status:str="ok"
     topic:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
     next_action:str=""
+    version:str=VERSION
 
 class FlightResponse(BaseModel):
     status:str="ok"
@@ -384,6 +394,11 @@ class FlightResponse(BaseModel):
     missing:List[str]=Field(default_factory=list)
     next_action:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
+    airlines:List[Dict[str,Any]]=Field(default_factory=list)
+    charters:List[Dict[str,Any]]=Field(default_factory=list)
+    official_url:str=""
+    simulation:bool=True
+    real_booking:bool=False
 
 class BookingResponse(BaseModel):
     status:str="ok"
@@ -398,18 +413,31 @@ class BookingResponse(BaseModel):
     steps:List[Dict[str,Any]]=Field(default_factory=list)
     next_action:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
+    official_url:str=""
+    version:str=VERSION
 
 class ItemResponse(BaseModel):
     status:str="verify"
     item:str=""
     category:str=""
     baggage_type:str=""
+    decision:str="verify"
+    decision_label:str="🔵 NO SE PUEDE DETERMINAR CON SEGURIDAD"
     message:str=""
+    explanation:str=""
+    conditions:List[str]=Field(default_factory=list)
+    alternatives:List[str]=Field(default_factory=list)
+    warnings:List[str]=Field(default_factory=list)
     gemini_used:bool=False
+    gemini_available:bool=False
+    gemini_error:bool=False
+    confidence:str="low"
     final_decision:bool=False
+    official_authority:str=""
     verify_with:List[Any]=Field(default_factory=list)
     next_action:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
+    version:str=VERSION
 
 class BaggageResponse(BaseModel):
     status:str="review"
@@ -419,10 +447,13 @@ class BaggageResponse(BaseModel):
     origin:str=""
     destination:str=""
     fare:str=""
+    cabin:str=""
     message:str=""
     do_not_assume:List[str]=Field(default_factory=list)
+    conditions:List[str]=Field(default_factory=list)
     next_action:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
+    version:str=VERSION
 
 class CubaResponse(BaseModel):
     status:str="incomplete"
@@ -436,6 +467,7 @@ class CubaResponse(BaseModel):
     message:str=""
     next_action:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
+    version:str=VERSION
 
 class DocumentResponse(BaseModel):
     status:str="incomplete"
@@ -443,6 +475,7 @@ class DocumentResponse(BaseModel):
     pending:List[str]=Field(default_factory=list)
     next_action:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
+    version:str=VERSION
 
 class PracticeResponse(BaseModel):
     mode:str="practice"
@@ -459,6 +492,11 @@ class PracticeResponse(BaseModel):
     current_step:Dict[str,Any]=Field(default_factory=dict)
     steps:List[Dict[str,Any]]=Field(default_factory=list)
     step:int=0
+    total_steps:int=0
+    can_go_back:bool=True
+    can_go_home:bool=True
+    official_url:str=""
+    version:str=VERSION
 
 class GuideResponse(BaseModel):
     status:str="incomplete"
@@ -466,6 +504,7 @@ class GuideResponse(BaseModel):
     pending:List[str]=Field(default_factory=list)
     next_action:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
+    version:str=VERSION
 
 class HealthResponse(BaseModel):
     status:str="ok"
@@ -483,6 +522,7 @@ class ErrorResponse(BaseModel):
     message:str=""
     next_action:str=""
     details:Dict[str,Any]=Field(default_factory=dict)
+    version:str=VERSION
 
 class SimulationStep(BaseModel):
     step:int=0
@@ -491,6 +531,9 @@ class SimulationStep(BaseModel):
     fields:List[str]=Field(default_factory=list)
     options:List[str]=Field(default_factory=list)
     completed:bool=False
+    reference_image:str=""
+    reference_type:str=""
+    official_step:bool=False
 
 class SimulationResponse(BaseModel):
     status:str="ok"
@@ -508,18 +551,25 @@ class SimulationResponse(BaseModel):
     missing:List[str]=Field(default_factory=list)
     prefilled:Dict[str,Any]=Field(default_factory=dict)
     official_url:str=""
+    total_steps:int=0
+    can_go_back:bool=True
+    can_go_home:bool=True
+    reference_images:List[Dict[str,Any]]=Field(default_factory=list)
+    version:str=VERSION
 
 class AirlineResponse(BaseModel):
     status:str="ok"
     airlines:List[Dict[str,Any]]=Field(default_factory=list)
     charters:List[Dict[str,Any]]=Field(default_factory=list)
     next_action:str=""
+    version:str=VERSION
 
 class LegalResponse(BaseModel):
     status:str="ok"
     title:str="Aviso legal"
     message:str=""
     points:List[str]=Field(default_factory=list)
+    version:str=VERSION
 
 class ConfigResponse(BaseModel):
     status:str="ok"
