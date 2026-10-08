@@ -1,95 +1,78 @@
-```html
 <!doctype html>
 <html lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>¿QUÉ QUIERES LLEVAR? | May Roga LLC</title>
-<meta name="description" content="Preparación sencilla para viajar a Cuba.">
+<meta name="description" content="Ayuda sencilla para preparar un viaje a Cuba: D'Viajeros, visa electrónica, vuelos, artículos y equipaje.">
 <style>
 *{box-sizing:border-box}
-html{scroll-behavior:smooth}
-body{margin:0;background:#000;color:#fff;font-family:Arial,Helvetica,sans-serif;font-size:17px;line-height:1.45}
+html,body{margin:0;padding:0;background:#000;color:#fff;font-family:Arial,Helvetica,sans-serif}
+body{min-height:100vh}
 button,input,select,textarea{font:inherit}
 button{cursor:pointer}
 a{color:#fff}
-.wrap{width:min(920px,94%);margin:auto}
-header{border-bottom:1px solid #333;padding:13px 0;position:sticky;top:0;background:#000;z-index:20}
+.wrap{width:min(1100px,94%);margin:auto}
+header{border-bottom:1px solid #333;padding:14px 0;position:sticky;top:0;background:#000;z-index:20}
 .head{display:flex;align-items:center;justify-content:space-between;gap:12px}
-.logo{font-size:19px;font-weight:800}
-.lang{display:flex;gap:5px}
-.lang button{background:#111;color:#fff;border:1px solid #555;border-radius:8px;padding:7px 10px;font-weight:700}
-.lang button.active{background:#fff;color:#000}
-.hero{padding:28px 0 17px;text-align:center}
-.hero h1{font-size:clamp(27px,5vw,43px);margin:0 0 8px}
-.hero p{max-width:690px;margin:0 auto;color:#ccc}
-.legal{font-size:12px;color:#888;margin-top:14px}
-.cards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:20px 0 28px}
-.card{background:#0b0b0b;border:1px solid #333;border-radius:12px;min-height:115px;padding:15px;text-align:left;color:#fff}
-.card:hover{border-color:#fff}
-.card strong{display:block;font-size:18px;margin-bottom:6px}
-.card span{display:block;color:#aaa;font-size:14px}
-.panel{display:none;border-top:1px solid #333;padding:24px 0 34px}
-.panel.open{display:block}
-.panel h2{margin:0 0 7px;font-size:27px}
-.panel>p{color:#bbb;margin:0 0 18px}
-.simple{background:#090909;border:1px solid #292929;border-radius:12px;padding:16px;margin:13px 0}
-.steps{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:15px 0}
-.step{background:#070707;border:1px solid #292929;border-radius:10px;padding:10px;text-align:center}
-.step b{display:block;border:1px solid #777;border-radius:50%;width:30px;height:30px;line-height:28px;margin:0 auto 7px}
-.step small{color:#bbb}
+.logo{font-weight:900;font-size:18px}
+.lang{display:flex;gap:6px}
+.lang button,.btn{border:1px solid #777;background:#111;color:#fff;border-radius:10px;padding:11px 15px;font-weight:700}
+.lang button.active,.btn.primary{background:#fff;color:#000;border-color:#fff}
+.hero{padding:34px 0 25px;text-align:center}
+.hero h1{font-size:clamp(30px,6vw,58px);margin:0 0 12px}
+.hero p{max-width:780px;margin:auto;color:#ccc;font-size:18px;line-height:1.5}
+.note{margin:20px auto 0;border:1px solid #333;border-radius:12px;padding:13px;max-width:800px;color:#ddd}
+.cards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:15px 0 25px}
+.card{border:1px solid #444;border-radius:15px;padding:20px;background:#050505;min-height:150px}
+.card h2{margin:0 0 10px;font-size:20px}
+.card p{color:#bbb;line-height:1.4;margin:0 0 16px}
+.panel{display:none;border-top:1px solid #333;padding:30px 0 45px}
+.panel.show{display:block}
+.panel h2{font-size:30px;margin:0 0 8px}
+.panel>p{color:#ccc;line-height:1.5}
+.close{float:right}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.box{border:1px solid #333;border-radius:13px;padding:17px;margin:12px 0;background:#030303}
+.box h3{margin:0 0 9px}
+.small{font-size:13px;color:#aaa}
+.form{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+label{display:block;color:#ddd;font-weight:700;font-size:14px}
+input,select,textarea{width:100%;margin-top:6px;background:#0b0b0b;border:1px solid #555;color:#fff;border-radius:9px;padding:12px}
+textarea{min-height:80px;resize:vertical}
+.full{grid-column:1/-1}
 .actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:14px}
-.btn,.linkbtn{background:#fff;color:#000;border:1px solid #fff;border-radius:9px;padding:11px 15px;font-weight:800;text-decoration:none;display:inline-block}
-.btn.alt,.linkbtn.alt{background:#111;color:#fff;border-color:#666}
-.form{display:grid;grid-template-columns:repeat(2,1fr);gap:11px}
-.field{display:flex;flex-direction:column;gap:5px}
-.field.full{grid-column:1/-1}
-label{font-weight:700;font-size:15px}
-input,select,textarea{width:100%;background:#050505;color:#fff;border:1px solid #555;border-radius:8px;padding:12px}
-input:focus,select:focus,textarea:focus{outline:2px solid #fff}
-.answer{background:#080808;border:1px solid #444;border-radius:13px;padding:17px;margin-top:15px}
-.answer h3{margin:0 0 9px;font-size:22px}
-.answer p{margin:8px 0}
-.answer ul{margin:8px 0;padding-left:21px}
-.answer li{margin:4px 0}
-.notice{border-left:3px solid #fff;padding:9px 12px;background:#090909;margin:13px 0}
-.source{margin-top:14px;padding-top:12px;border-top:1px solid #333;font-size:14px;color:#bbb}
-.source a{word-break:break-word}
-.guide{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin:15px 0}
-.guidebox{border:1px solid #333;border-radius:10px;overflow:hidden;background:#080808}
-.guidepic{height:125px;background:#111;display:flex;align-items:center;justify-content:center;padding:8px;text-align:center}
-.guidepic img{width:100%;height:100%;object-fit:contain}
-.guidecap{padding:9px;font-size:13px;color:#ddd}
-.guidecap b{display:block;margin-bottom:3px;color:#fff}
-.visual{height:100%;width:100%;border:1px solid #444;border-radius:5px;background:#f4f4f4;color:#111;padding:6px;text-align:left;font-size:7px;line-height:1.25}
-.visual .bar{height:9px;background:#222;margin-bottom:5px}
-.visual .line{height:5px;background:#aaa;margin:4px 0;border-radius:2px}
-.visual .box{border:1px solid #999;padding:4px;margin:4px 0;background:#fff}
-.visual .ok{border:1px solid #222;padding:4px;text-align:center;font-weight:bold;margin-top:5px}
-.simtop{display:flex;justify-content:space-between;gap:10px;align-items:center}
-.simstep{font-size:13px;color:#999}
-.flightlist,.source-list{display:grid;gap:9px;margin-top:13px}
-.provider{border:1px solid #333;border-radius:10px;padding:12px;background:#080808}
-.provider strong{display:block}
-.provider small{display:block;color:#aaa;margin:3px 0 8px}
-.provider a{display:inline-block;margin-top:5px}
-.checks{display:flex;flex-wrap:wrap;gap:8px}
-.check{display:flex;align-items:center;gap:6px;border:1px solid #333;padding:9px 10px;border-radius:8px;background:#080808}
-.check input{width:auto}
-.muted{color:#999}
-footer{border-top:1px solid #333;color:#777;padding:23px 0 35px;font-size:12px;margin-top:20px}
+.result{margin-top:15px;border:1px solid #666;border-radius:13px;padding:18px;background:#080808;line-height:1.55}
+.good{border-color:#777}
+.warn{border-color:#999}
+.source{display:block;margin-top:9px;padding:10px;border:1px solid #444;border-radius:9px;text-decoration:none;background:#111}
+.source:hover{background:#222}
+.visuals{display:grid;grid-template-columns:repeat(2,1fr);gap:14px;margin-top:18px}
+.visual{border:1px solid #444;border-radius:14px;padding:13px;background:#090909}
+.visual-title{font-weight:900;margin-bottom:8px}
+.mock{background:#eee;color:#111;border-radius:9px;padding:12px;min-height:180px}
+.mock-head{font-weight:900;border-bottom:2px solid #aaa;padding-bottom:7px;margin-bottom:8px}
+.mock-row{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:6px 0}
+.mock-field{background:#fff;border:1px solid #bbb;border-radius:4px;padding:6px;font-size:11px}
+.mock-field b{display:block;font-size:8px;color:#555;margin-bottom:3px}
+.mock-ok{margin-top:8px;border:2px solid #333;padding:7px;text-align:center;font-weight:900;border-radius:5px}
+.visual-note{font-size:11px;color:#aaa;margin-top:7px}
+.steps{display:flex;flex-wrap:wrap;gap:7px;margin:15px 0}
+.step{border:1px solid #444;border-radius:8px;padding:8px 10px;color:#ccc;font-size:13px}
+.big{font-size:21px;font-weight:900;margin-bottom:7px}
+.airlines{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:15px}
+.airline{border:1px solid #444;border-radius:12px;padding:13px}
+.airline a{display:inline-block;margin-top:8px}
+.checks{display:grid;grid-template-columns:repeat(2,1fr);gap:7px;margin-top:8px}
+.checks label{font-weight:400;border:1px solid #444;padding:9px;border-radius:8px}
+.checks input{width:auto;margin-right:7px}
+footer{border-top:1px solid #333;padding:22px 0 35px;color:#999;font-size:12px;line-height:1.5}
 .hidden{display:none!important}
 @media(max-width:760px){
-.cards{grid-template-columns:repeat(2,1fr)}
-.steps,.guide{grid-template-columns:repeat(2,1fr)}
-.form{grid-template-columns:1fr}
-.field.full{grid-column:auto}
-}
-@media(max-width:430px){
-body{font-size:16px}
-.cards{grid-template-columns:1fr}
+.cards,.grid,.visuals,.form,.airlines{grid-template-columns:1fr}
+.full{grid-column:auto}
+.hero{padding-top:25px}
 .card{min-height:auto}
-.steps,.guide{grid-template-columns:1fr 1fr}
 }
 </style>
 </head>
@@ -106,513 +89,596 @@ body{font-size:16px}
 
 <main class="wrap">
 <section class="hero">
-<h1 data-t="title">Viaja con más tranquilidad.</h1>
-<p data-t="subtitle">Aquí encuentras lo que necesitas para preparar tu viaje a Cuba, sin palabras complicadas.</p>
-<p class="legal" data-t="legal">Servicio independiente. No somos gobierno, aerolínea, aeropuerto, aduana, inmigración, consulado ni agencia de viajes.</p>
+<h1 data-t="title">Viaja con una respuesta clara</h1>
+<p data-t="intro">Aquí puedes aprender qué hacer antes de viajar a Cuba, ver cómo se hace cada trámite, buscar tu vuelo y resolver dudas sobre lo que puedes llevar.</p>
+<div class="note" data-t="note">No necesitas conocer palabras complicadas. La aplicación te explica el paso que necesitas hacer.</div>
 </section>
 
 <section class="cards">
-<button class="card" onclick="openPanel('dviajeros')">
-<strong>1. D’Viajeros</strong>
-<span data-t="c1">Mira cómo se llena y qué hacer al terminar.</span>
-</button>
-<button class="card" onclick="openPanel('visa')">
-<strong>2. Visa electrónica</strong>
-<span data-t="c2">Mira cómo se hace, paso a paso.</span>
-</button>
-<button class="card" onclick="openPanel('flights')">
-<strong>3. Vuelos a Cuba</strong>
-<span data-t="c3">Busca vuelos y continúa con la aerolínea.</span>
-</button>
-<button class="card" onclick="openPanel('baggage')">
-<strong>4. Equipaje y artículos</strong>
-<span data-t="c4">Pregunta qué puedes llevar y cómo llevarlo.</span>
-</button>
+<article class="card">
+<h2>1. D’Viajeros</h2>
+<p data-t="cardDv">Mira cómo se llena y cómo queda terminado.</p>
+<button class="btn primary" onclick="openPanel('dv')">Ver cómo se hace</button>
+</article>
+<article class="card">
+<h2>2. Visa electrónica</h2>
+<p data-t="cardVisa">Mira los pasos y el resultado final antes de entrar al sitio oficial.</p>
+<button class="btn primary" onclick="openPanel('visa')">Ver cómo se hace</button>
+</article>
+<article class="card">
+<h2>3. Vuelos a Cuba</h2>
+<p data-t="cardFlights">Encuentra dónde buscar tu vuelo y conoce las opciones disponibles.</p>
+<button class="btn primary" onclick="openPanel('flights')">Buscar vuelo</button>
+</article>
+<article class="card">
+<h2>4. ¿Qué quieres llevar?</h2>
+<p data-t="cardItem">Pregunta por un artículo y recibe una respuesta directa.</p>
+<button class="btn primary" onclick="openPanel('item')">Preguntar</button>
+</article>
+<article class="card">
+<h2>5. Entiende tu equipaje</h2>
+<p data-t="cardBag">Revisa maletas, piezas, peso y medidas de forma sencilla.</p>
+<button class="btn primary" onclick="openPanel('bag')">Ver mi equipaje</button>
+</article>
+<article class="card">
+<h2>6. Mi PDF</h2>
+<p data-t="cardPdf">Crea tu resumen solamente si quieres guardarlo o imprimirlo.</p>
+<button class="btn primary" onclick="openPanel('pdf')">Crear mi PDF</button>
+</article>
 </section>
 
-<section id="dviajeros" class="panel">
+<section id="dv" class="panel">
+<button class="btn close" onclick="closePanels()">Cerrar</button>
 <h2>D’Viajeros</h2>
-<p data-t="dvIntro">Primero mira la clase visual. Después abre el formulario oficial y hazlo allí.</p>
+<p data-t="dvIntro">Primero mira el proceso. Después abre el sitio oficial y completa allí tus datos.</p>
 <div class="steps">
-<div class="step"><b>1</b><small data-t="dv1">Preparar</small></div>
-<div class="step"><b>2</b><small data-t="dv2">Llenar</small></div>
-<div class="step"><b>3</b><small data-t="dv3">Revisar</small></div>
-<div class="step"><b>4</b><small data-t="dv4">Guardar</small></div>
+<div class="step">1. Datos personales</div>
+<div class="step">2. Pasaporte</div>
+<div class="step">3. Viaje</div>
+<div class="step">4. Revisión</div>
+<div class="step">5. Resultado</div>
 </div>
-<div class="simple">
-<h3 data-t="visualTitle">Así se verá el proceso</h3>
-<p class="muted" data-t="visualText">Las imágenes son una clase preparada por esta aplicación. No son el formulario oficial.</p>
-<div id="dvGuide" class="guide"></div>
-<div id="dvSim" class="answer"></div>
+<div id="dvRefs"></div>
+<div class="visuals">
+<div class="visual">
+<div class="visual-title">Paso 1 · Datos personales</div>
+<div class="mock">
+<div class="mock-head">D’Viajeros · Ejemplo</div>
+<div class="mock-row">
+<div class="mock-field"><b>NOMBRES</b>ANA MARÍA</div>
+<div class="mock-field"><b>APELLIDOS</b>GARCÍA LÓPEZ</div>
+</div>
+<div class="mock-row">
+<div class="mock-field"><b>FECHA DE NACIMIENTO</b>15/05/1980</div>
+<div class="mock-field"><b>NACIONALIDAD</b>EJEMPLO</div>
+</div>
+<div class="mock-ok">DATOS COMPLETADOS</div>
+</div>
+<div class="visual-note">Ejemplo visual · No oficial</div>
+</div>
+
+<div class="visual">
+<div class="visual-title">Paso 2 · Pasaporte</div>
+<div class="mock">
+<div class="mock-head">Documento de viaje</div>
+<div class="mock-row">
+<div class="mock-field"><b>NÚMERO</b>ABC123456</div>
+<div class="mock-field"><b>PAÍS</b>EJEMPLO</div>
+</div>
+<div class="mock-row">
+<div class="mock-field"><b>FECHA</b>01/01/2030</div>
+<div class="mock-field"><b>SEXO</b>—</div>
+</div>
+<div class="mock-ok">REVISAR ANTES DE CONTINUAR</div>
+</div>
+<div class="visual-note">Ejemplo visual · No oficial</div>
+</div>
+
+<div class="visual">
+<div class="visual-title">Paso 3 · Datos del viaje</div>
+<div class="mock">
+<div class="mock-head">Entrada al país</div>
+<div class="mock-row">
+<div class="mock-field"><b>LLEGADA</b>10/12/2026</div>
+<div class="mock-field"><b>VUELO</b>XX123</div>
+</div>
+<div class="mock-row">
+<div class="mock-field"><b>AEROPUERTO</b>DESTINO</div>
+<div class="mock-field"><b>ALOJAMIENTO</b>EJEMPLO</div>
+</div>
+<div class="mock-ok">REVISAR DATOS</div>
+</div>
+<div class="visual-note">Ejemplo visual · No oficial</div>
+</div>
+
+<div class="visual">
+<div class="visual-title">Paso 4 · Revisión</div>
+<div class="mock">
+<div class="mock-head">Antes de terminar</div>
+<div>✓ Datos personales</div>
+<div>✓ Pasaporte</div>
+<div>✓ Viaje</div>
+<div>✓ Alojamiento</div>
+<div class="mock-ok">TODO REVISADO</div>
+</div>
+<div class="visual-note">Ejemplo visual · No oficial</div>
+</div>
+
+<div class="visual">
+<div class="visual-title">Paso 5 · Terminado</div>
+<div class="mock">
+<div class="mock-head">Resultado del ejemplo</div>
+<div class="mock-ok">FORMULARIO TERMINADO</div>
+<div style="margin-top:12px;text-align:center">Guarda el resultado que te entregue el sitio oficial.</div>
+</div>
+<div class="visual-note">Ejemplo visual · No oficial</div>
+</div>
+
+<div class="visual">
+<div class="visual-title">En el aeropuerto</div>
+<div class="mock">
+<div class="mock-head">Tu preparación</div>
+<div>✓ Formulario realizado</div>
+<div>✓ Resultado guardado</div>
+<div>✓ Documentos preparados</div>
+<div class="mock-ok">LISTO PARA PRESENTAR</div>
+</div>
+<div class="visual-note">Ejemplo visual · No oficial</div>
+</div>
+</div>
 <div class="actions">
-<button class="btn" onclick="startDviajeros()" data-t="start">Ver clase completa</button>
-<a class="linkbtn" href="https://dviajeros.mitrans.gob.cu/" target="_blank" rel="noopener" data-t="openDv">Abrir D’Viajeros oficial</a>
-</div>
+<a id="dvOfficial" class="btn primary" href="https://dviajeros.mitrans.gob.cu/" target="_blank" rel="noopener">Abrir D’Viajeros oficial</a>
 </div>
 </section>
 
 <section id="visa" class="panel">
+<button class="btn close" onclick="closePanels()">Cerrar</button>
 <h2>Visa electrónica</h2>
-<p data-t="visaIntro">Mira primero cómo se hace. Después abre el sitio oficial para realizar el proceso.</p>
+<p data-t="visaIntro">Mira primero cómo se realiza. Después abre el sitio oficial para hacer el trámite real.</p>
 <div class="steps">
-<div class="step"><b>1</b><small data-t="v1">Preparar</small></div>
-<div class="step"><b>2</b><small data-t="v2">Llenar</small></div>
-<div class="step"><b>3</b><small data-t="v3">Revisar</small></div>
-<div class="step"><b>4</b><small data-t="v4">Guardar</small></div>
+<div class="step">1. Datos personales</div>
+<div class="step">2. Pasaporte</div>
+<div class="step">3. Viaje</div>
+<div class="step">4. Revisión</div>
+<div class="step">5. Resultado</div>
 </div>
-<div class="simple">
-<h3 data-t="visualVisaTitle">Así se verá el proceso</h3>
-<p class="muted" data-t="visualVisaText">La aplicación te enseña el recorrido con imágenes sencillas antes de enviarte al sitio oficial.</p>
-<div id="visaGuide" class="guide"></div>
-<div id="visaSim" class="answer"></div>
+<div id="visaRefs"></div>
+<div class="visuals">
+<div class="visual">
+<div class="visual-title">Paso 1 · Solicitud</div>
+<div class="mock">
+<div class="mock-head">Visa electrónica · Ejemplo</div>
+<div class="mock-row">
+<div class="mock-field"><b>APELLIDOS</b>GARCÍA LÓPEZ</div>
+<div class="mock-field"><b>NOMBRES</b>ANA MARÍA</div>
+</div>
+<div class="mock-row">
+<div class="mock-field"><b>NACIONALIDAD</b>EJEMPLO</div>
+<div class="mock-field"><b>FECHA</b>15/05/1980</div>
+</div>
+</div>
+<div class="visual-note">Ejemplo visual · No oficial</div>
+</div>
+
+<div class="visual">
+<div class="visual-title">Paso 2 · Pasaporte</div>
+<div class="mock">
+<div class="mock-head">Datos del documento</div>
+<div class="mock-field"><b>NÚMERO DE PASAPORTE</b>ABC123456</div>
+<div class="mock-row">
+<div class="mock-field"><b>PAÍS</b>EJEMPLO</div>
+<div class="mock-field"><b>VENCIMIENTO</b>01/01/2030</div>
+</div>
+</div>
+<div class="visual-note">Ejemplo visual · No oficial</div>
+</div>
+
+<div class="visual">
+<div class="visual-title">Paso 3 · Viaje</div>
+<div class="mock">
+<div class="mock-head">Información del viaje</div>
+<div class="mock-row">
+<div class="mock-field"><b>LLEGADA</b>10/12/2026</div>
+<div class="mock-field"><b>SALIDA</b>20/12/2026</div>
+</div>
+<div class="mock-field"><b>DESTINO</b>EJEMPLO</div>
+</div>
+<div class="visual-note">Ejemplo visual · No oficial</div>
+</div>
+
+<div class="visual">
+<div class="visual-title">Paso 4 · Revisión</div>
+<div class="mock">
+<div class="mock-head">Revisa antes de terminar</div>
+<div>✓ Nombre</div>
+<div>✓ Pasaporte</div>
+<div>✓ Viaje</div>
+<div>✓ Correo</div>
+<div class="mock-ok">REVISADO</div>
+</div>
+<div class="visual-note">Ejemplo visual · No oficial</div>
+</div>
+
+<div class="visual">
+<div class="visual-title">Paso 5 · Resultado</div>
+<div class="mock">
+<div class="mock-head">Resultado del ejemplo</div>
+<div class="mock-ok">SOLICITUD TERMINADA</div>
+<div style="margin-top:10px;text-align:center">Conserva el resultado que entregue el sitio oficial.</div>
+</div>
+<div class="visual-note">Ejemplo visual · No oficial</div>
+</div>
+
+<div class="visual">
+<div class="visual-title">En el aeropuerto</div>
+<div class="mock">
+<div class="mock-head">Tu preparación</div>
+<div>✓ Pasaporte</div>
+<div>✓ Visa correspondiente</div>
+<div>✓ Resultado guardado</div>
+<div class="mock-ok">DOCUMENTOS PREPARADOS</div>
+</div>
+<div class="visual-note">Ejemplo visual · No oficial</div>
+</div>
+</div>
 <div class="actions">
-<button class="btn" onclick="startVisa()" data-t="start">Ver clase completa</button>
-<a class="linkbtn" href="https://evisacuba.cu/" target="_blank" rel="noopener" data-t="openVisa">Abrir visa oficial</a>
-</div>
+<a id="visaOfficial" class="btn primary" href="https://evisacuba.cu/" target="_blank" rel="noopener">Abrir visa oficial</a>
 </div>
 </section>
 
 <section id="flights" class="panel">
+<button class="btn close" onclick="closePanels()">Cerrar</button>
 <h2>Vuelos a Cuba</h2>
-<p data-t="flightIntro">Si todavía no tienes vuelo, comienza aquí. Si ya tienes uno, puedes usar la información para entenderlo.</p>
-<div class="simple">
-<h3 data-t="firstSearch">Primero busca tu vuelo</h3>
-<p class="muted" data-t="firstSearchText">Puedes comenzar por Google Flights y después pasar al sitio oficial de la aerolínea.</p>
+<p data-t="flightIntro">Si todavía no tienes vuelo, empieza aquí. Si ya lo tienes, puedes usar esta parte para entenderlo.</p>
 <div class="actions">
-<a class="btn" href="https://www.google.com/travel/flights" target="_blank" rel="noopener" data-t="googleFlights">Buscar vuelos</a>
+<a class="btn primary" href="https://www.google.com/travel/flights" target="_blank" rel="noopener">Buscar vuelos</a>
 </div>
-</div>
-<div class="simple">
+<div class="box">
+<h3>Buscar un vuelo</h3>
 <div class="form">
-<div class="field"><label data-t="origin">Lugar de salida</label><input id="fl_origin"></div>
-<div class="field"><label data-t="destination">Destino</label><input id="fl_destination" value="Cuba"></div>
-<div class="field"><label data-t="departure">Fecha de salida</label><input id="fl_departure" type="date"></div>
-<div class="field"><label data-t="return">Regreso, si aplica</label><input id="fl_return" type="date"></div>
-<div class="field"><label data-t="passengers">Personas</label><input id="fl_passengers" type="number" min="1" value="1"></div>
-<div class="field"><label data-t="airline">Aerolínea, si ya la sabes</label><input id="fl_airline"></div>
+<label>Origen<input id="fl_origin" placeholder="Ej.: Miami"></label>
+<label>Destino<input id="fl_destination" placeholder="Ej.: La Habana"></label>
+<label>Fecha de ida<input id="fl_departure" type="date"></label>
+<label>Fecha de regreso<input id="fl_return" type="date"></label>
+<label>Pasajeros<input id="fl_passengers" type="number" min="1" value="1"></label>
+<label>Tipo
+<select id="fl_type">
+<option value="regular">Vuelo regular</option>
+<option value="charter">Charter</option>
+<option value="">Cualquiera</option>
+</select>
+</label>
+<label class="full">Aerolínea, si ya la conoces<input id="fl_airline" placeholder="Opcional"></label>
 </div>
-<div class="actions">
-<button class="btn" onclick="searchFlights()" data-t="continue">Continuar</button>
-</div>
-</div>
+<div class="actions"><button class="btn primary" onclick="searchFlight()">Ver opciones</button></div>
 <div id="flightResult"></div>
+</div>
+<div class="box">
+<h3>Aerolíneas</h3>
+<p class="small">Aquí aparecerán las opciones disponibles y su sitio para continuar la compra directamente con la aerolínea.</p>
+<div id="airlines" class="airlines"></div>
+</div>
+<div class="box">
+<h3>Charters</h3>
+<div id="charters" class="airlines"></div>
+</div>
 </section>
 
-<section id="baggage" class="panel">
-<h2>Equipaje y artículos</h2>
-<p data-t="bagIntro">Aquí puedes preguntar primero por el artículo y después entender el peso, las medidas y la cantidad que puedes llevar.</p>
-
-<div class="simple">
-<h3 data-t="itemTitle">¿Qué quieres llevar?</h3>
-<p class="muted" data-t="itemIntro">Dime exactamente qué es. Si falta un dato importante, te lo preguntaremos antes de darte la respuesta.</p>
+<section id="item" class="panel">
+<button class="btn close" onclick="closePanels()">Cerrar</button>
+<h2>¿Qué quieres llevar?</h2>
+<p data-t="itemIntro">Dime qué quieres llevar. Te damos la respuesta primero. Si falta un dato necesario, te lo pedimos antes de darte una respuesta.</p>
+<div class="box">
 <div class="form">
-<div class="field full">
-<label data-t="itemName">Artículo</label>
-<input id="it_item" placeholder="Ejemplo: batería, laptop, medicina, comida..." data-ph="itemPlaceholder">
-</div>
-<div class="field">
-<label data-t="airline">Aerolínea, si ya la sabes</label>
-<input id="it_airline">
-</div>
-<div class="field">
-<label data-t="where">¿Dónde quieres llevarlo?</label>
+<label>¿Qué quieres llevar?<input id="it_item" placeholder="Ej.: batería portátil"></label>
+<label>Marca o modelo, si lo sabes<input id="it_model" placeholder="Opcional"></label>
+<label>Aerolínea, si la conoces<input id="it_airline" placeholder="Opcional"></label>
+<label>¿Dónde quieres llevarlo?
 <select id="it_bag">
-<option value="" data-t="dontKnow">Todavía no sé</option>
-<option value="carry_on" data-t="withMe">Conmigo</option>
-<option value="checked" data-t="inBag">En la maleta que entrego</option>
-<option value="personal" data-t="personal">Como artículo pequeño conmigo</option>
+<option value="">No estoy seguro</option>
+<option value="carry_on">Conmigo</option>
+<option value="checked">En la maleta que entrego</option>
+<option value="personal">En mi artículo pequeño</option>
 </select>
+</label>
+<label>Cantidad<input id="it_quantity" type="number" min="1" value="1"></label>
+<label>Peso aproximado<input id="it_weight" placeholder="Ej.: 2 lb / 1 kg"></label>
+<label>Medidas, si aplica<input id="it_size" placeholder="Ej.: 20 x 10 x 5 cm"></label>
+<label>Capacidad de batería, si tiene<input id="it_capacity" placeholder="Ej.: 20 Wh o 5000 mAh"></label>
+<label class="full">Más información<textarea id="it_description" placeholder="Escribe cualquier dato que pueda ayudar a identificar el artículo."></textarea></label>
 </div>
-<div class="field">
-<label data-t="quantity">Cantidad, si aplica</label>
-<input id="it_qty" type="number" min="1">
-</div>
-<div class="field">
-<label data-t="capacity">Capacidad, si aparece</label>
-<input id="it_capacity" placeholder="Ejemplo: 100 Wh o 20,000 mAh" data-ph="capacityPlaceholder">
-</div>
-<div class="field">
-<label data-t="weight">Peso, si aplica</label>
-<input id="it_weight" placeholder="Ejemplo: 2 lb" data-ph="weightPlaceholder">
-</div>
-<div class="field">
-<label data-t="size">Medidas, si aplica</label>
-<input id="it_size" placeholder="Ejemplo: 20 x 15 x 5 cm" data-ph="sizePlaceholder">
-</div>
-</div>
-<div class="simple">
-<h3 data-t="onlyIf">Solo marca lo que corresponda</h3>
 <div class="checks">
-<label class="check"><input id="it_battery" type="checkbox"><span data-t="battery">Tiene batería</span></label>
-<label class="check"><input id="it_liquid" type="checkbox"><span data-t="liquid">Tiene líquido</span></label>
-<label class="check"><input id="it_food" type="checkbox"><span data-t="food">Es comida</span></label>
-<label class="check"><input id="it_med" type="checkbox"><span data-t="medicine">Es medicina</span></label>
-<label class="check"><input id="it_electronic" type="checkbox"><span data-t="electronic">Es electrónico</span></label>
+<label><input id="it_battery" type="checkbox">Tiene batería</label>
+<label><input id="it_liquid" type="checkbox">Es líquido</label>
+<label><input id="it_food" type="checkbox">Es comida</label>
+<label><input id="it_med" type="checkbox">Es medicamento</label>
+<label><input id="it_animal" type="checkbox">Es para un animal</label>
+<label><input id="it_electronic" type="checkbox">Es electrónico</label>
 </div>
-</div>
-<div class="actions">
-<button class="btn" onclick="askItem()" data-t="ask">Dime si puedo llevarlo</button>
-</div>
-</div>
+<div class="actions"><button class="btn primary" onclick="checkItem()">Dame la respuesta</button></div>
 <div id="itemResult"></div>
+</div>
+</section>
 
-<div class="simple">
-<h3 data-t="bagTitle">Entiende tu equipaje</h3>
-<p class="muted" data-t="bagExplain">Para responder bien necesitamos saber qué llevas, cuántas piezas, cuánto pesan y cuánto miden.</p>
+<section id="bag" class="panel">
+<button class="btn close" onclick="closePanels()">Cerrar</button>
+<h2>Entiende tu equipaje</h2>
+<p data-t="bagIntro">Pon los datos que tengas. No inventaremos peso, medidas, cantidad ni condiciones que no estén confirmadas.</p>
+<div class="box">
 <div class="form">
-<div class="field"><label data-t="airline">Aerolínea</label><input id="bg_airline"></div>
-<div class="field"><label data-t="fare">Tipo de boleto, si lo sabes</label><input id="bg_fare"></div>
-<div class="field"><label data-t="bagType">Qué estás preparando</label>
-<select id="bg_type">
-<option value="">Todavía no sé</option>
-<option value="personal">Artículo pequeño conmigo</option>
-<option value="carry_on">Maleta que llevo conmigo</option>
-<option value="checked">Maleta que entrego</option>
+<label>Aerolínea<input id="bag_airline" placeholder="Ej.: Aerolínea"></label>
+<label>Origen<input id="bag_origin" placeholder="Ej.: Miami"></label>
+<label>Destino<input id="bag_destination" placeholder="Ej.: La Habana"></label>
+<label>Tipo de tarifa<input id="bag_fare" placeholder="Ej.: Básica"></label>
+<label>¿Qué equipaje quieres revisar?
+<select id="bag_type">
+<option value="carry_on">Lo que llevas contigo</option>
+<option value="checked">La maleta que entregas</option>
+<option value="personal">El artículo pequeño que llevas contigo</option>
 </select>
+</label>
+<label>Cantidad de piezas<input id="bag_pieces" type="number" min="1" placeholder="Ej.: 1"></label>
+<label>Peso<input id="bag_weight" placeholder="Ej.: 50 lb / 23 kg"></label>
+<label>Medidas<input id="bag_dimensions" placeholder="Ej.: 62 pulgadas lineales"></label>
 </div>
-<div class="field"><label data-t="pieces">Cantidad</label><input id="bg_pieces" type="number" min="0"></div>
-<div class="field"><label data-t="weight">Peso</label><input id="bg_weight" placeholder="Ejemplo: 25 lb" data-ph="bagWeightPlaceholder"></div>
-<div class="field"><label data-t="dimensions">Medidas</label><input id="bg_dimensions" placeholder="Ejemplo: 28 x 20 x 10 in" data-ph="dimensionsPlaceholder"></div>
+<div class="actions"><button class="btn primary" onclick="checkBag()">Entender mi equipaje</button></div>
+<div id="bagResult"></div>
 </div>
-<div class="actions">
-<button class="btn" onclick="checkBaggage()" data-t="understand">Ayúdame a entenderlo</button>
-</div>
-</div>
-<div id="baggageResult"></div>
 </section>
 
 <section id="pdf" class="panel">
-<h2 data-t="pdfTitle">Mi PDF</h2>
-<p data-t="pdfIntro">Es opcional. Solo aparece aquí si quieres guardar tu preparación.</p>
-<div class="simple">
-<button class="btn" onclick="makePDF()" data-t="createPdf">Sacar mi PDF</button>
+<button class="btn close" onclick="closePanels()">Cerrar</button>
+<h2>Mi PDF</h2>
+<p data-t="pdfIntro">Este PDF es opcional. Úsalo solamente si quieres guardar o imprimir tu información.</p>
+<div class="box">
+<div class="big">Crear mi resumen</div>
+<p class="small">Se utilizarán las respuestas que hayas obtenido en esta sesión.</p>
+<div class="actions"><button class="btn primary" onclick="makePDF()">Crear PDF</button></div>
 <div id="pdfResult"></div>
 </div>
 </section>
 </main>
 
 <footer>
-<div class="wrap" data-t="footer">¿QUÉ QUIERES LLEVAR? · May Roga LLC · Servicio independiente de preparación.</div>
+<div class="wrap">
+¿QUÉ QUIERES LLEVAR? es una herramienta independiente de orientación y preparación. No reserva vuelos, no vende boletos, no procesa visas, no completa trámites oficiales ni sustituye las instrucciones del sitio oficial.
+</div>
 </footer>
 
 <script>
 const API="";
-const KEY="qql_trip_v17";
 let lang=localStorage.getItem("qql_lang")||"es";
-let state=loadState();
+let state=JSON.parse(localStorage.getItem("qql_trip_v16")||"{}");
 
 const T={
 es:{
-title:"Viaja con más tranquilidad.",
-subtitle:"Aquí encuentras lo que necesitas para preparar tu viaje a Cuba, sin palabras complicadas.",
-legal:"Servicio independiente. No somos gobierno, aerolínea, aeropuerto, aduana, inmigración, consulado ni agencia de viajes.",
-c1:"Mira cómo se llena y qué hacer al terminar.",
-c2:"Mira cómo se hace, paso a paso.",
-c3:"Busca vuelos y continúa con la aerolínea.",
-c4:"Pregunta qué puedes llevar y cómo llevarlo.",
-dvIntro:"Primero mira la clase visual. Después abre el formulario oficial y hazlo allí.",
-dv1:"Preparar",dv2:"Llenar",dv3:"Revisar",dv4:"Guardar",
-visualTitle:"Así se verá el proceso",visualText:"Las imágenes son una clase preparada por esta aplicación. No son el formulario oficial.",
-start:"Ver clase completa",openDv:"Abrir D’Viajeros oficial",
-visaIntro:"Mira primero cómo se hace. Después abre el sitio oficial para realizar el proceso.",
-v1:"Preparar",v2:"Llenar",v3:"Revisar",v4:"Guardar",
-visualVisaTitle:"Así se verá el proceso",visualVisaText:"La aplicación te enseña el recorrido con imágenes sencillas antes de enviarte al sitio oficial.",
-openVisa:"Abrir visa oficial",
-flightIntro:"Si todavía no tienes vuelo, comienza aquí. Si ya tienes uno, puedes usar la información para entenderlo.",
-firstSearch:"Primero busca tu vuelo",firstSearchText:"Puedes comenzar por Google Flights y después pasar al sitio oficial de la aerolínea.",
-googleFlights:"Buscar vuelos",origin:"Lugar de salida",destination:"Destino",departure:"Fecha de salida",return:"Regreso, si aplica",passengers:"Personas",airline:"Aerolínea, si ya la sabes",continue:"Continuar",
-itemTitle:"¿Qué quieres llevar?",itemIntro:"Dime exactamente qué es. Si falta un dato importante, te lo preguntaremos antes de darte la respuesta.",itemName:"Artículo",itemPlaceholder:"Ejemplo: batería, laptop, medicina, comida...",where:"¿Dónde quieres llevarlo?",dontKnow:"Todavía no sé",withMe:"Conmigo",inBag:"En la maleta que entrego",personal:"Como artículo pequeño conmigo",quantity:"Cantidad, si aplica",capacity:"Capacidad, si aparece",capacityPlaceholder:"Ejemplo: 100 Wh o 20,000 mAh",weight:"Peso, si aplica",weightPlaceholder:"Ejemplo: 2 lb",size:"Medidas, si aplica",sizePlaceholder:"Ejemplo: 20 x 15 x 5 cm",onlyIf:"Solo marca lo que corresponda",battery:"Tiene batería",liquid:"Tiene líquido",food:"Es comida",medicine:"Es medicina",electronic:"Es electrónico",ask:"Dime si puedo llevarlo",
-bagTitle:"Entiende tu equipaje",bagIntro:"Aquí puedes preguntar primero por el artículo y después entender el peso, las medidas y la cantidad que puedes llevar.",bagIntro2:"",bagExplain:"Para responder bien necesitamos saber qué llevas, cuántas piezas, cuánto pesan y cuánto miden.",fare:"Tipo de boleto, si lo sabes",bagType:"Qué estás preparando",pieces:"Cantidad",dimensions:"Medidas",bagWeightPlaceholder:"Ejemplo: 25 lb",dimensionsPlaceholder:"Ejemplo: 28 x 20 x 10 in",understand:"Ayúdame a entenderlo",
-pdfTitle:"Mi PDF",pdfIntro:"Es opcional. Solo aparece aquí si quieres guardar tu preparación.",createPdf:"Sacar mi PDF",footer:"¿QUÉ QUIERES LLEVAR? · May Roga LLC · Servicio independiente de preparación."
+title:"Viaja con una respuesta clara",
+intro:"Aquí puedes aprender qué hacer antes de viajar a Cuba, ver cómo se hace cada trámite, buscar tu vuelo y resolver dudas sobre lo que puedes llevar.",
+note:"No necesitas conocer palabras complicadas. La aplicación te explica el paso que necesitas hacer.",
+cardDv:"Mira cómo se llena y cómo queda terminado.",
+cardVisa:"Mira los pasos y el resultado final antes de entrar al sitio oficial.",
+cardFlights:"Encuentra dónde buscar tu vuelo y conoce las opciones disponibles.",
+cardItem:"Pregunta por un artículo y recibe una respuesta directa.",
+cardBag:"Revisa maletas, piezas, peso y medidas de forma sencilla.",
+cardPdf:"Crea tu resumen solamente si quieres guardarlo o imprimirlo.",
+dvIntro:"Primero mira el proceso. Después abre el sitio oficial y completa allí tus datos.",
+visaIntro:"Mira primero cómo se realiza. Después abre el sitio oficial para hacer el trámite real.",
+flightIntro:"Si todavía no tienes vuelo, empieza aquí. Si ya lo tienes, puedes usar esta parte para entenderlo.",
+itemIntro:"Dime qué quieres llevar. Te damos la respuesta primero. Si falta un dato necesario, te lo pedimos antes de darte una respuesta.",
+bagIntro:"Pon los datos que tengas. No inventaremos peso, medidas, cantidad ni condiciones que no estén confirmadas.",
+pdfIntro:"Este PDF es opcional. Úsalo solamente si quieres guardar o imprimir tu información."
 },
 en:{
-title:"Travel with more peace of mind.",
-subtitle:"Find what you need to prepare your trip to Cuba, using simple words.",
-legal:"Independent service. We are not a government office, airline, airport, customs office, immigration office, consulate, or travel agency.",
-c1:"See how it is completed and what to do at the end.",
-c2:"See how it works, step by step.",
-c3:"Search for flights and continue with the airline.",
-c4:"Ask what you can take and how to take it.",
-dvIntro:"First see the visual class. Then open the official form and complete it there.",
-dv1:"Prepare",dv2:"Complete",dv3:"Review",dv4:"Save",
-visualTitle:"See how the process looks",visualText:"These images are a class prepared by this app. They are not the official form.",
-start:"See full class",openDv:"Open official D’Viajeros",
-visaIntro:"First see how it works. Then open the official site to complete the process.",
-v1:"Prepare",v2:"Complete",v3:"Review",v4:"Save",
-visualVisaTitle:"See how the process looks",visualVisaText:"The app teaches the process with simple images before sending you to the official site.",
-openVisa:"Open official visa site",
-flightIntro:"If you do not have a flight yet, start here. If you already have one, use the information to understand it.",
-firstSearch:"First search for your flight",firstSearchText:"You can start with Google Flights and then go to the airline's official site.",
-googleFlights:"Search flights",origin:"Departure",destination:"Destination",departure:"Departure date",return:"Return date, if applicable",passengers:"People",airline:"Airline, if known",continue:"Continue",
-itemTitle:"What do you want to take?",itemIntro:"Tell me exactly what it is. If an important detail is missing, I will ask you before answering.",itemName:"Item",itemPlaceholder:"Example: battery, laptop, medicine, food...",where:"Where do you want to take it?",dontKnow:"I don't know yet",withMe:"With me",inBag:"In the suitcase I check",personal:"As a small item with me",quantity:"Quantity, if applicable",capacity:"Capacity, if shown",capacityPlaceholder:"Example: 100 Wh or 20,000 mAh",weight:"Weight, if applicable",weightPlaceholder:"Example: 2 lb",size:"Size, if applicable",sizePlaceholder:"Example: 20 x 15 x 5 cm",onlyIf:"Only select what applies",battery:"Has a battery",liquid:"Contains liquid",food:"Is food",medicine:"Is medicine",electronic:"Is electronic",ask:"Tell me if I can take it",
-bagTitle:"Understand your baggage",bagExplain:"To answer correctly we need to know what you have, how many pieces, how much they weigh, and how large they are.",fare:"Ticket type, if known",bagType:"What are you preparing?",pieces:"Quantity",dimensions:"Measurements",bagWeightPlaceholder:"Example: 25 lb",dimensionsPlaceholder:"Example: 28 x 20 x 10 in",understand:"Help me understand it",
-pdfTitle:"My PDF",pdfIntro:"Optional. Use this only if you want to save your preparation.",createPdf:"Get my PDF",footer:"¿QUÉ QUIERES LLEVAR? · May Roga LLC · Independent preparation service."
-}};
+title:"Travel with a clear answer",
+intro:"Learn what to do before traveling to Cuba, see how each process works, find your flight and get clear answers about what you can take.",
+note:"You do not need complicated words. The app explains the step you need to take.",
+cardDv:"See how the form is completed and finished.",
+cardVisa:"See the steps and final result before opening the official site.",
+cardFlights:"Find where to search for your flight and see available options.",
+cardItem:"Ask about an item and get a direct answer.",
+cardBag:"Check bags, pieces, weight and size in simple language.",
+cardPdf:"Create your summary only if you want to save or print it.",
+dvIntro:"First see how the process works. Then open the official site and enter your information there.",
+visaIntro:"First see how it works. Then open the official site to complete the real process.",
+flightIntro:"If you do not have a flight yet, start here. If you already have one, use this section to understand it.",
+itemIntro:"Tell me what you want to take. We give you the answer first. If a necessary detail is missing, we ask for it before answering.",
+bagIntro:"Enter the information you have. We will not invent weight, size, quantity or conditions that are not confirmed.",
+pdfIntro:"This PDF is optional. Use it only if you want to save or print your information."
+}
+};
 
-function t(k){return T[lang]?.[k]||T.es[k]||k}
 function setLang(x){
-lang=x;localStorage.setItem("qql_lang",x);document.documentElement.lang=x;
-document.querySelectorAll("[data-t]").forEach(e=>e.textContent=t(e.dataset.t));
-document.querySelectorAll("[data-ph]").forEach(e=>e.placeholder=t(e.dataset.ph));
+lang=x;localStorage.setItem("qql_lang",x);
+document.documentElement.lang=x;
+document.querySelectorAll("[data-t]").forEach(e=>{let k=e.dataset.t;if(T[x][k])e.textContent=T[x][k]});
 document.getElementById("esBtn").classList.toggle("active",x==="es");
 document.getElementById("enBtn").classList.toggle("active",x==="en");
-state.language=x;saveState();renderGuides();
-}
-function loadState(){
-try{return JSON.parse(localStorage.getItem(KEY)||"{}")}catch(e){return{}}
-}
-function saveState(){localStorage.setItem(KEY,JSON.stringify(state||{}))}
-function val(id){return document.getElementById(id)?.value?.trim()||""}
-function checked(id){return !!document.getElementById(id)?.checked}
-function esc(x){return String(x??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
-function safeUrl(x){
-try{let u=new URL(x);return /^https?:$/.test(u.protocol)?u.href:"#"}catch(e){return"#"}
 }
 function openPanel(id){
-document.querySelectorAll(".panel").forEach(x=>x.classList.remove("open"));
-let p=document.getElementById(id);if(!p)return;
-p.classList.add("open");p.scrollIntoView({behavior:"smooth",block:"start"});
-if(id==="dviajeros")renderGuides();
-if(id==="visa")renderGuides();
+document.querySelectorAll(".panel").forEach(x=>x.classList.remove("show"));
+document.getElementById(id).classList.add("show");
+window.scrollTo({top:document.getElementById(id).offsetTop-70,behavior:"smooth"});
+if(id==="flights")loadFlightData();
+if(id==="dv")loadGuide("dviajeros","dvRefs");
+if(id==="visa")loadGuide("visa","visaRefs");
+}
+function closePanels(){document.querySelectorAll(".panel").forEach(x=>x.classList.remove("show"))}
+function val(id){return document.getElementById(id)?.value?.trim()||""}
+function checked(id){return !!document.getElementById(id)?.checked}
+function esc(s){return String(s??"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[m]))}
+function safeUrl(u){
+try{let x=new URL(u,location.origin);return /^https?:$/.test(x.protocol)?x.href:""}catch{return""}
 }
 async function post(path,data){
-let r=await fetch(API+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(data)});
+try{
+let r=await fetch(API+path,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({...data,language:lang})});
 let text=await r.text(),j;
-try{j=JSON.parse(text)}catch(e){throw new Error(text||"Error")}
-if(!r.ok)throw new Error(j.detail||j.message||"Error");
+try{j=JSON.parse(text)}catch{throw new Error("El servidor no devolvió una respuesta válida.")};
+if(!r.ok)throw new Error(j.detail||j.message||"No se pudo completar la consulta.");
 return j;
+}catch(e){throw e}
 }
-async function get(path){
-let r=await fetch(API+path);let j=await r.json();
-if(!r.ok)throw new Error(j.detail||"Error");
-return j;
+function sourceUrl(s){
+if(!s)return"";
+return safeUrl(s.exact_url||s.deep_url||s.section_url||s.url||s.link||"");
 }
-
-function fakeImage(type,step){
-let labels={
-dv:["Datos del viajero","Datos del viaje","Revisión","Resultado"],
-visa:["Datos personales","Información del viaje","Revisión","Resultado"]
-};
-let a=labels[type]||labels.dv,l=a[(step-1)%4];
-return `<div class="visual"><div class="bar"></div><b>${esc(l)}</b><div class="box"><div class="line"></div><div class="line"></div><div class="line"></div></div><div class="box"><div class="line"></div><div class="line"></div></div><div class="ok">${lang==="es"?"CONTINUAR":"CONTINUE"}</div></div>`;
-}
-function guideHTML(type){
-let a=lang==="es"?
-(type==="dv"?["Prepara tus datos","Mira dónde colocarlos","Revisa todo","Guarda el resultado"]:["Prepara tus datos","Completa cada parte","Revisa todo","Guarda el resultado"]):
-(type==="dv"?["Prepare your information","See where it goes","Review everything","Save the result"]:["Prepare your information","Complete each part","Review everything","Save the result"]);
-return a.map((x,i)=>`<div class="guidebox"><div class="guidepic">${fakeImage(type,i+1)}</div><div class="guidecap"><b>${i+1}. ${esc(x)}</b>${type==="dv"?(lang==="es"?"Ejemplo visual del paso.":"Visual example of the step."):(lang==="es"?"Ejemplo visual del paso.":"Visual example of the step.")}</div></div>`).join("");
-}
-function renderGuides(){
-document.getElementById("dvGuide").innerHTML=guideHTML("dv");
-document.getElementById("visaGuide").innerHTML=guideHTML("visa");
-}
-
-let dvStep=0,visaStep=0;
-async function startDviajeros(){
-dvStep=1;
-await simulation("/api/dviajeros",{language:lang,step:dvStep},"dvSim","dv");
-}
-async function nextDviajeros(){
-if(dvStep<7)dvStep++;
-await simulation("/api/dviajeros",{language:lang,step:dvStep},"dvSim","dv");
-}
-async function startVisa(){
-visaStep=1;
-await simulation("/api/visa",{language:lang,step:visaStep},"visaSim","visa");
-}
-async function nextVisa(){
-if(visaStep<6)visaStep++;
-await simulation("/api/visa",{language:lang,step:visaStep},"visaSim","visa");
-}
-async function simulation(path,data,target,type){
-let el=document.getElementById(target);
-try{
-let d=await post(path,data);
-renderSimulation(d,target,type);
-}catch(e){
-renderLocalSimulation(target,type);
-}
-}
-function renderSimulation(d,target,type){
-let el=document.getElementById(target),steps=d.steps||[],n=type==="dv"?dvStep:visaStep;
-let current=steps.find(x=>Number(x.number)===Number(n))||steps[Math.max(0,n-1)]||{};
-let title=current.title||`${lang==="es"?"Paso":"Step"} ${n}`;
-let text=current.text||current.official_step||d.message||"";
-let link=current.link||d.official_url||"";
-let final=(type==="dv"&&n>=7)||(type==="visa"&&n>=6);
-let html=`<div class="simtop"><b>${esc(title)}</b><span class="simstep">${n}/${type==="dv"?7:6}</span></div>`;
-html+=`<p>${esc(text)}</p>`;
-html+=`<div class="guide">${guideHTML(type)}</div>`;
-if(!final){
-html+=`<div class="actions"><button class="btn" onclick="${type==="dv"?"nextDviajeros()":"nextVisa()"}">${lang==="es"?"Siguiente":"Next"}</button></div>`;
-}else{
-html+=`<div class="notice">${lang==="es"?"Ya viste el recorrido. Ahora puedes hacerlo en el sitio oficial.":"You have seen the process. You can now complete it on the official site."}</div>`;
-}
-if(link)html+=`<div class="source"><a href="${esc(safeUrl(link))}" target="_blank" rel="noopener">${esc(lang==="es"?"Abrir sitio oficial":"Open official site")}</a></div>`;
-el.innerHTML=html;
-}
-function renderLocalSimulation(target,type){
-let n=type==="dv"?dvStep:visaStep;
-let total=type==="dv"?7:6;
-let titles=type==="dv"?
-(lang==="es"?["Prepara tus datos","Busca los datos de tu viaje","Mira dónde colocarlos","Revisa cada dato","Termina el formulario","Guarda el resultado","Ya puedes hacerlo en el sitio oficial"]:["Prepare your information","Find your trip information","See where it goes","Review each detail","Complete the form","Save the result","You can now use the official site"]):
-(lang==="es"?["Prepara tus datos","Comienza","Completa la información","Revisa","Termina","Guarda el resultado"]:["Prepare your information","Start","Complete the information","Review","Finish","Save the result"]);
-let title=titles[n-1]||titles[0];
-let final=n>=total;
-document.getElementById(target).innerHTML=`<div class="simtop"><b>${esc(title)}</b><span class="simstep">${n}/${total}</span></div><p>${esc(final?(lang==="es"?"Ahora abre el sitio oficial y haz el trámite allí.":"Now open the official site and complete the process there."):(lang==="es"?"Mira la imagen y pasa al siguiente paso.":"Look at the image and go to the next step."))}</p><div class="guide">${guideHTML(type)}</div><div class="actions">${!final?`<button class="btn" onclick="${type==="dv"?"nextDviajeros()":"nextVisa()"}">${lang==="es"?"Siguiente":"Next"}</button>`:`<a class="btn" href="${type==="dv"?safeUrl("https://dviajeros.mitrans.gob.cu/"):safeUrl("https://evisacuba.cu/")}" target="_blank" rel="noopener">${lang==="es"?"Abrir sitio oficial":"Open official site"}</a>`}</div>`;
-}
-
-async function askItem(){
-let item=val("it_item");
-if(!item){showBox("itemResult",lang==="es"?"Escribe primero qué quieres llevar.":"First tell us what you want to take.");return}
-let data={
-item,
-airline:val("it_airline"),
-baggage_type:val("it_bag"),
-quantity:val("it_qty"),
-capacity:val("it_capacity"),
-weight:val("it_weight"),
-size:val("it_size"),
-contains_battery:checked("it_battery"),
-contains_liquid:checked("it_liquid"),
-contains_food:checked("it_food"),
-is_medication:checked("it_med"),
-is_electronic:checked("it_electronic"),
-destination:"Cuba",
-language:lang
-};
-try{
-let d=await post("/api/item",data);
-state.item={...data,result:d};saveState();renderItem(d);
-}catch(e){showBox("itemResult",lang==="es"?"No pudimos comprobarlo ahora. Inténtalo nuevamente.":"We could not check it now. Please try again.")}
-}
-function renderItem(d){
-let label=d.decision_label||d.final_decision||d.decision||"";
-let html=`<div class="answer"><h3>${esc(label)}</h3>`;
-if(d.message)html+=`<p>${esc(d.message)}</p>`;
-if(d.explanation&&d.explanation!==d.message)html+=`<p>${esc(d.explanation)}</p>`;
-let cond=Array.isArray(d.conditions)?d.conditions:[];let alt=Array.isArray(d.alternatives)?d.alternatives:[];let warn=Array.isArray(d.warnings)?d.warnings:[];
-if(cond.length)html+=`<div class="simple"><b>${lang==="es"?"Qué debes hacer":"What to do"}</b><ul>${cond.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`;
-if(alt.length)html+=`<div class="simple"><b>${lang==="es"?"Otra opción":"Another option"}</b><ul>${alt.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`;
-if(warn.length)html+=`<div class="notice"><b>${lang==="es"?"Importante":"Important"}</b><ul>${warn.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`;
-if(d.next_action)html+=`<p><b>${esc(d.next_action)}</b></p>`;
-if(d.official_url)html+=`<div class="source"><b>${lang==="es"?"Lee exactamente esta información":"Read this exact information"}</b><br>${esc(d.official_label||"")}<br><a href="${esc(safeUrl(d.official_url))}" target="_blank" rel="noopener">${esc(lang==="es"?"Abrir la información oficial":"Open the official information")}</a></div>`;
-else if(Array.isArray(d.sources)&&d.sources.length)html+=`<div class="source">${sourceLinks(d.sources)}</div>`;
-html+=`</div>`;
-document.getElementById("itemResult").innerHTML=html;
-}
-
-async function checkBaggage(){
-let data={
-airline:val("bg_airline"),
-fare:val("bg_fare"),
-type:val("bg_type"),
-pieces:val("bg_pieces"),
-weight:val("bg_weight"),
-dimensions:val("bg_dimensions"),
-destination:"Cuba",
-language:lang
-};
-try{
-let d=await post("/api/baggage",data);
-state.baggage={...data,result:d};saveState();renderBaggage(d);
-}catch(e){showBox("baggageResult",lang==="es"?"No pudimos comprobarlo ahora. Inténtalo nuevamente.":"We could not check it now. Please try again.")}
-}
-function renderBaggage(d){
-let html=`<div class="answer"><h3>${esc(d.type_name||d.status||"Resultado")}</h3><p>${esc(d.message||"")}</p>`;
-let missing=Array.isArray(d.do_not_assume)?d.do_not_assume:[];
-if(missing.length)html+=`<div class="simple"><b>${lang==="es"?"Falta saber":"Still needed"}</b><ul>${missing.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`;
-let cond=Array.isArray(d.conditions)?d.conditions:[];
-if(cond.length)html+=`<ul>${cond.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
-if(d.next_action)html+=`<p><b>${esc(d.next_action)}</b></p>`;
-if(Array.isArray(d.sources)&&d.sources.length)html+=`<div class="source">${sourceLinks(d.sources)}</div>`;
-html+=`</div>`;
-document.getElementById("baggageResult").innerHTML=html;
-}
-
-async function searchFlights(){
-let data={
-origin:val("fl_origin"),
-destination:val("fl_destination")||"Cuba",
-departure:val("fl_departure"),
-return_date:val("fl_return"),
-passengers:Number(val("fl_passengers")||1),
-airline:val("fl_airline"),
-language:lang
-};
-try{let d=await post("/api/flight",data);renderFlights(d,data)}
-catch(e){renderFlights({},data)}
-}
-async function renderFlights(d,data){
-let airlines=[],charters=[];
-try{
-let a=await get("/api/airlines");airlines=Array.isArray(a)?a:(a.airlines||[]);
-}catch(e){}
-try{
-let c=await get("/api/charters");charters=Array.isArray(c)?c:(c.charters||[]);
-}catch(e){}
-let html=`<div class="answer"><h3>${esc(lang==="es"?"Tu siguiente paso":"Your next step")}</h3><p>${esc(d.message|| (lang==="es"?"Busca el vuelo y después abre directamente el sitio de la aerolínea.":"Search for the flight and then open the airline's official site."))}</p>`;
-html+=`<div class="actions"><a class="btn" href="https://www.google.com/travel/flights" target="_blank" rel="noopener">${esc(t("googleFlights"))}</a></div>`;
-if(data.airline){
-let f=airlines.find(x=>_low(x.name||x.airline).includes(_low(data.airline)));
-if(f)html+=provider(f);
-}
-if(airlines.length){
-html+=`<div class="simple"><h3>${lang==="es"?"Aerolíneas":"Airlines"}</h3><div class="flightlist">${airlines.map(provider).join("")}</div></div>`;
-}
-if(charters.length){
-html+=`<div class="simple"><h3>${lang==="es"?"Vuelos chárter":"Charter flights"}</h3><p class="muted">${lang==="es"?"Comprueba siempre que exista disponibilidad para tu fecha antes de comprar.":"Always check availability for your date before purchasing."}</p><div class="flightlist">${charters.map(provider).join("")}</div></div>`;
-}
-html+=`</div>`;
-document.getElementById("flightResult").innerHTML=html;
-}
-function _low(x){return String(x||"").toLowerCase()}
-function provider(x){
-let n=x.name||x.airline||"Aerolínea",u=safeUrl(x.url||x.website||"");
-return `<div class="provider"><strong>${esc(n)}</strong>${x.note?`<small>${esc(x.note)}</small>`:""}${u!=="#" ? `<a href="${esc(u)}" target="_blank" rel="noopener">${esc(lang==="es"?"Abrir sitio oficial":"Open official site")}</a>`:""}</div>`;
-}
-
-function sourceLinks(a){
-return a.map(x=>{
-if(typeof x==="string")return `<div><a href="${esc(safeUrl(x))}" target="_blank" rel="noopener">${esc(x)}</a></div>`;
-let u=safeUrl(x.url||x.link||"");if(u==="#")return"";
-return `<div><a href="${esc(u)}" target="_blank" rel="noopener">${esc(x.name||x.title||u)}</a>${x.description?` — ${esc(x.description)}`:""}</div>`;
+function sourceLinks(sources){
+if(!Array.isArray(sources)||!sources.length)return"";
+return sources.map((s,i)=>{
+let u=sourceUrl(s);if(!u)return"";
+let title=s.title||s.name||s.what_it_covers||`Fuente ${i+1}`;
+let desc=s.description||s.what_it_covers||"";
+return `<a class="source" href="${esc(u)}" target="_blank" rel="noopener"><b>${esc(title)}</b>${desc?`<br><span class="small">${esc(desc)}</span>`:""}<br><span class="small">Abrir la información</span></a>`
 }).join("");
 }
-function showBox(id,msg){
-document.getElementById(id).innerHTML=`<div class="answer"><p>${esc(msg)}</p></div>`;
+function save(){
+localStorage.setItem("qql_trip_v16",JSON.stringify(state));
+}
+function renderRefs(target,data){
+let refs=data?.reference_images||data?.reference_image||[];
+if(!refs)return"";
+if(!Array.isArray(refs))refs=[refs];
+return refs.map(r=>{
+let u=typeof r==="string"?r:(r.url||r.src||"");
+u=safeUrl(u);if(!u)return"";
+return `<div class="box"><img src="${esc(u)}" alt="Ejemplo visual" style="width:100%;max-height:500px;object-fit:contain;border-radius:9px"><div class="small" style="margin-top:6px">Referencia visual · Revisa siempre el sitio oficial.</div></div>`
+}).join("");
+}
+async function loadGuide(type,target){
+try{
+let r=await post(type==="dviajeros"?"/api/dviajeros":"/api/visa",{});
+document.getElementById(target).innerHTML=renderRefs(target,r);
+}catch(e){document.getElementById(target).innerHTML=""}
+}
+async function loadFlightData(){
+try{
+let [a,c]=await Promise.all([
+fetch(API+"/api/airlines").then(x=>x.json()),
+fetch(API+"/api/charters").then(x=>x.json())
+]);
+renderProviders("airlines",a);
+renderProviders("charters",c);
+}catch(e){}
+}
+function providerArray(x){
+if(Array.isArray(x))return x;
+return x?.airlines||x?.charters||x?.providers||x?.items||[];
+}
+function renderProviders(id,data){
+let arr=providerArray(data);
+let el=document.getElementById(id);
+if(!arr.length){el.innerHTML='<div class="small">No hay opciones disponibles en este momento.</div>';return}
+el.innerHTML=arr.map(x=>{
+let name=x.name||x.airline||x.title||"Opción";
+let u=safeUrl(x.url||x.website||x.official_url||"");
+return `<div class="airline"><b>${esc(name)}</b>${x.description?`<div class="small">${esc(x.description)}</div>`:""}${u?`<a class="btn" href="${esc(u)}" target="_blank" rel="noopener">Abrir sitio</a>`:""}</div>`
+}).join("");
+}
+async function searchFlight(){
+let data={
+origin:val("fl_origin"),destination:val("fl_destination"),departure:val("fl_departure"),
+return_date:val("fl_return"),passengers:Number(val("fl_passengers")||1),
+flight_type:val("fl_type"),airline:val("fl_airline")
+};
+if(!data.origin||!data.destination||!data.departure){
+document.getElementById("flightResult").innerHTML='<div class="result warn">Escribe origen, destino y fecha de ida para buscar.</div>';return;
+}
+try{
+let r=await post("/api/booking",data);
+state.flight={request:data,result:r};save();
+document.getElementById("flightResult").innerHTML=renderFlight(r);
+}catch(e){document.getElementById("flightResult").innerHTML=`<div class="result warn">${esc(e.message)}</div>`}
+}
+function renderFlight(r){
+let msg=r.message||r.explanation||r.summary||"Revisa las opciones disponibles.";
+let links=sourceLinks(r.sources);
+return `<div class="result"><div class="big">${esc(r.title||"Resultado")}</div><div>${esc(msg)}</div>${r.next_action?`<p><b>Siguiente paso:</b> ${esc(r.next_action)}</p>`:""}${links}</div>`
+}
+async function checkItem(){
+let item=val("it_item");
+if(!item){document.getElementById("itemResult").innerHTML='<div class="result warn">Primero dime qué artículo quieres llevar.</div>';return}
+let battery=checked("it_battery")||/bater[ií]a|battery|power\s*bank|cargador\s*port[aá]til/i.test(item);
+let cap=val("it_capacity");
+if(battery&&!cap){
+document.getElementById("itemResult").innerHTML='<div class="result warn"><b>Necesito un dato antes de responder:</b><br>Busca en la batería o en su etiqueta la capacidad. Puede aparecer en Wh o mAh. Escríbela aquí y vuelve a preguntar.</div>';
+document.getElementById("it_capacity").focus();return;
+}
+let desc=val("it_description");
+if(val("it_model"))desc+=(desc?"\n":"")+`Modelo: ${val("it_model")}`;
+if(cap)desc+=(desc?"\n":"")+`Capacidad de batería: ${cap}`;
+let data={
+item,description:desc,airline:val("it_airline"),destination:val("fl_destination"),
+origin:val("fl_origin"),baggage_type:val("it_bag"),quantity:Number(val("it_quantity")||1),
+weight:val("it_weight"),size:val("it_size"),contains_battery:battery,
+contains_liquid:checked("it_liquid"),contains_food:checked("it_food"),
+is_medication:checked("it_med"),is_animal:checked("it_animal"),
+is_electronic:checked("it_electronic")
+};
+try{
+let r=await post("/api/item",data);
+state.item={request:data,result:r};save();
+document.getElementById("itemResult").innerHTML=renderItem(r);
+}catch(e){document.getElementById("itemResult").innerHTML=`<div class="result warn">${esc(e.message)}</div>`}
+}
+function renderItem(r){
+let answer=r.decision_label||r.decision||r.final_decision||"Respuesta";
+let msg=r.message||r.explanation||"";
+let cond=Array.isArray(r.conditions)?r.conditions:[];
+let warnings=Array.isArray(r.warnings)?r.warnings:[];
+let html=`<div class="result"><div class="big">${esc(answer)}</div><div>${esc(msg)}</div>`;
+if(r.next_action)html+=`<p><b>Siguiente paso:</b> ${esc(r.next_action)}</p>`;
+if(cond.length)html+=`<p><b>Ten en cuenta:</b></p><ul>${cond.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
+if(warnings.length)html+=`<p><b>Importante:</b></p><ul>${warnings.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
+if(r.verify_with)html+=`<p><b>Debes confirmar:</b> ${esc(r.verify_with)}</p>`;
+html+=sourceLinks(r.sources);
+html+=`</div>`;
+return html;
+}
+async function checkBag(){
+let data={
+type:val("bag_type"),baggage_type:val("bag_type"),airline:val("bag_airline"),
+origin:val("bag_origin"),destination:val("bag_destination"),fare:val("bag_fare"),
+pieces:val("bag_pieces"),weight:val("bag_weight"),dimensions:val("bag_dimensions")
+};
+if(!data.airline&&!data.origin&&!data.destination){
+document.getElementById("bagResult").innerHTML='<div class="result warn">Para darte una respuesta útil necesito al menos la aerolínea y, si puedes, origen y destino.</div>';return;
+}
+try{
+let r=await post("/api/baggage",data);
+state.baggage={request:data,result:r};save();
+document.getElementById("bagResult").innerHTML=renderBag(r);
+}catch(e){document.getElementById("bagResult").innerHTML=`<div class="result warn">${esc(e.message)}</div>`}
+}
+function renderBag(r){
+let msg=r.message||r.explanation||r.summary||"";
+let html=`<div class="result"><div class="big">${esc(r.title||"Tu equipaje")}</div><div>${esc(msg)}</div>`;
+if(r.next_action)html+=`<p><b>Siguiente paso:</b> ${esc(r.next_action)}</p>`;
+if(Array.isArray(r.conditions)&&r.conditions.length)html+=`<ul>${r.conditions.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>`;
+html+=sourceLinks(r.sources)+`</div>`;
+return html;
 }
 async function makePDF(){
-let data={...state,language:lang};
+let data={
+language:lang,
+title:"¿QUÉ QUIERES LLEVAR?",
+flight:state.flight||null,
+item:state.item||null,
+baggage:state.baggage||null
+};
+let box=document.getElementById("pdfResult");
+box.innerHTML='<div class="result">Preparando tu PDF...</div>';
 try{
 let r=await fetch(API+"/api/pdf",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({data,lang,title:"¿QUÉ QUIERES LLEVAR?"})});
-let ct=r.headers.get("content-type")||"";
-if(ct.includes("application/pdf")){
-let blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement("a");
-a.href=url;a.download="mi-guia-que-quieres-llevar.pdf";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
-document.getElementById("pdfResult").innerHTML=`<div class="notice">${lang==="es"?"Tu PDF está listo.":"Your PDF is ready."}</div>`;
-}else{
-let j=await r.json().catch(()=>({}));
-document.getElementById("pdfResult").innerHTML=`<div class="notice">${esc(j.message|| (lang==="es"?"El PDF no está disponible en este momento.":"The PDF is not available right now."))}</div>`;
+if(!r.ok){
+let t=await r.text();throw new Error(t||"No se pudo crear el PDF.");
 }
-}catch(e){
-document.getElementById("pdfResult").innerHTML=`<div class="notice">${lang==="es"?"No pudimos crear el PDF ahora.":"We could not create the PDF right now."}</div>`;
+let blob=await r.blob(),url=URL.createObjectURL(blob);
+let a=document.createElement("a");a.href=url;a.download="mi-guia-que-quieres-llevar.pdf";a.click();
+setTimeout(()=>URL.revokeObjectURL(url),3000);
+box.innerHTML='<div class="result">Tu PDF fue creado.</div>';
+}catch(e){box.innerHTML=`<div class="result warn">${esc(e.message)}</div>`}
 }
-}
-
-function loadFormState(){
-let i=state.item||{};
-let map={item:"it_item",airline:"it_airline",baggage_type:"it_bag",quantity:"it_qty",capacity:"it_capacity",weight:"it_weight",size:"it_size"};
-Object.entries(map).forEach(([k,id])=>{if(i[k]!==undefined&&document.getElementById(id))document.getElementById(id).value=i[k]});
-let b=state.baggage||{};
-let bm={airline:"bg_airline",fare:"bg_fare",type:"bg_type",pieces:"bg_pieces",weight:"bg_weight",dimensions:"bg_dimensions"};
-Object.entries(bm).forEach(([k,id])=>{if(b[k]!==undefined&&document.getElementById(id))document.getElementById(id).value=b[k]});
-}
-
 setLang(lang);
-renderGuides();
-loadFormState();
 </script>
 </body>
 </html>
-```
