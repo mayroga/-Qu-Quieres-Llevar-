@@ -28,7 +28,6 @@ main{max-width:1100px;margin:auto;padding:28px 16px 60px}
 .card p{color:#bbb;line-height:1.45;margin:0 0 18px}
 .btn{display:inline-flex;align-items:center;justify-content:center;background:#fff;color:#000;border:0;border-radius:9px;padding:12px 16px;font-weight:800;cursor:pointer}
 .btn.red{background:#d40000;color:#fff}
-.btn.dark{background:#151515;color:#fff;border:1px solid #555}
 .panel{display:none;margin-top:28px;border-top:1px solid #444;padding-top:25px}
 .panel.open{display:block}
 .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;margin-bottom:20px}
@@ -106,15 +105,15 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <main>
 <section class="hero">
 <h1 id="title">Viaja con una respuesta clara</h1>
-<p id="intro">Mira cómo preparar tus documentos para Cuba, reconoce lo que encontrarás y continúa directamente en el lugar que corresponde.</p>
-<div class="notice" id="notice">Aquí te enseñamos qué hacer. Los trámites, pagos y documentos se realizan fuera de esta aplicación.</div>
+<p id="intro">Mira qué necesitas preparar para tu viaje a Cuba y entra directamente en el sitio donde puedes continuar.</p>
+<div class="notice" id="notice">Aquí puedes conocer los pasos antes de comenzar. Cuando estés listo, entra directamente al sitio que necesitas.</div>
 </section>
 
 <section class="grid">
 <article class="card">
 <div>
 <h2>D’Viajeros</h2>
-<p id="dvText">Mira el formulario completo: datos personales, información migratoria, sanitaria, aduana, declaración y resultado final con PDF y QR.</p>
+<p id="dvText">Mira paso a paso qué datos te pedirán, qué debes tener preparado y cómo guardar el resultado final.</p>
 </div>
 <button class="btn" id="dvBtn">Ver cómo se hace</button>
 </article>
@@ -122,7 +121,7 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <article class="card">
 <div>
 <h2>Visa para Cuba</h2>
-<p id="visaText">Conoce las opciones para obtener la visa y entra directamente al sitio que elijas.</p>
+<p id="visaText">Mira las formas disponibles para obtener tu visa y entra directamente en la opción que prefieras.</p>
 </div>
 <button class="btn" id="visaBtn">Ver opciones</button>
 </article>
@@ -130,7 +129,7 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <article class="card">
 <div>
 <h2>Vuelos a Cuba</h2>
-<p id="flightText">Consulta las aerolíneas que ofrecen vuelos a Cuba y continúa directamente con la compañía correspondiente.</p>
+<p id="flightText">Mira las aerolíneas que vuelan a Cuba y entra directamente en el sitio de la compañía.</p>
 </div>
 <button class="btn" id="flightBtn">Ver vuelos</button>
 </article>
@@ -138,7 +137,7 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <article class="card">
 <div>
 <h2>Vuelos chárter a Cuba</h2>
-<p id="charterText">Consulta las principales opciones de vuelos chárter entre Florida y Cuba y entra directamente en cada sitio.</p>
+<p id="charterText">Mira las principales opciones de vuelos chárter entre Florida y Cuba y entra directamente en cada sitio.</p>
 </div>
 <button class="btn" id="charterBtn">Ver charters</button>
 </article>
@@ -146,7 +145,7 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <article class="card">
 <div>
 <h2>Mi guía PDF</h2>
-<p id="pdfText">Guarda los pasos principales de D’Viajeros y las opciones para la visa.</p>
+<p id="pdfText">Guarda en un solo documento los pasos principales de D’Viajeros y las opciones para la visa.</p>
 </div>
 <button class="btn red" id="pdfBtn">Crear PDF</button>
 </article>
@@ -156,7 +155,7 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <div class="panel-head">
 <div>
 <h2>D’Viajeros: así se hace</h2>
-<p>Estas imágenes explican las etapas que encontrarás en el formulario real.</p>
+<p>Mira cada parte del formulario y prepara con calma lo que vas a necesitar.</p>
 </div>
 <button class="close" data-close="dvPanel">Cerrar</button>
 </div>
@@ -164,23 +163,23 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <div class="steps">
 
 <div class="step">
-<div class="step-title"><strong>1. Datos Personales</strong><span>Primero te pedirán los datos del viajero.</span></div>
+<div class="step-title"><strong>1. Tus datos</strong><span>Primero escribes tus datos personales.</span></div>
 <div class="mock"><div class="mock-window">
-<div class="mock-top">D’Viajeros · Formulario</div>
+<div class="mock-top">D’Viajeros · Datos Personales</div>
 <div class="mock-body">
 <div class="mock-brand">Datos Personales</div>
 <div class="mock-section">
-<h4>Los datos que poseen (*) son obligatorios</h4>
+<h4>Escribe tus datos</h4>
 <div class="fields">
-<div class="field"><b>Primer Nombre (*)</b><span>Nombre</span></div>
-<div class="field"><b>Segundo Nombre</b><span>Opcional</span></div>
-<div class="field"><b>Primer Apellido (*)</b><span>Apellido</span></div>
-<div class="field"><b>Segundo Apellido</b><span>Opcional</span></div>
-<div class="field"><b>Fecha de nacimiento (*)</b><span>Día / Mes / Año</span></div>
-<div class="field select"><b>Género (*)</b><span>Seleccione</span></div>
-<div class="field select"><b>Ciudadanía (*)</b><span>Seleccione</span></div>
-<div class="field"><b>Número de pasaporte (*)</b><span>Número de pasaporte</span></div>
-<div class="field select"><b>País de residencia permanente (*)</b><span>Seleccione</span></div>
+<div class="field"><b>Primer Nombre</b><span>Nombre</span></div>
+<div class="field"><b>Segundo Nombre</b><span>Si tienes</span></div>
+<div class="field"><b>Primer Apellido</b><span>Apellido</span></div>
+<div class="field"><b>Segundo Apellido</b><span>Si tienes</span></div>
+<div class="field"><b>Fecha de nacimiento</b><span>Día / Mes / Año</span></div>
+<div class="field select"><b>Género</b><span>Seleccione</span></div>
+<div class="field select"><b>Ciudadanía</b><span>Seleccione</span></div>
+<div class="field"><b>Número de pasaporte</b><span>Pasaporte con el que viajarás</span></div>
+<div class="field select"><b>País de residencia permanente</b><span>Seleccione</span></div>
 <div class="field"><b>Correo</b><span>Correo electrónico</span></div>
 <div class="field full"><b>Teléfono</b><span>Teléfono</span></div>
 </div>
@@ -188,139 +187,138 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 </div>
 </div>
 </div>
-<div class="explain"><strong>Ten a mano:</strong> tus datos exactamente como aparecen en el pasaporte.</div>
+<div class="explain"><strong>Ten cerca:</strong> tu pasaporte y tus datos escritos exactamente como aparecen en él.</div>
 </div>
 
 <div class="step">
-<div class="step-title"><strong>2. Información Migratoria</strong><span>Indicas cómo llegarás a Cuba.</span></div>
+<div class="step-title"><strong>2. Tu llegada a Cuba</strong><span>Aquí escribes los datos de tu llegada.</span></div>
 <div class="mock"><div class="mock-window">
-<div class="mock-top">D’Viajeros · Información Migratoria</div>
+<div class="mock-top">D’Viajeros · Tu llegada a Cuba</div>
 <div class="mock-body">
-<div class="mock-brand">Información Migratoria</div>
+<div class="mock-brand">Información de llegada</div>
 <div class="mock-section">
-<h4>Los datos que poseen (*) son obligatorios</h4>
+<h4>Datos de tu viaje</h4>
 <div class="fields">
-<div class="field"><b>Fecha de Arribo (*)</b><span>Día / Mes / Año</span></div>
-<div class="field"><b>Vuelo (*)</b><span>Número de vuelo</span></div>
-<div class="field select"><b>Nombre de la Aerolínea (*)</b><span>Seleccione</span></div>
-<div class="field select"><b>País origen del Viajero (*)</b><span>Seleccione</span></div>
-<div class="field select"><b>Punto de entrada a Cuba (*)</b><span>Seleccione</span></div>
-<div class="field select"><b>Motivo de Viaje (*)</b><span>Seleccione</span></div>
+<div class="field"><b>Fecha de llegada</b><span>Día / Mes / Año</span></div>
+<div class="field"><b>Vuelo</b><span>Número de vuelo</span></div>
+<div class="field select"><b>Aerolínea</b><span>Seleccione</span></div>
+<div class="field select"><b>País de donde vienes</b><span>Seleccione</span></div>
+<div class="field select"><b>Entrada a Cuba</b><span>Seleccione</span></div>
+<div class="field select"><b>Motivo del viaje</b><span>Seleccione</span></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="explain"><strong>Ten a mano:</strong> fecha de llegada, vuelo, aerolínea, país de origen, entrada a Cuba y motivo del viaje.</div>
+<div class="explain"><strong>Ten cerca:</strong> tu fecha de llegada, número de vuelo y nombre de la aerolínea.</div>
 </div>
 
 <div class="step">
-<div class="step-title"><strong>3. Información Sanitaria</strong><span>Indicas dónde estarás y respondes las preguntas que aparezcan.</span></div>
+<div class="step-title"><strong>3. Dónde te vas a quedar</strong><span>Escribes dónde estarás durante tu viaje.</span></div>
 <div class="mock"><div class="mock-window">
-<div class="mock-top">D’Viajeros · Información Sanitaria</div>
+<div class="mock-top">D’Viajeros · Dónde te vas a quedar</div>
 <div class="mock-body">
-<div class="mock-brand">Información Sanitaria</div>
+<div class="mock-brand">Dónde te vas a quedar</div>
 <div class="mock-section">
-<h4>Los datos que poseen (*) son obligatorios</h4>
+<h4>Información de tu estancia</h4>
 <div class="fields">
-<div class="field select"><b>Lugar de alojamiento (*)</b><span>Seleccione</span></div>
-<div class="field"><b>Dirección (*)</b><span>Dirección</span></div>
-<div class="field select"><b>Provincia a donde se dirige (*)</b><span>Seleccione</span></div>
+<div class="field select"><b>Lugar donde te quedarás</b><span>Seleccione</span></div>
+<div class="field"><b>Dirección</b><span>Dirección</span></div>
+<div class="field select"><b>Provincia</b><span>Seleccione</span></div>
 <div class="field select"><b>Municipio</b><span>Seleccione</span></div>
 <div class="field full select"><b>Países visitados en los últimos 15 días</b><span>Seleccione</span></div>
-<div class="field full select"><b>Síntomas o signos de enfermedad en los últimos 15 días</b><span>Seleccione</span></div>
-<div class="field full select"><b>Cuestionario</b><span>Seleccione</span></div>
+<div class="field full select"><b>Cómo te has sentido durante los últimos 15 días</b><span>Seleccione</span></div>
+<div class="field full select"><b>Preguntas sobre tu viaje</b><span>Seleccione</span></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="explain"><strong>Ten a mano:</strong> lugar de alojamiento, dirección, provincia y municipio cuando corresponda.</div>
-</div>
-
-<div class="step">
-<div class="step-title"><strong>4. Información de Aduana</strong><span>Respondes si tienes algo que declarar.</span></div>
-<div class="mock"><div class="mock-window">
-<div class="mock-top">D’Viajeros · Aduana</div>
-<div class="mock-body">
-<div class="mock-brand">Información de Aduana</div>
-<div class="mock-section">
-<h4>Los datos que poseen (*) son obligatorios</h4>
-<div class="field full"><b>¿Tiene algo que declarar en la aduana? (*)</b><span>○ Sí &nbsp;&nbsp;&nbsp; ○ No</span></div>
-</div>
-</div>
-</div>
-</div>
-<div class="explain"><strong>Responde según tu situación real</strong> y según las instrucciones que aparezcan en el formulario.</div>
+<div class="explain"><strong>Ten cerca:</strong> el nombre y la dirección del lugar donde te quedarás.</div>
 </div>
 
 <div class="step">
-<div class="step-title"><strong>5. Declaración Jurada</strong><span>Revisas la información y aceptas la declaración.</span></div>
+<div class="step-title"><strong>4. Lo que llevas contigo</strong><span>Indicas si tienes algo que declarar.</span></div>
 <div class="mock"><div class="mock-window">
-<div class="mock-top">D’Viajeros · Declaración</div>
+<div class="mock-top">D’Viajeros · Lo que llevas contigo</div>
 <div class="mock-body">
-<div class="mock-brand">Declaración Jurada</div>
+<div class="mock-brand">Lo que llevas contigo</div>
 <div class="mock-section">
-<div class="check">□ <span>Declaro que la información proporcionada es verdadera y completa.</span></div><br>
-<div class="check">□ <span>Estoy de acuerdo</span></div><br>
-<div style="padding:15px;border:1px dashed #999;border-radius:5px;text-align:center;color:#555">Verificación de seguridad</div>
+<h4>Elige una opción</h4>
+<div class="field full"><b>¿Tienes algo que declarar?</b><span>○ Sí &nbsp;&nbsp;&nbsp; ○ No</span></div>
 </div>
 </div>
 </div>
 </div>
-<div class="explain"><strong>Antes de terminar:</strong> revisa los datos y completa la verificación que aparezca.</div>
+<div class="explain"><strong>Solo tienes que elegir</strong> la respuesta que corresponde a lo que llevas contigo.</div>
 </div>
 
 <div class="step">
-<div class="step-title"><strong>6. Formulario Finalizado</strong><span>El sistema genera el resultado que debes conservar.</span></div>
+<div class="step-title"><strong>5. Revisa y termina</strong><span>Lees tus datos y confirmas que están correctos.</span></div>
 <div class="mock"><div class="mock-window">
-<div class="mock-top">D’Viajeros · Formulario Finalizado</div>
+<div class="mock-top">D’Viajeros · Revisa y termina</div>
 <div class="mock-body">
-<div class="mock-brand">Formulario Finalizado</div>
+<div class="mock-brand">Revisa y termina</div>
 <div class="mock-section">
-<p style="margin-top:0">El formulario finalizado se genera en PDF para conservarlo durante el viaje.</p>
-<p>El sistema puede proporcionar un código privado para editar el formulario.</p>
-<p>Los datos y el código pueden enviarse al correo indicado.</p>
+<div class="check">□ <span>Confirmo que mis datos están correctos.</span></div><br>
+<div class="check">□ <span>Estoy de acuerdo</span></div>
+</div>
+</div>
+</div>
+</div>
+<div class="explain"><strong>Antes de terminar:</strong> mira tus datos una vez más y confirma.</div>
+</div>
+
+<div class="step">
+<div class="step-title"><strong>6. Guarda tu resultado</strong><span>Al terminar podrás guardar la información de tu viaje.</span></div>
+<div class="mock"><div class="mock-window">
+<div class="mock-top">D’Viajeros · Resultado</div>
+<div class="mock-body">
+<div class="mock-brand">Formulario terminado</div>
+<div class="mock-section">
+<p style="margin-top:0">Puedes guardar el resultado en PDF para llevarlo contigo.</p>
+<p>También puedes recibir un código para volver a entrar y hacer cambios.</p>
+<p>La información puede enviarse al correo que hayas indicado.</p>
 <button class="mock-red">VER PDF</button>
 </div>
 </div>
 </div>
 </div>
-<div class="explain"><strong>Guarda el PDF</strong> y conserva el código privado si el sistema te lo proporciona.</div>
+<div class="explain"><strong>Guarda tu PDF</strong> para tenerlo contigo durante el viaje.</div>
 </div>
 
 <div class="step">
-<div class="step-title"><strong>7. PDF y código QR</strong><span>El resultado final puede mostrar un código QR.</span></div>
+<div class="step-title"><strong>7. Tu resultado con QR</strong><span>El documento puede mostrar un código QR.</span></div>
 <div class="mock"><div class="mock-window">
-<div class="mock-top">D’Viajeros · PDF</div>
+<div class="mock-top">D’Viajeros · Resultado</div>
 <div class="mock-body">
-<div class="mock-brand">Documento del viajero</div>
+<div class="mock-brand">Tu documento</div>
 <div class="mock-section">
 <div class="qrbox">
 <div class="qr"></div>
-<div><h3 style="margin:0 0 8px">Código QR</h3><p style="margin:0;color:#444;line-height:1.5">Conserva el documento y tenlo disponible durante tu viaje.</p></div>
+<div><h3 style="margin:0 0 8px">Código QR</h3><p style="margin:0;color:#444;line-height:1.5">Guarda tu documento y tenlo disponible durante tu viaje.</p></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="explain"><strong>Último paso:</strong> conserva el resultado y tenlo disponible para mostrarlo cuando te lo soliciten.</div>
+<div class="explain"><strong>Listo:</strong> conserva tu resultado y tenlo a mano durante el viaje.</div>
 </div>
 
 </div>
 
 <div class="official">
-<h3>Ahora hazlo en D’Viajeros</h3>
-<p>Esta guía solo te enseña el proceso. Para realizar el formulario, continúa en el sitio oficial.</p>
-<a class="btn" href="https://dviajeros.mitrans.gob.cu/" target="_blank" rel="noopener noreferrer">Abrir D’Viajeros oficial</a>
+<h3>Hazlo en D’Viajeros</h3>
+<p>Cuando quieras comenzar, entra directamente en el sitio de D’Viajeros.</p>
+<a class="btn" href="https://dviajeros.mitrans.gob.cu/" target="_blank" rel="noopener noreferrer">Abrir D’Viajeros</a>
 </div>
 </section>
 
 <section id="visaPanel" class="panel">
 <div class="panel-head">
 <div>
-<h2>Visa para Cuba: opciones para obtenerla</h2>
-<p>La aplicación te muestra las opciones y te lleva directamente al lugar correspondiente.</p>
+<h2>Visa para Cuba</h2>
+<p>Mira las opciones y elige dónde quieres continuar.</p>
 </div>
 <button class="close" data-close="visaPanel">Cerrar</button>
 </div>
@@ -328,47 +326,47 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <div class="route-grid">
 <div class="route">
 <h3>Opapeleo</h3>
-<p>Una opción privada para tramitar la visa electrónica en línea. Su página explica un proceso sencillo: datos personales, pago, enlace personalizado, información adicional antes del viaje y PDF final.</p>
-<small>Proveedor privado. El precio mostrado actualmente en su página es $80 por persona y puede cambiar.</small>
+<p>Puedes hacer el proceso por internet. Primero escribes tus datos, realizas el pago y recibes un enlace para continuar. Después recibes tu resultado en PDF.</p>
+<small>El precio que aparece actualmente en su sitio es de $80 por persona. Puede cambiar.</small>
 <a class="btn" href="https://tramites.opapeleo.com/es/cuba-visa" target="_blank" rel="noopener noreferrer">Ir a Opapeleo</a>
 </div>
 
 <div class="route">
 <h3>Visa electrónica</h3>
-<p>Consulta la información oficial disponible sobre la visa electrónica para Cuba y verifica qué corresponde a tu caso antes de continuar.</p>
-<a class="btn" href="https://evisacuba.cu/" target="_blank" rel="noopener noreferrer">Ver eVisa oficial</a>
+<p>Aquí puedes conocer la información sobre la visa electrónica para Cuba y continuar desde su sitio.</p>
+<a class="btn" href="https://evisacuba.cu/" target="_blank" rel="noopener noreferrer">Ver visa electrónica</a>
 </div>
 
 <div class="route">
 <h3>Consulado</h3>
-<p>Si tu caso debe realizarse mediante una representación consular, consulta directamente la información correspondiente.</p>
-<a class="btn" href="https://misiones.cubaminrex.cu/" target="_blank" rel="noopener noreferrer">Ver información consular</a>
+<p>Si prefieres recibir orientación directamente de un consulado, aquí puedes consultar la información.</p>
+<a class="btn" href="https://misiones.cubaminrex.cu/" target="_blank" rel="noopener noreferrer">Ver información</a>
 </div>
 </div>
 
 <div class="step" style="margin-top:18px">
-<div class="step-title"><strong>¿Cómo funciona la opción de Opapeleo?</strong><span>La propia página de Opapeleo describe estos pasos.</span></div>
+<div class="step-title"><strong>Así funciona Opapeleo</strong><span>Estos son los pasos que encontrarás al entrar.</span></div>
 <div class="mock"><div class="mock-window">
-<div class="mock-top">Opapeleo · Visa electrónica para Cuba</div>
+<div class="mock-top">Opapeleo · Visa para Cuba</div>
 <div class="mock-body">
 <div class="mock-section">
 <div class="fields">
-<div class="field full"><b>1. Datos personales</b><span>Escribe los datos tal como aparecen en el pasaporte.</span></div>
-<div class="field full"><b>2. Pago</b><span>Completa el proceso de compra en Opapeleo.</span></div>
-<div class="field full"><b>3. Enlace personalizado</b><span>Recibes un enlace por SMS y correo electrónico.</span></div>
-<div class="field full"><b>4. Una semana antes del viaje</b><span>Usas el enlace para completar la información adicional.</span></div>
-<div class="field full"><b>5. Resultado</b><span>Recibes un PDF con código de barras.</span></div>
+<div class="field full"><b>1. Tus datos</b><span>Escribe tus datos como aparecen en tu pasaporte.</span></div>
+<div class="field full"><b>2. Pago</b><span>Completa el pago en el sitio de Opapeleo.</span></div>
+<div class="field full"><b>3. Tu enlace</b><span>Recibes un enlace por mensaje y correo electrónico.</span></div>
+<div class="field full"><b>4. Antes del viaje</b><span>Entras en el enlace y completas la información que te indiquen.</span></div>
+<div class="field full"><b>5. Tu resultado</b><span>Recibes un PDF con código de barras.</span></div>
 </div>
 </div>
 </div>
 </div>
 </div>
-<div class="explain"><strong>QQL no te pide llenar aquí esos datos.</strong> Te explica el camino y te entrega el botón para continuar directamente en Opapeleo.</div>
+<div class="explain"><strong>No tienes que repetir tus datos aquí.</strong> Solo mira cómo funciona y entra directamente en la opción que prefieras.</div>
 </div>
 
 <div class="official">
-<h3>Importante</h3>
-<p>QQL no vende ni emite visas. Opapeleo es un proveedor privado. Antes de pagar, revisa directamente sus condiciones, precio y requisitos actuales.</p>
+<h3>Elige cómo quieres continuar</h3>
+<p>Puedes escoger la opción que mejor se adapte a ti y continuar directamente desde su sitio.</p>
 </div>
 </section>
 
@@ -376,7 +374,7 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <div class="panel-head">
 <div>
 <h2>Vuelos a Cuba</h2>
-<p>Consulta las aerolíneas que ofrecen vuelos a Cuba y continúa directamente con la compañía correspondiente.</p>
+<p>Mira las aerolíneas que vuelan a Cuba y entra directamente en el sitio de la compañía.</p>
 </div>
 <button class="close" data-close="flightPanel">Cerrar</button>
 </div>
@@ -384,15 +382,15 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <div id="flightList" class="flight-list">
 <div class="flight">
 <div>
-<h3>Cargando aerolíneas...</h3>
-<p>Un momento.</p>
+<h3>Buscando aerolíneas...</h3>
+<p>Espera un momento.</p>
 </div>
 </div>
 </div>
 
 <div class="official">
-<h3>Buscar vuelos</h3>
-<p>Puedes comenzar una búsqueda general y después continuar con la compañía que opere tu vuelo.</p>
+<h3>Buscar un vuelo</h3>
+<p>Puedes comenzar buscando fechas y vuelos y después entrar en el sitio de la compañía.</p>
 <a class="btn" href="https://www.google.com/travel/flights" target="_blank" rel="noopener noreferrer">Buscar vuelos</a>
 </div>
 </section>
@@ -401,21 +399,21 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <div class="panel-head">
 <div>
 <h2>Vuelos chárter a Cuba</h2>
-<p>Opciones especiales de vuelos chárter entre Florida y Cuba.</p>
+<p>Aquí puedes ver opciones especiales de vuelos entre Florida y Cuba.</p>
 </div>
 <button class="close" data-close="charterPanel">Cerrar</button>
 </div>
 
-<p class="charter-intro">Principalmente, las operaciones aéreas chárter entre Florida (Miami/Tampa) y Cuba se gestionan a través de agencias autorizadas que colaboran con aerolíneas operadoras. A continuación se detallan los sitios web y opciones principales.</p>
+<p class="charter-intro">Estas son opciones para buscar vuelos chárter desde Florida hacia Cuba. Entra directamente en cada sitio para mirar fechas, destinos y vuelos disponibles.</p>
 
 <div class="charter-list">
 
 <div class="charter">
 <div>
 <h3>Aerocuba</h3>
-<p>La Habana y diversas provincias.</p>
+<p>Vuelos a La Habana y diversas provincias.</p>
 </div>
-<a class="btn" href="https://www.aerocuba.com/" target="_blank" rel="noopener noreferrer">Sitio oficial</a>
+<a class="btn" href="https://www.aerocuba.com/" target="_blank" rel="noopener noreferrer">Entrar</a>
 </div>
 
 <div class="charter">
@@ -423,29 +421,29 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <h3>Xael Charters</h3>
 <p>La Habana, Camagüey, Holguín, Santa Clara y Santiago de Cuba.</p>
 </div>
-<a class="btn" href="https://www.xaelcharter.com/" target="_blank" rel="noopener noreferrer">Sitio oficial</a>
+<a class="btn" href="https://www.xaelcharter.com/" target="_blank" rel="noopener noreferrer">Entrar</a>
 </div>
 
 <div class="charter">
 <div>
 <h3>Cuballama (Viajes)</h3>
-<p>La Habana, Santa Clara, Camagüey, Holguín y Santiago de Cuba desde Miami y Tampa.</p>
+<p>Vuelos desde Miami y Tampa hacia La Habana, Santa Clara, Camagüey, Holguín y Santiago de Cuba.</p>
 </div>
-<a class="btn" href="https://www.cuballama.com/viajes/vuelos/charters" target="_blank" rel="noopener noreferrer">Ver charters</a>
+<a class="btn" href="https://www.cuballama.com/viajes/vuelos/charters" target="_blank" rel="noopener noreferrer">Ver vuelos</a>
 </div>
 
 <div class="charter">
 <div>
 <h3>Cubazul Air Charter</h3>
-<p>Vuelos chárter directos hacia la isla.</p>
+<p>Vuelos chárter directos hacia Cuba.</p>
 </div>
-<a class="btn" href="https://cubazulaircharter.com/" target="_blank" rel="noopener noreferrer">Sitio oficial</a>
+<a class="btn" href="https://cubazulaircharter.com/" target="_blank" rel="noopener noreferrer">Entrar</a>
 </div>
 
 </div>
 
 <div class="charter-note">
-<strong>Antes de elegir:</strong> verifica directamente en cada sitio la disponibilidad de las fechas, los destinos, el equipaje, el precio y la documentación vigente para tu viaje.
+<strong>Para elegir tu vuelo:</strong> mira directamente las fechas, el destino, el equipaje y el precio que aparecen en cada sitio.
 </div>
 </section>
 
@@ -453,13 +451,13 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <div class="panel-head">
 <div>
 <h2>Mi guía PDF</h2>
-<p>Una opción para conservar los pasos principales.</p>
+<p>Guarda los pasos principales para consultarlos cuando quieras.</p>
 </div>
 <button class="close" data-close="pdfPanel">Cerrar</button>
 </div>
 <div class="pdfbox">
 <h3>D’Viajeros + Visa</h3>
-<p>La guía puede incluir las etapas de D’Viajeros y las opciones principales para obtener la visa, incluyendo el acceso directo a Opapeleo.</p>
+<p>Tu guía puede reunir los pasos de D’Viajeros y las opciones para obtener la visa.</p>
 <button class="btn red" id="pdfCreateBtn">Crear mi guía PDF</button>
 <p id="pdfStatus"></p>
 </div>
@@ -467,8 +465,8 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 </main>
 
 <footer>
-May Roga LLC · Información independiente de orientación.<br>
-No somos una agencia de viajes y no emitimos visas ni realizamos trámites oficiales.
+May Roga LLC · Guía sencilla para ayudarte a preparar tu viaje.<br>
+Los formularios, pagos y documentos se realizan directamente en los sitios correspondientes.
 </footer>
 
 <script>
@@ -479,23 +477,23 @@ var lang=localStorage.getItem("qql_lang")||"es";
 var TX={
 es:{
 title:"Viaja con una respuesta clara",
-intro:"Mira cómo preparar tus documentos para Cuba, reconoce lo que encontrarás y continúa directamente en el lugar que corresponde.",
-notice:"Aquí te enseñamos qué hacer. Los trámites, pagos y documentos se realizan fuera de esta aplicación.",
-dvText:"Mira el formulario completo: datos personales, información migratoria, sanitaria, aduana, declaración y resultado final con PDF y QR.",
-visaText:"Conoce las opciones para obtener la visa y entra directamente al sitio que elijas.",
-flightText:"Consulta las aerolíneas que ofrecen vuelos a Cuba y continúa directamente con la compañía correspondiente.",
-charterText:"Consulta las principales opciones de vuelos chárter entre Florida y Cuba y entra directamente en cada sitio.",
-pdfText:"Guarda los pasos principales de D’Viajeros y las opciones para la visa."
+intro:"Mira qué necesitas preparar para tu viaje a Cuba y entra directamente en el sitio donde puedes continuar.",
+notice:"Aquí puedes conocer los pasos antes de comenzar. Cuando estés listo, entra directamente al sitio que necesitas.",
+dvText:"Mira paso a paso qué datos te pedirán, qué debes tener preparado y cómo guardar el resultado final.",
+visaText:"Mira las formas disponibles para obtener tu visa y entra directamente en la opción que prefieras.",
+flightText:"Mira las aerolíneas que vuelan a Cuba y entra directamente en el sitio de la compañía.",
+charterText:"Mira las principales opciones de vuelos chárter entre Florida y Cuba y entra directamente en cada sitio.",
+pdfText:"Guarda en un solo documento los pasos principales de D’Viajeros y las opciones para la visa."
 },
 en:{
 title:"Travel with a clear answer",
-intro:"See how to prepare your Cuba travel documents, recognize what you will find and continue directly at the appropriate place.",
-notice:"We show you what to do. Procedures, payments and documents are completed outside this application.",
-dvText:"See the complete form: personal information, travel information, health information, customs, declaration and final PDF/QR result.",
-visaText:"Learn the available visa options and go directly to the site you choose.",
-flightText:"Check airlines offering flights to Cuba and continue directly with the corresponding company.",
+intro:"See what you need to prepare for your trip to Cuba and go directly to the place where you can continue.",
+notice:"See the steps before you begin. When you are ready, go directly to the site you need.",
+dvText:"See step by step what information you will enter, what to have ready and how to save your final result.",
+visaText:"See the available ways to get your visa and go directly to the option you prefer.",
+flightText:"See the airlines that fly to Cuba and go directly to the airline's site.",
 charterText:"See the main charter flight options between Florida and Cuba and go directly to each site.",
-pdfText:"Keep the main D’Viajeros steps and visa options."
+pdfText:"Keep the main D’Viajeros steps and visa options in one document."
 }};
 
 function $(id){return document.getElementById(id)}
@@ -549,7 +547,7 @@ var left=document.createElement("div");
 var h=document.createElement("h3");
 h.textContent=name;
 var p=document.createElement("p");
-p.textContent=type||"Continúa con la información de la compañía.";
+p.textContent=type||"Entra en el sitio de la compañía para mirar sus vuelos.";
 left.appendChild(h);
 left.appendChild(p);
 d.appendChild(left);
@@ -559,19 +557,19 @@ a.className="btn";
 a.href=url;
 a.target="_blank";
 a.rel="noopener noreferrer";
-a.textContent=lang==="en"?"Official site":"Sitio oficial";
+a.textContent=lang==="en"?"Enter":"Entrar";
 d.appendChild(a);
 }
 box.appendChild(d);
 });
 }catch(e){
-box.innerHTML='<div class="flight"><div><h3>Opciones de vuelos</h3><p>Consulta la búsqueda actual para continuar.</p></div></div>';
+box.innerHTML='<div class="flight"><div><h3>Buscar vuelos</h3><p>Entra en la búsqueda para mirar las opciones disponibles.</p></div></div>';
 }
 }
 
 async function createPDF(){
 var s=$("pdfStatus");
-s.textContent=lang==="en"?"Creating guide...":"Creando guía...";
+s.textContent=lang==="en"?"Creating your guide...":"Creando tu guía...";
 try{
 var r=await fetch(API+"/api/pdf",{
 method:"POST",
@@ -593,9 +591,9 @@ document.body.appendChild(a);
 a.click();
 a.remove();
 setTimeout(function(){URL.revokeObjectURL(url)},3000);
-s.textContent=lang==="en"?"The PDF was created.":"El PDF fue creado.";
+s.textContent=lang==="en"?"Your PDF was created.":"Tu PDF fue creado.";
 }catch(e){
-s.textContent=lang==="en"?"The PDF could not be created right now.":"No se pudo crear el PDF en este momento.";
+s.textContent=lang==="en"?"The guide could not be created right now.":"No se pudo crear la guía en este momento.";
 }
 }
 
