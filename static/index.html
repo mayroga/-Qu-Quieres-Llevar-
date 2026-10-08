@@ -72,13 +72,14 @@ main{max-width:1100px;margin:auto;padding:28px 16px 60px}
 .flight h3{margin:0 0 5px}
 .flight p{margin:0;color:#aaa}
 .flight a{white-space:nowrap}
-.charter-title{margin:30px 0 12px;font-size:25px}
-.charter-intro{color:#bbb;line-height:1.5;margin:0 0 15px}
 .charter-list{display:grid;gap:12px}
-.charter{border:1px solid #444;border-radius:12px;padding:17px;background:#080808;display:flex;justify-content:space-between;align-items:center;gap:18px}
-.charter h3{margin:0 0 6px;font-size:20px}
-.charter p{margin:0;color:#aaa;line-height:1.45}
+.charter{border:1px solid #444;border-radius:12px;padding:18px;background:#080808;display:flex;justify-content:space-between;align-items:center;gap:18px}
+.charter h3{margin:0 0 7px;font-size:21px}
+.charter p{margin:0;color:#aaa;line-height:1.5}
 .charter a{white-space:nowrap}
+.charter-note{margin-top:18px;border:1px solid #555;border-radius:12px;padding:18px;background:#080808;color:#bbb;line-height:1.55}
+.charter-note strong{color:#fff}
+.charter-intro{color:#bbb;line-height:1.6;margin:0 0 20px}
 .pdfbox{border:1px solid #444;border-radius:14px;padding:22px;background:#080808}
 .pdfbox p{color:#bbb;line-height:1.55}
 footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;font-size:13px;line-height:1.5}
@@ -129,9 +130,17 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <article class="card">
 <div>
 <h2>Vuelos a Cuba</h2>
-<p id="flightText">Consulta las aerolíneas y los vuelos chárter disponibles y continúa directamente con la compañía o agencia correspondiente.</p>
+<p id="flightText">Consulta las aerolíneas que ofrecen vuelos a Cuba y continúa directamente con la compañía correspondiente.</p>
 </div>
 <button class="btn" id="flightBtn">Ver vuelos</button>
+</article>
+
+<article class="card">
+<div>
+<h2>Vuelos chárter a Cuba</h2>
+<p id="charterText">Consulta las principales opciones de vuelos chárter entre Florida y Cuba y entra directamente en cada sitio.</p>
+</div>
+<button class="btn" id="charterBtn">Ver charters</button>
 </article>
 
 <article class="card">
@@ -174,7 +183,11 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <div class="field select"><b>País de residencia permanente (*)</b><span>Seleccione</span></div>
 <div class="field"><b>Correo</b><span>Correo electrónico</span></div>
 <div class="field full"><b>Teléfono</b><span>Teléfono</span></div>
-</div></div></div></div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
 <div class="explain"><strong>Ten a mano:</strong> tus datos exactamente como aparecen en el pasaporte.</div>
 </div>
 
@@ -193,7 +206,11 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <div class="field select"><b>País origen del Viajero (*)</b><span>Seleccione</span></div>
 <div class="field select"><b>Punto de entrada a Cuba (*)</b><span>Seleccione</span></div>
 <div class="field select"><b>Motivo de Viaje (*)</b><span>Seleccione</span></div>
-</div></div></div></div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
 <div class="explain"><strong>Ten a mano:</strong> fecha de llegada, vuelo, aerolínea, país de origen, entrada a Cuba y motivo del viaje.</div>
 </div>
 
@@ -213,7 +230,11 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <div class="field full select"><b>Países visitados en los últimos 15 días</b><span>Seleccione</span></div>
 <div class="field full select"><b>Síntomas o signos de enfermedad en los últimos 15 días</b><span>Seleccione</span></div>
 <div class="field full select"><b>Cuestionario</b><span>Seleccione</span></div>
-</div></div></div></div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
 <div class="explain"><strong>Ten a mano:</strong> lugar de alojamiento, dirección, provincia y municipio cuando corresponda.</div>
 </div>
 
@@ -226,7 +247,10 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <div class="mock-section">
 <h4>Los datos que poseen (*) son obligatorios</h4>
 <div class="field full"><b>¿Tiene algo que declarar en la aduana? (*)</b><span>○ Sí &nbsp;&nbsp;&nbsp; ○ No</span></div>
-</div></div></div></div>
+</div>
+</div>
+</div>
+</div>
 <div class="explain"><strong>Responde según tu situación real</strong> y según las instrucciones que aparezcan en el formulario.</div>
 </div>
 
@@ -240,7 +264,10 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <div class="check">□ <span>Declaro que la información proporcionada es verdadera y completa.</span></div><br>
 <div class="check">□ <span>Estoy de acuerdo</span></div><br>
 <div style="padding:15px;border:1px dashed #999;border-radius:5px;text-align:center;color:#555">Verificación de seguridad</div>
-</div></div></div></div>
+</div>
+</div>
+</div>
+</div>
 <div class="explain"><strong>Antes de terminar:</strong> revisa los datos y completa la verificación que aparezca.</div>
 </div>
 
@@ -255,7 +282,10 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <p>El sistema puede proporcionar un código privado para editar el formulario.</p>
 <p>Los datos y el código pueden enviarse al correo indicado.</p>
 <button class="mock-red">VER PDF</button>
-</div></div></div></div>
+</div>
+</div>
+</div>
+</div>
 <div class="explain"><strong>Guarda el PDF</strong> y conserva el código privado si el sistema te lo proporciona.</div>
 </div>
 
@@ -269,7 +299,11 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <div class="qrbox">
 <div class="qr"></div>
 <div><h3 style="margin:0 0 8px">Código QR</h3><p style="margin:0;color:#444;line-height:1.5">Conserva el documento y tenlo disponible durante tu viaje.</p></div>
-</div></div></div></div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
 <div class="explain"><strong>Último paso:</strong> conserva el resultado y tenlo disponible para mostrarlo cuando te lo soliciten.</div>
 </div>
 
@@ -324,7 +358,11 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <div class="field full"><b>3. Enlace personalizado</b><span>Recibes un enlace por SMS y correo electrónico.</span></div>
 <div class="field full"><b>4. Una semana antes del viaje</b><span>Usas el enlace para completar la información adicional.</span></div>
 <div class="field full"><b>5. Resultado</b><span>Recibes un PDF con código de barras.</span></div>
-</div></div></div></div></div>
+</div>
+</div>
+</div>
+</div>
+</div>
 <div class="explain"><strong>QQL no te pide llenar aquí esos datos.</strong> Te explica el camino y te entrega el botón para continuar directamente en Opapeleo.</div>
 </div>
 
@@ -338,24 +376,44 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <div class="panel-head">
 <div>
 <h2>Vuelos a Cuba</h2>
-<p>Consulta las aerolíneas y las opciones de vuelos chárter y continúa directamente con la compañía o agencia correspondiente.</p>
+<p>Consulta las aerolíneas que ofrecen vuelos a Cuba y continúa directamente con la compañía correspondiente.</p>
 </div>
 <button class="close" data-close="flightPanel">Cerrar</button>
 </div>
 
 <div id="flightList" class="flight-list">
-<div class="flight"><div><h3>Cargando aerolíneas...</h3><p>Un momento.</p></div></div>
+<div class="flight">
+<div>
+<h3>Cargando aerolíneas...</h3>
+<p>Un momento.</p>
+</div>
+</div>
 </div>
 
-<h3 class="charter-title">Vuelos chárter a Cuba</h3>
-<p class="charter-intro">Estas son opciones de agencias y operadores que ofrecen información sobre vuelos chárter entre Florida y Cuba. Entra directamente en cada sitio para comprobar vuelos disponibles.</p>
+<div class="official">
+<h3>Buscar vuelos</h3>
+<p>Puedes comenzar una búsqueda general y después continuar con la compañía que opere tu vuelo.</p>
+<a class="btn" href="https://www.google.com/travel/flights" target="_blank" rel="noopener noreferrer">Buscar vuelos</a>
+</div>
+</section>
+
+<section id="charterPanel" class="panel">
+<div class="panel-head">
+<div>
+<h2>Vuelos chárter a Cuba</h2>
+<p>Opciones especiales de vuelos chárter entre Florida y Cuba.</p>
+</div>
+<button class="close" data-close="charterPanel">Cerrar</button>
+</div>
+
+<p class="charter-intro">Principalmente, las operaciones aéreas chárter entre Florida (Miami/Tampa) y Cuba se gestionan a través de agencias autorizadas que colaboran con aerolíneas operadoras. A continuación se detallan los sitios web y opciones principales.</p>
 
 <div class="charter-list">
 
 <div class="charter">
 <div>
 <h3>Aerocuba</h3>
-<p>Vuelos a La Habana y otras provincias de Cuba.</p>
+<p>La Habana y diversas provincias.</p>
 </div>
 <a class="btn" href="https://www.aerocuba.com/" target="_blank" rel="noopener noreferrer">Sitio oficial</a>
 </div>
@@ -363,15 +421,15 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <div class="charter">
 <div>
 <h3>Xael Charters</h3>
-<p>Opciones hacia La Habana, Camagüey, Holguín, Santa Clara y Santiago de Cuba.</p>
+<p>La Habana, Camagüey, Holguín, Santa Clara y Santiago de Cuba.</p>
 </div>
 <a class="btn" href="https://www.xaelcharter.com/" target="_blank" rel="noopener noreferrer">Sitio oficial</a>
 </div>
 
 <div class="charter">
 <div>
-<h3>Cuballama — Viajes</h3>
-<p>Opciones de vuelos chárter desde Miami y Tampa hacia Cuba.</p>
+<h3>Cuballama (Viajes)</h3>
+<p>La Habana, Santa Clara, Camagüey, Holguín y Santiago de Cuba desde Miami y Tampa.</p>
 </div>
 <a class="btn" href="https://www.cuballama.com/viajes/vuelos/charters" target="_blank" rel="noopener noreferrer">Ver charters</a>
 </div>
@@ -379,22 +437,15 @@ footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;
 <div class="charter">
 <div>
 <h3>Cubazul Air Charter</h3>
-<p>Opciones de vuelos chárter directos hacia Cuba.</p>
+<p>Vuelos chárter directos hacia la isla.</p>
 </div>
 <a class="btn" href="https://cubazulaircharter.com/" target="_blank" rel="noopener noreferrer">Sitio oficial</a>
 </div>
 
 </div>
 
-<div class="official">
-<h3>Antes de elegir</h3>
-<p>Comprueba directamente en el sitio de la aerolínea o charter la disponibilidad del vuelo, equipaje, precio y requisitos actuales.</p>
-</div>
-
-<div class="official">
-<h3>Buscar vuelos</h3>
-<p>Puedes comenzar una búsqueda general y después continuar con la compañía que opere tu vuelo.</p>
-<a class="btn" href="https://www.google.com/travel/flights" target="_blank" rel="noopener noreferrer">Buscar vuelos</a>
+<div class="charter-note">
+<strong>Antes de elegir:</strong> verifica directamente en cada sitio la disponibilidad de las fechas, los destinos, el equipaje, el precio y la documentación vigente para tu viaje.
 </div>
 </section>
 
@@ -432,7 +483,8 @@ intro:"Mira cómo preparar tus documentos para Cuba, reconoce lo que encontrará
 notice:"Aquí te enseñamos qué hacer. Los trámites, pagos y documentos se realizan fuera de esta aplicación.",
 dvText:"Mira el formulario completo: datos personales, información migratoria, sanitaria, aduana, declaración y resultado final con PDF y QR.",
 visaText:"Conoce las opciones para obtener la visa y entra directamente al sitio que elijas.",
-flightText:"Consulta las aerolíneas y los vuelos chárter disponibles y continúa directamente con la compañía o agencia correspondiente.",
+flightText:"Consulta las aerolíneas que ofrecen vuelos a Cuba y continúa directamente con la compañía correspondiente.",
+charterText:"Consulta las principales opciones de vuelos chárter entre Florida y Cuba y entra directamente en cada sitio.",
 pdfText:"Guarda los pasos principales de D’Viajeros y las opciones para la visa."
 },
 en:{
@@ -441,10 +493,13 @@ intro:"See how to prepare your Cuba travel documents, recognize what you will fi
 notice:"We show you what to do. Procedures, payments and documents are completed outside this application.",
 dvText:"See the complete form: personal information, travel information, health information, customs, declaration and final PDF/QR result.",
 visaText:"Learn the available visa options and go directly to the site you choose.",
-flightText:"Check available airlines and charter flights and continue directly with the corresponding company or agency.",
+flightText:"Check airlines offering flights to Cuba and continue directly with the corresponding company.",
+charterText:"See the main charter flight options between Florida and Cuba and go directly to each site.",
 pdfText:"Keep the main D’Viajeros steps and visa options."
 }};
+
 function $(id){return document.getElementById(id)}
+
 function setLang(next){
 lang=next==="en"?"en":"es";
 localStorage.setItem("qql_lang",lang);
@@ -455,14 +510,17 @@ $("notice").textContent=t.notice;
 $("dvText").textContent=t.dvText;
 $("visaText").textContent=t.visaText;
 $("flightText").textContent=t.flightText;
+$("charterText").textContent=t.charterText;
 $("pdfText").textContent=t.pdfText;
 $("esBtn").classList.toggle("active",lang==="es");
 $("enBtn").classList.toggle("active",lang==="en");
 document.documentElement.lang=lang;
 }
+
 function closePanels(){
 document.querySelectorAll(".panel").forEach(function(p){p.classList.remove("open")});
 }
+
 function openPanel(id){
 closePanels();
 var p=$(id);
@@ -471,6 +529,7 @@ p.classList.add("open");
 setTimeout(function(){p.scrollIntoView({behavior:"smooth",block:"start"})},30);
 if(id==="flightPanel")loadFlights();
 }
+
 async function loadFlights(){
 var box=$("flightList");
 try{
@@ -509,6 +568,7 @@ box.appendChild(d);
 box.innerHTML='<div class="flight"><div><h3>Opciones de vuelos</h3><p>Consulta la búsqueda actual para continuar.</p></div></div>';
 }
 }
+
 async function createPDF(){
 var s=$("pdfStatus");
 s.textContent=lang==="en"?"Creating guide...":"Creando guía...";
@@ -520,7 +580,7 @@ body:JSON.stringify({
 lang:lang,
 language:lang,
 title:"¿QUÉ QUIERES LLEVAR?",
-data:{guide:true,dviajeros:true,visa:true,opapeleo:true}
+data:{guide:true,dviajeros:true,visa:true,opapeleo:true,charters:true}
 })
 });
 if(!r.ok)throw new Error("PDF");
@@ -538,11 +598,13 @@ s.textContent=lang==="en"?"The PDF was created.":"El PDF fue creado.";
 s.textContent=lang==="en"?"The PDF could not be created right now.":"No se pudo crear el PDF en este momento.";
 }
 }
+
 $("esBtn").addEventListener("click",function(){setLang("es")});
 $("enBtn").addEventListener("click",function(){setLang("en")});
 $("dvBtn").addEventListener("click",function(){openPanel("dvPanel")});
 $("visaBtn").addEventListener("click",function(){openPanel("visaPanel")});
 $("flightBtn").addEventListener("click",function(){openPanel("flightPanel")});
+$("charterBtn").addEventListener("click",function(){openPanel("charterPanel")});
 $("pdfBtn").addEventListener("click",function(){openPanel("pdfPanel")});
 $("pdfCreateBtn").addEventListener("click",createPDF);
 document.querySelectorAll("[data-close]").forEach(function(b){b.addEventListener("click",closePanels)});
