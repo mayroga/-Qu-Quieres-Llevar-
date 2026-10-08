@@ -1,445 +1,281 @@
 from __future__ import annotations
-import os,json,re,urllib.request,urllib.error
-from typing import Any,Dict,List
-VERSION="17.0.0"
-GEMINI_MODEL=os.getenv("GEMINI_MODEL","gemini-2.5-flash")
-GEMINI_KEY=os.getenv("GEMINI_API_KEY","").strip()
-DVIAJEROS="https://dviajeros.mitrans.gob.cu/"
-VISA="https://evisacuba.cu/"
-GOOGLE_FLIGHTS="https://www.google.com/travel/flights"
-CUBA="https://www.cubatravel.cu/"
-OFFICIAL={
-"dviajeros":{"name":"D’Viajeros","url":DVIAJEROS,"topic":"formulario de entrada a Cuba"},
-"visa":{"name":"Visa electrónica Cuba","url":VISA,"topic":"visa electrónica"},
-"google_flights":{"name":"Google Flights","url":GOOGLE_FLIGHTS,"topic":"vuelos a Cuba"},
-"cuba":{"name":"Información oficial de Cuba","url":CUBA,"topic":"viaje a Cuba"}
-}
-AIRLINES=[
-{"name":"American Airlines","url":"https://www.aa.com/","cuba":True},
-{"name":"Delta Air Lines","url":"https://www.delta.com/","cuba":True},
-{"name":"Southwest Airlines","url":"https://www.southwest.com/","cuba":True},
-{"name":"United Airlines","url":"https://www.united.com/","cuba":True},
-{"name":"JetBlue","url":"https://www.jetblue.com/","cuba":True},
-{"name":"Copa Airlines","url":"https://www.copaair.com/","cuba":True},
-{"name":"Viva Aerobus","url":"https://www.vivaaerobus.com/","cuba":True},
-{"name":"Air Europa","url":"https://www.aireuropa.com/","cuba":True},
-{"name":"Iberia","url":"https://www.iberia.com/","cuba":True},
-{"name":"Turkish Airlines","url":"https://www.turkishairlines.com/","cuba":True}
-]
-CHARTERS=[
-{"name":"Aerocuba","url":"https://www.aerocuba.com/","note":"Comprueba disponibilidad antes de comprar."},
-{"name":"Havanatur","url":"https://www.havanatur.cu/","note":"Consulta las opciones de viaje disponibles."}
-]
-def _d(x):
-    if hasattr(x,"model_dump"): return x.model_dump()
-    if isinstance(x,dict): return x
-    return {}
-def _s(x): return str(x or "").strip()
-def _low(x): return _s(x).lower()
-def _source(name,url,topic="",section="",description=""):
-    return {"name":name,"url":url,"topic":topic,"section":section,"description":description}
-def official_url(kind):
-    k=_low(kind)
-    if k in OFFICIAL:return OFFICIAL[k]["url"]
-    if k=="dviajeros":return DVIAJEROS
-    if k=="visa":return VISA
-    if k=="flights":return GOOGLE_FLIGHTS
-    return CUBA
-def get_sources():
-    return [
-        _source("D’Viajeros",DVIAJEROS,"formulario","Inicio","Formulario oficial para el viajero."),
-        _source("Visa electrónica Cuba",VISA,"visa","Inicio","Sitio oficial para la visa electrónica."),
-        _source("Google Flights",GOOGLE_FLIGHTS,"vuelos","Buscar vuelo","Búsqueda de vuelos."),
-        _source("Información oficial de Cuba",CUBA,"viaje","Información","Información general del destino.")
-    ]
-def official_sources():
-    return get_sources()
-def answer_sources():
-    return get_sources()
-def get_airlines():
-    return AIRLINES
-def get_charters():
-    return CHARTERS
-def _gemini_prompt(data):
-    item=_s(data.get("item"))
-    desc=_s(data.get("description"))
-    airline=_s(data.get("airline"))
-    origin=_s(data.get("origin"))
-    destination=_s(data.get("destination")) or "Cuba"
-    bag=_s(data.get("baggage_type"))
-    capacity=_s(data.get("capacity"))
-    weight=_s(data.get("weight"))
-    quantity=_s(data.get("quantity"))
-    flight=_s(data.get("flight_number"))
-    lang=_s(data.get("language")) or "es"
-    return f"""
-Eres el asistente de preparación de viaje de ¿QUÉ QUIERES LLEVAR?.
-Resuelve exactamente la duda del viajero. Responde primero con una conclusión clara.
-No inventes reglas. Si falta un dato necesario, pregunta SOLO por ese dato.
-Si existe información oficial relevante, úsala y proporciona el enlace directo a la página o sección concreta cuando sea posible.
-Si hay información específica de la aerolínea indicada, úsala.
-No uses lenguaje alarmista. No des teoría legal. No conviertas la respuesta en una lista de advertencias.
-El viajero necesita saber qué puede hacer.
-Idioma: {lang}
-Artículo: {item}
-Descripción: {desc}
-Aerolínea: {airline}
-Origen: {origin}
-Destino: {destination}
-Forma de llevarlo: {bag}
-Capacidad: {capacity}
-Peso: {weight}
-Cantidad: {quantity}
-Vuelo: {flight}
+import os,json,re,urllib.request
+from datetime import datetime
+from typing import Any,Dict,List,Optional
+from source_registry import source_by_id,get_sources,official_sources,answer_sources,get_airlines,get_charters,official_url
 
-Devuelve SOLO JSON válido:
-{{
-"decision":"yes|no|conditional|need_info",
-"decision_label":"respuesta corta",
-"message":"respuesta directa para el viajero",
-"explanation":"explicación sencilla",
-"conditions":["condiciones concretas"],
-"alternatives":["alternativas útiles"],
-"warnings":["solo advertencias necesarias"],
-"missing_information":["datos que faltan"],
-"next_action":"qué debe hacer ahora",
-"official_url":"URL exacta si existe",
-"official_label":"qué debe leer en esa página",
-"confidence":"high|medium|low"
-}}
-"""
-def _gemini(data):
-    if not GEMINI_KEY:return None
-    url=f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_KEY}"
-    body={
-        "contents":[{"role":"user","parts":[{"text":_gemini_prompt(data)}]}],
-        "tools":[{"google_search":{}}],
-        "generationConfig":{"temperature":0.1,"responseMimeType":"application/json"}
-    }
+VERSION="16.0.0"
+APP="¿QUÉ QUIERES LLEVAR?"
+GEMINI_MODEL=os.getenv("GEMINI_MODEL","gemini-2.5-flash")
+GEMINI_API_KEY=os.getenv("GEMINI_API_KEY","").strip()
+
+def _s(v:Any)->str:return str(v or "").strip()
+def _l(v:Any)->str:return _s(v).lower()
+def _b(v:Any)->bool:
+    if isinstance(v,bool):return v
+    return _l(v) in ("1","true","yes","si","sí","y","on")
+def _n(v:Any,default:int=0)->int:
+    try:return int(v)
+    except:return default
+def _source(i:str)->Dict[str,Any]:
+    try:return source_by_id(i) or {}
+    except:return {}
+def _sources(topic:str="",country:str="",airline:str="")->List[Dict[str,Any]]:
+    try:return official_sources(topic,country,airline)
+    except:return []
+def _airline_source(name:str)->Dict[str,Any]:
+    a=_s(name)
+    if not a:return {}
     try:
-        req=urllib.request.Request(
-            url,
-            data=json.dumps(body).encode(),
-            headers={"Content-Type":"application/json"},
-            method="POST"
-        )
-        with urllib.request.urlopen(req,timeout=35) as r:
-            raw=json.loads(r.read().decode("utf-8","ignore"))
-        txt=""
-        for c in raw.get("candidates",[]):
-            for p in c.get("content",{}).get("parts",[]):
-                if p.get("text"):txt+=p["text"]
-        txt=txt.strip()
-        if txt.startswith("```"):
-            txt=re.sub(r"^```(?:json)?","",txt).strip()
-            txt=re.sub(r"```$","",txt).strip()
-        return json.loads(txt)
-    except Exception:
-        return None
-def _item_fallback(data):
-    item=_low(data.get("item"))
-    desc=_low(data.get("description"))
-    text=f"{item} {desc}"
-    cap=_s(data.get("capacity"))
-    if any(x in text for x in ["arma","pistola","explosivo","granada","munición","municion"]):
-        return {
-            "decision":"no","decision_label":"No lo lleves.",
-            "message":"No lleves este artículo en el avión.",
-            "explanation":"Este tipo de artículo no debe transportarse como un artículo normal de viaje.",
-            "conditions":[],"alternatives":[],"warnings":[],
-            "next_action":"Si necesitas una respuesta sobre un objeto concreto, dime exactamente qué es.",
-            "official_url":"","official_label":"","confidence":"high"
-        }
-    if any(x in text for x in ["batería","bateria","power bank","powerbank","litio"]):
-        if not cap:
-            return {
-                "decision":"need_info",
-                "decision_label":"Necesito un dato.",
-                "message":"Necesito saber la capacidad de la batería para decirte cómo puedes llevarla.",
-                "explanation":"Busca en la etiqueta un dato que diga Wh, mAh o capacidad.",
-                "conditions":["Dime exactamente lo que aparece en la etiqueta."],
-                "alternatives":[],
-                "warnings":[],
-                "next_action":"Escribe aquí el valor de Wh o mAh que aparece en la batería.",
-                "official_url":"",
-                "official_label":"",
-                "confidence":"high"
-            }
-        return {
-            "decision":"conditional",
-            "decision_label":"Hay que comprobar la capacidad.",
-            "message":"La forma de llevar esta batería depende de su capacidad y del tipo de batería.",
-            "explanation":f"Me indicaste una capacidad de {cap}. Para darte una respuesta definitiva también importa el tipo exacto de batería.",
-            "conditions":["Confirma la capacidad que aparece en la etiqueta.","Indica qué dispositivo alimenta la batería."],
-            "alternatives":[],
-            "warnings":[],
-            "next_action":"Dime qué aparece en la etiqueta y para qué dispositivo es.",
-            "official_url":"",
-            "official_label":"",
-            "confidence":"medium"
-        }
-    if any(x in text for x in ["líquido","liquido","perfume","champú","shampoo","crema","gel"]):
-        return {
-            "decision":"conditional",
-            "decision_label":"Depende de cómo lo lleves.",
-            "message":"Puedo decirte cómo llevarlo, pero necesito saber qué líquido es y cuánto contiene.",
-            "explanation":"La cantidad y la forma de transportarlo pueden cambiar la respuesta.",
-            "conditions":["Dime qué producto es.","Dime cuántos mililitros contiene."],
-            "alternatives":[],"warnings":[],
-            "next_action":"Escribe el nombre del producto y los mililitros.",
-            "official_url":"","official_label":"","confidence":"medium"
-        }
-    if any(x in text for x in ["comida","alimento","carne","queso","semilla","fruta","vegetal","comida"]):
-        return {
-            "decision":"conditional",
-            "decision_label":"Necesito saber qué alimento es.",
-            "message":"La respuesta depende del alimento y del lugar al que viajas.",
-            "explanation":"Dime exactamente qué alimento quieres llevar y cómo está preparado.",
-            "conditions":[],"alternatives":[],"warnings":[],
-            "next_action":"Escribe el nombre exacto del alimento.",
-            "official_url":"","official_label":"","confidence":"medium"
-        }
-    return {
-        "decision":"need_info",
-        "decision_label":"Necesito un poco más de información.",
-        "message":"Dime exactamente qué artículo quieres llevar y cómo piensas transportarlo.",
-        "explanation":"Con esos datos puedo darte una respuesta más útil.",
-        "conditions":[],"alternatives":[],"warnings":[],
-        "next_action":"Escribe el nombre del artículo y, si tiene etiqueta, sus datos.",
-        "official_url":"","official_label":"","confidence":"low"
-    }
-def item_analysis(request):
-    data=_d(request)
-    result=_gemini(data)
-    used=result is not None
-    if not result:result=_item_fallback(data)
-    result=dict(result)
-    result["gemini_used"]=used
-    result["gemini_error"]=bool(GEMINI_KEY and not used)
-    result["version"]=VERSION
-    if not result.get("sources"):result["sources"]=[]
-    if result.get("official_url"):
-        result["sources"].append(_source(
-            result.get("official_label") or "Regla oficial",
-            result["official_url"],
-            "respuesta"
-        ))
-    result.setdefault("decision","need_info")
-    result.setdefault("decision_label","Necesito información.")
-    result.setdefault("message","Necesito un dato para darte una respuesta.")
-    result.setdefault("explanation","")
-    result.setdefault("conditions",[])
-    result.setdefault("alternatives",[])
-    result.setdefault("warnings",[])
-    result.setdefault("next_action","")
-    result.setdefault("confidence","medium")
-    return result
-def baggage_rules(request):
-    d=_d(request)
-    airline=_s(d.get("airline"))
-    weight=d.get("weight")
-    dimensions=_s(d.get("dimensions"))
-    pieces=d.get("pieces")
-    kind=_low(d.get("baggage_type") or d.get("type"))
-    names={
-        "carry_on":"Lo que llevas contigo",
-        "checked":"La maleta que entregas",
-        "personal":"El artículo pequeño que llevas contigo"
-    }
-    name=names.get(kind,"Tu equipaje")
-    missing=[]
-    if weight is None:missing.append("peso")
-    if not dimensions:missing.append("medidas")
-    if pieces is None:missing.append("cantidad")
-    msg=f"Para saber exactamente qué permite tu boleto con {airline or 'la aerolínea'}, necesito revisar peso, medidas y cantidad."
-    if not missing:
-        msg="Ya tenemos los datos principales de tu equipaje. Ahora hay que compararlos con las condiciones de tu boleto."
-    return {
-        "status":"need_info" if missing else "ready",
-        "type":kind,
-        "type_name":name,
-        "airline":airline,
-        "origin":_s(d.get("origin")),
-        "destination":_s(d.get("destination")),
-        "fare":_s(d.get("fare")),
-        "cabin":_s(d.get("cabin")),
-        "message":msg,
-        "do_not_assume":[f"Falta indicar {x}." for x in missing],
-        "conditions":[],
-        "next_action":"Completa los datos que faltan." if missing else "Revisa la respuesta de tu aerolínea.",
-        "sources":[],
-        "version":VERSION
-    }
-def _sim_step(n,title,text,link="",image=""):
-    return {
-        "number":n,
-        "title":title,
-        "text":text,
-        "reference_image":image,
-        "reference_type":"visual-guide" if image else "",
-        "official_step":text,
-        "link":link
-    }
-def dviajeros_simulation(request):
-    lang=_s(_d(request).get("language")) or "es"
-    if lang=="en":
-        steps=[
-            _sim_step(1,"Open the official form","Open the official D’Viajeros website.",DVIAJEROS),
-            _sim_step(2,"Start","Choose the option to complete the traveler information."),
-            _sim_step(3,"Enter your information","Use your passport and travel information exactly as shown."),
-            _sim_step(4,"Review","Check the information before finishing."),
-            _sim_step(5,"Finish","Complete the official process and keep the result."),
-            _sim_step(6,"At the airport","Have the result available on your phone when you need it."),
-            _sim_step(7,"If you need help","Return to the official form and follow the instructions shown there.",DVIAJEROS)
+        x=get_airlines(a)
+        return x[0] if x else {}
+    except:return {}
+def _dedupe(xs:List[Dict[str,Any]])->List[Dict[str,Any]]:
+    out=[];seen=set()
+    for x in xs or []:
+        if not isinstance(x,dict):continue
+        i=_s(x.get("id")) or _s(x.get("url"))
+        if i and i not in seen:seen.add(i);out.append(x)
+    return out
+
+def _item_sources(item:str="",airline:str="",origin:str="",destination:str="Cuba")->List[Dict[str,Any]]:
+    out=[]
+    try:
+        if airline:out+=get_sources("airline","",destination,airline)
+        q=f"{item} {_s(origin)} {_s(destination)}".strip()
+        out+=get_sources("security",q,origin,airline)
+        out+=get_sources("customs",q,destination,airline)
+        out+=get_sources("item",q,destination,airline)
+        out+=get_sources("baggage","",destination,airline)
+        if "cuba" in _l(destination):out+=get_sources("cuba","",destination,airline)
+    except:pass
+    return _dedupe(out or _sources("",destination,airline))
+
+def _step(n:int,title:str,instruction:str,fields:List[str],data:Dict[str,Any],required:Optional[List[str]]=None,official:bool=False)->Dict[str,Any]:
+    req=required or []
+    complete=all(_s(data.get(x)) for x in req) if req else False
+    return {"step":n,"title":title,"instruction":instruction,"fields":fields,"options":[],"completed":complete,"reference_image":"","reference_type":"","official_step":official}
+
+def _simulation_steps(scenario:str,data:Dict[str,Any])->List[Dict[str,Any]]:
+    s=_l(scenario);d=data or {}
+    if "dvia" in s:
+        return [
+            _step(1,"Datos personales","Escribe tus datos exactamente como aparecen en tu documento.",["given_names","surnames","birth_date","nationality","passport_number"],d,["given_names","surnames","birth_date","nationality","passport_number"]),
+            _step(2,"Residencia y viaje","Indica dónde resides y el motivo del viaje.",["country_of_residence","purpose"],d,["country_of_residence","purpose"]),
+            _step(3,"Vuelo","Coloca los datos de tu vuelo cuando los tengas.",["airline","flight_number","arrival_date","arrival_airport"],d,["airline","arrival_date"]),
+            _step(4,"Alojamiento","Indica dónde te alojarás en Cuba.",["province","municipality","accommodation_name","address_destination"],d,["address_destination"]),
+            _step(5,"Revisión","Comprueba que los datos coincidan con tus documentos.",["review"],d),
+            _step(6,"Sitio oficial","Abre D'Viajeros y completa el formulario real. Esta aplicación no lo envía.",["official_submission"],d,official=True)
         ]
-        return {"title":"D’Viajeros","message":"Visual practice before using the official form.","steps":steps,"official_url":DVIAJEROS,"official_label":"Open D’Viajeros","airport_steps":steps[5:],"reference_images":[],"language":"en","version":VERSION}
-    steps=[
-        _sim_step(1,"Abre el formulario","Abre el sitio oficial de D’Viajeros.",DVIAJEROS),
-        _sim_step(2,"Comienza","Busca la opción para completar la información del viajero."),
-        _sim_step(3,"Pon tus datos","Usa tu pasaporte y tus datos del viaje exactamente como aparecen."),
-        _sim_step(4,"Revisa","Mira nuevamente los datos antes de terminar."),
-        _sim_step(5,"Termina","Completa el proceso oficial y guarda el resultado."),
-        _sim_step(6,"En el aeropuerto","Ten el resultado disponible en tu teléfono cuando lo necesites."),
-        _sim_step(7,"Si necesitas ayuda","Vuelve al formulario oficial y sigue las instrucciones que aparecen allí.",DVIAJEROS)
+    if "visa" in s:
+        return [
+            _step(1,"Pasaporte","Usa los datos exactamente como aparecen en tu pasaporte.",["given_names","surnames","passport_number","nationality"],d,["given_names","surnames","passport_number","nationality"]),
+            _step(2,"Viaje","Prepara el motivo y las fechas de tu viaje.",["purpose","arrival_date","departure_date"],d,["purpose","arrival_date"]),
+            _step(3,"Contacto","Usa un correo electrónico que puedas consultar.",["email","phone"],d,["email"]),
+            _step(4,"Revisión","Comprueba que los datos coincidan con tu pasaporte.",["review"],d),
+            _step(5,"Proceso oficial","Continúa en el canal oficial que corresponda a tu caso.",["official_submission"],d,official=True)
+        ]
+    if "flight" in s or "booking" in s:
+        return [
+            _step(1,"Origen y destino","Indica desde dónde quieres salir y confirma Cuba como destino.",["origin","destination"],d,["origin","destination"]),
+            _step(2,"Fecha y pasajeros","Indica la fecha y las personas que viajan.",["departure","return_date","passengers"],d,["departure"]),
+            _step(3,"Proveedor","Revisa las aerolíneas y charters disponibles.",["airline","flight_type"],d),
+            _step(4,"Revisión","Comprueba ruta, fechas y condiciones.",["review"],d),
+            _step(5,"Sitio oficial","La compra o reserva real se hace directamente con el proveedor.",["official_booking"],d,official=True)
+        ]
+    return [
+        _step(1,"Preparación","Completa la información que corresponda.",["data"],d),
+        _step(2,"Revisión","Comprueba los datos.",["review"],d),
+        _step(3,"Fuente oficial","Comprueba el dato final en el sitio oficial.",["official_source"],d,official=True)
     ]
-    return {"title":"D’Viajeros","message":"Clase visual antes de entrar al formulario oficial.","steps":steps,"official_url":DVIAJEROS,"official_label":"Abrir D’Viajeros","airport_steps":steps[5:],"reference_images":[],"language":"es","version":VERSION}
-def visa_simulation(request):
-    d=_d(request)
-    lang=_s(d.get("language")) or "es"
-    if lang=="en":
-        texts=[
-            ("1","Open the official website","Open the official electronic visa website.",VISA),
-            ("2","Start","Choose the option to begin the electronic visa process.",""),
-            ("3","Complete the information","Use the information shown on your passport.",""),
-            ("4","Review and finish","Check everything before completing the official process.",""),
-            ("5","Keep your result","Save the confirmation or document you receive.",""),
-            ("6","At the airport","Keep the information available with your travel documents.","")
-        ]
+
+def _simulation_result(scenario:str,data:Dict[str,Any],step:Any=0)->Dict[str,Any]:
+    d=data or {};steps=_simulation_steps(scenario,d);total=len(steps)
+    pos=max(0,min(total-1,_n(step)))
+    current=steps[pos]
+    done=sum(1 for x in steps if x["completed"])
+    s=_l(scenario)
+    if "dvia" in s:
+        sources=[_source("dviajeros")];url=official_url("dviajeros")
+    elif "visa" in s:
+        sources=[_source("evisa_cuba"),_source("cuba_minrex")];url=official_url("evisa_cuba")
     else:
-        texts=[
-            ("1","Abre el sitio oficial","Abre el sitio oficial de la visa electrónica.",VISA),
-            ("2","Comienza","Busca la opción para comenzar el proceso de visa.",""),
-            ("3","Completa la información","Usa exactamente los datos que aparecen en tu pasaporte.",""),
-            ("4","Revisa y termina","Comprueba los datos antes de terminar el proceso oficial.",""),
-            ("5","Guarda el resultado","Guarda la confirmación o documento que recibas.",""),
-            ("6","En el aeropuerto","Ten esa información junto con tus documentos de viaje.","")
-        ]
-    steps=[_sim_step(int(n),t,x,l) for n,t,x,l in texts]
+        sources=get_airlines()+get_charters();url=official_url(_s(d.get("airline"))) if d.get("airline") else ""
     return {
-        "title":"Visa electrónica",
-        "message":"Clase visual antes de utilizar el sitio oficial.",
-        "steps":steps,
-        "official_url":VISA,
-        "official_label":"Abrir visa electrónica",
-        "airport_steps":steps[-1:],
-        "reference_images":[],
-        "language":lang,
-        "version":VERSION
+        "status":"ok","scenario":scenario,"simulation":True,"official_submission":False,
+        "notice":"Esta es una práctica guiada. No es el formulario oficial y no envía información.",
+        "message":current["instruction"],"step":pos,"progress":round(done/total*100,1),
+        "current_step":current,"steps":steps,
+        "next_action":"Completa este paso y continúa." if not current["official_step"] else "Cuando estés listo, abre el sitio oficial.",
+        "sources":_dedupe(sources),"missing":[],"prefilled":d,
+        "official_url":url,"total_steps":total,"can_go_back":pos>0,"can_go_home":True,
+        "reference_images":[],"version":VERSION
     }
-def analyze_flight(request):
-    d=_d(request)
-    airline=_s(d.get("airline"))
-    origin=_s(d.get("origin"))
-    destination=_s(d.get("destination")) or "Cuba"
+
+def dviajeros_simulation(data:Dict[str,Any])->Dict[str,Any]:
+    return _simulation_result("dviajeros",data,data.get("step",0))
+def visa_simulation(data:Dict[str,Any])->Dict[str,Any]:
+    return _simulation_result("visa",data,data.get("step",0))
+def practice_scenario(data:Dict[str,Any])->Dict[str,Any]:
+    return _simulation_result(_s(data.get("scenario") or "dviajeros"),data,_n(data.get("step")))
+
+def document_analysis(data:Dict[str,Any])->Dict[str,Any]:
+    d=data or {}
+    checks=[
+        ("Pasaporte","passport_number",bool(_s(d.get("passport_number"))),"Ten tu pasaporte disponible."),
+        ("Nacionalidad","nationality",bool(_s(d.get("nationality"))),"Indica tu nacionalidad."),
+        ("Vuelo","flight_number",bool(_s(d.get("flight_number")) or _s(d.get("airline"))),"Ten los datos del vuelo."),
+        ("Visa","visa_checked",_b(d.get("visa_checked")),"Comprueba el proceso de visa que corresponde."),
+        ("D'Viajeros","dviajeros_done",_b(d.get("dviajeros_done")),"Completa el proceso oficial cuando corresponda.")
+    ]
+    rows=[{"name":a,"field":b,"ok":c,"message":m} for a,b,c,m in checks]
+    pending=[a for a,b,c,m in checks if not c]
+    return {"status":"complete" if not pending else "incomplete","checks":rows,"pending":pending,"next_action":pending[0] if pending else "Revisa y conserva tus comprobantes.","sources":_dedupe([_source("dviajeros"),_source("evisa_cuba"),_source("cuba_minrex")]),"version":VERSION}
+
+def baggage_rules(data:Dict[str,Any])->Dict[str,Any]:
+    d=data or {};airline=_s(d.get("airline"));typ=_s(d.get("type") or d.get("baggage_type") or "carry_on")
+    names={"carry_on":"Equipaje de mano","checked":"Equipaje facturado","personal":"Artículo personal"}
+    conditions=[]
+    if not airline:conditions.append("Primero identifica la aerolínea.")
+    if not _s(d.get("fare")):conditions.append("La tarifa puede cambiar lo que incluye el boleto.")
+    if not _s(d.get("cabin")):conditions.append("La cabina puede cambiar las condiciones.")
+    src=_dedupe(([_airline_source(airline)] if airline else [])+_item_sources("",airline,_s(d.get("origin")),_s(d.get("destination") or "Cuba")))
     return {
-        "ok":True,
-        "message":"Puedes comenzar buscando el vuelo y después revisar la aerolínea, el boleto y el equipaje antes de comprar.",
-        "search_url":GOOGLE_FLIGHTS,
-        "search_label":"Buscar vuelos a Cuba",
-        "airline":airline,
-        "origin":origin,
-        "destination":destination,
-        "official_airline":next((x for x in AIRLINES if _low(x["name"])==_low(airline)),None),
-        "sources":[_source("Google Flights",GOOGLE_FLIGHTS,"vuelos","Buscar vuelo")],
-        "version":VERSION
+        "status":"review","type":typ,"type_name":names.get(typ,typ),"airline":airline,
+        "origin":_s(d.get("origin")),"destination":_s(d.get("destination") or "Cuba"),
+        "fare":_s(d.get("fare")),"cabin":_s(d.get("cabin")),
+        "message":"La cantidad, peso y medidas dependen de la aerolínea, ruta, tarifa y boleto. No se deben suponer.",
+        "do_not_assume":["No asumir peso o cantidad sin revisar el boleto.","No asumir que una regla general sustituye la regla de la aerolínea.","No asumir que una regla de salida sustituye una regla de entrada a Cuba."],
+        "conditions":conditions,"next_action":"Revisa la condición exacta en el proveedor oficial.","sources":src,"version":VERSION
     }
-def booking_simulation(request):
-    d=_d(request)
+
+def _fallback_item(item:str)->Dict[str,Any]:
+    q=_l(item)
+    if any(x in q for x in ("arma","explosivo","granada","municion","munición","fuego artificial")):
+        return {"decision":"red","decision_label":"🔴 NO LO LLEVES SIN VERIFICAR","category":"Artículo restringido","message":"Este artículo puede estar prohibido o sujeto a controles especiales.","explanation":"No se debe asumir que puede viajar en el equipaje.","conditions":["Comprueba la regla oficial específica antes de viajar."],"alternatives":[],"warnings":[],"authority":"Autoridad oficial correspondiente"}
+    if any(x in q for x in ("bateria","batería","power bank","litio","lithium")):
+        return {"decision":"yellow","decision_label":"🟡 VERIFICA ANTES","category":"Batería","message":"Las baterías pueden tener reglas específicas.","explanation":"El tipo y capacidad de la batería pueden cambiar la respuesta.","conditions":["Comprueba el tipo y capacidad.","Revisa la regla vigente de la aerolínea."],"alternatives":[],"warnings":[],"authority":"Aerolínea y autoridad de seguridad"}
+    if any(x in q for x in ("liquido","líquido","perfume","crema","shampoo","champú")):
+        return {"decision":"yellow","decision_label":"🟡 VERIFICA ANTES","category":"Líquido","message":"Los líquidos pueden estar sujetos a límites.","explanation":"El recipiente y la forma de transporte pueden cambiar la respuesta.","conditions":["Comprueba la regla vigente antes de viajar."],"alternatives":[],"warnings":[],"authority":"Aerolínea y autoridad de seguridad"}
+    if any(x in q for x in ("carne","comida","alimento","queso","fruta","vegetal","semilla")):
+        return {"decision":"yellow","decision_label":"🟡 VERIFICA ANTES","category":"Alimento","message":"Los alimentos pueden tener reglas distintas para seguridad y entrada a Cuba.","explanation":"Que algo pueda pasar el control de salida no significa que pueda entrar en Cuba.","conditions":["Comprueba las reglas de entrada a Cuba."],"alternatives":[],"warnings":[],"authority":"Autoridad de entrada a Cuba"}
+    if any(x in q for x in ("laptop","computadora","ordenador","tablet","telefono","teléfono","celular","camara","cámara")):
+        return {"decision":"green","decision_label":"🟢 GENERALMENTE POSIBLE","category":"Electrónico","message":"Los dispositivos electrónicos generalmente pueden viajar.","explanation":"Pueden estar sujetos a controles durante el viaje.","conditions":["Sigue las instrucciones del control y de la aerolínea."],"alternatives":[],"warnings":[],"authority":"Aerolínea y autoridad de seguridad"}
+    return {"decision":"verify","decision_label":"🔵 HAY QUE COMPROBARLO","category":"Consulta específica","message":"No sería responsable decirte que puedes llevarlo sin comprobar el artículo exacto.","explanation":"La respuesta puede depender del artículo, contenido, cantidad, equipaje, aerolínea y destino.","conditions":["Comprueba la regla oficial específica antes de viajar."],"alternatives":[],"warnings":[],"authority":"Proveedor o autoridad oficial"}
+
+def _gemini_prompt(d:Dict[str,Any],sources:List[Dict[str,Any]])->str:
+    src=[{"name":x.get("name",""),"publisher":x.get("publisher",""),"url":x.get("url",""),"covers":x.get("what_it_covers","")} for x in sources[:12]]
+    return f"""Eres un asistente independiente de preparación de viaje.
+No eres una autoridad. No inventes reglas.
+Artículo: {_s(d.get("item"))}
+Descripción: {_s(d.get("description"))}
+Aerolínea: {_s(d.get("airline"))}
+Origen: {_s(d.get("origin"))}
+Destino: {_s(d.get("destination") or "Cuba")}
+Equipaje: {_s(d.get("baggage_type") or d.get("type"))}
+Cantidad: {_s(d.get("quantity"))}
+Peso: {_s(d.get("weight"))}
+Tamaño: {_s(d.get("size"))}
+Fuentes: {json.dumps(src,ensure_ascii=False)}
+Devuelve SOLO JSON válido:
+decision: green,yellow,red,verify
+decision_label: etiqueta breve en español
+category: categoría
+message: respuesta breve
+explanation: explicación
+conditions: lista
+alternatives: lista
+warnings: lista
+authority: quién debe confirmar
+confidence: high,medium,low
+Nunca inventes límites, cantidades, pesos, medidas, precios o autorizaciones.
+Si falta información usa verify o yellow.
+"""
+
+def _gemini_item(d:Dict[str,Any],sources:List[Dict[str,Any]])->Optional[Dict[str,Any]]:
+    if not GEMINI_API_KEY:return None
+    url=f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
+    body={"contents":[{"parts":[{"text":_gemini_prompt(d,sources)}]}],"generationConfig":{"temperature":0.1,"responseMimeType":"application/json"}}
+    try:
+        req=urllib.request.Request(url,data=json.dumps(body).encode(),headers={"Content-Type":"application/json"},method="POST")
+        with urllib.request.urlopen(req,timeout=15) as r:obj=json.loads(r.read().decode())
+        txt=obj.get("candidates",[{}])[0].get("content",{}).get("parts",[{}])[0].get("text","")
+        txt=re.sub(r"^```(?:json)?\s*|\s*```$","",txt.strip(),flags=re.I)
+        x=json.loads(txt)
+        return x if isinstance(x,dict) else None
+    except:return None
+
+def item_analysis(data:Dict[str,Any])->Dict[str,Any]:
+    d=data or {};item=_s(d.get("item"));airline=_s(d.get("airline"));destination=_s(d.get("destination") or "Cuba")
+    sources=_item_sources(item,airline,_s(d.get("origin")),destination)
+    result=_fallback_item(item);gem=_gemini_item(d,sources)
+    if gem:
+        for k in ("decision","decision_label","category","message","explanation","conditions","alternatives","warnings","authority","confidence"):
+            if k in gem and gem[k] not in (None,""):result[k]=gem[k]
+    result["decision"]=result.get("decision") if result.get("decision") in ("green","yellow","red","verify") else "verify"
+    for k in ("conditions","alternatives","warnings"):
+        if not isinstance(result.get(k),list):result[k]=[]
+    result.update({"status":"ok","item":item,"baggage_type":_s(d.get("baggage_type") or d.get("type")),"gemini_used":bool(gem),"gemini_available":bool(GEMINI_API_KEY),"gemini_error":bool(GEMINI_API_KEY and not gem),"confidence":_s(result.get("confidence")) or ("medium" if gem else "low"),"final_decision":False,"official_authority":_s(result.get("authority")),"verify_with":sources[:8],"next_action":"Comprueba la fuente oficial indicada antes de viajar.","sources":sources,"version":VERSION})
+    return result
+
+def analyze_flight(data:Dict[str,Any])->Dict[str,Any]:
+    d=data or {};origin=_s(d.get("origin"));destination=_s(d.get("destination") or "Cuba");airline=_s(d.get("airline"));departure=_s(d.get("departure") or d.get("arrival_date"))
+    missing=[]
+    if not origin:missing.append("origen")
+    if not departure:missing.append("fecha")
+    providers=[_airline_source(airline)] if airline else get_airlines()+get_charters()
+    providers=_dedupe([x for x in providers if x])
     return {
-        "ok":True,
-        "message":"Esta práctica te enseña el recorrido. No compra, paga ni reserva un vuelo.",
-        "steps":[
-            _sim_step(1,"Busca","Elige origen, destino y fecha."),
-            _sim_step(2,"Compara","Mira los vuelos y el horario que te conviene."),
-            _sim_step(3,"Revisa","Comprueba aerolínea, boleto y equipaje."),
-            _sim_step(4,"Continúa","Para comprar, pasa al sitio de la aerolínea.")
-        ],
-        "official_url":GOOGLE_FLIGHTS,
-        "version":VERSION
+        "status":"incomplete" if missing else "ok","version":VERSION,
+        "message":"Completa los datos que faltan." if missing else "Búsqueda preparada. Comprueba la disponibilidad en el proveedor oficial.",
+        "search":{"origin":origin,"destination":destination,"airline":airline,"flight_number":_s(d.get("flight_number")),"departure":departure,"return_date":_s(d.get("return_date")),"passengers":d.get("passengers",1),"cabin":_s(d.get("cabin")),"fare":_s(d.get("fare")),"stops":d.get("stops",0)},
+        "missing":missing,"next_action":"Completa: "+", ".join(missing) if missing else "Abre el proveedor oficial.",
+        "sources":providers,"airlines":get_airlines(),"charters":get_charters(),
+        "official_url":official_url(airline) if airline else "","simulation":True,"real_booking":False
     }
-def connection_analysis(request):
-    return {
-        "ok":True,
-        "message":"Si tienes una conexión, revisa el tiempo entre vuelos y las instrucciones que aparecen en tu boleto.",
-        "next_action":"Si me das los vuelos y horarios, puedo ayudarte a entender la conexión.",
-        "version":VERSION
-    }
-def cuba_check(request):
-    d=_d(request)
-    return {
-        "ok":True,
-        "message":"Para preparar tu entrada a Cuba, revisa D’Viajeros, la visa que corresponda y tus documentos de viaje.",
-        "dviajeros":DVIAJEROS,
-        "visa":VISA,
-        "version":VERSION
-    }
-def cuba_entry(request):
-    return cuba_check(request)
-def document_analysis(request):
-    return {
-        "ok":True,
-        "message":"Revisa tus documentos de viaje y compara los datos con los que aparecen en tu boleto y formularios.",
-        "next_action":"Si tienes una duda concreta, escribe exactamente qué documento quieres revisar.",
-        "version":VERSION
-    }
-def practice_scenario(request):
-    d=_d(request)
-    return {
-        "ok":True,
-        "message":"Esta es una práctica. No es un trámite oficial y no envía información a ninguna autoridad.",
-        "scenario":_s(d.get("scenario")),
-        "step":d.get("step",1),
-        "version":VERSION
-    }
-def solve(data):
-    d=_d(data)
-    return item_analysis(d) if d.get("item") else {
-        "ok":True,
-        "message":"Dime qué necesitas resolver.",
-        "next_action":"Escribe tu duda con tus propias palabras.",
-        "version":VERSION
-    }
-def guide(data):
-    d=_d(data)
-    topic=_low(d.get("topic"))
-    if "visa" in topic:return visa_simulation(d)
-    if "viajero" in topic or "dviajero" in topic:return dviajeros_simulation(d)
-    if "vuelo" in topic:return booking_simulation(d)
-    if "equipaje" in topic:return baggage_rules(d)
-    return {
-        "ok":True,
-        "message":"Dime si necesitas ayuda con D’Viajeros, visa, vuelos, equipaje o algo que quieras llevar.",
-        "version":VERSION
-    }
-def create_pdf(request):
-    return {
-        "ok":False,
-        "message":"El PDF es opcional. La creación del archivo se realiza desde la función de PDF cuando el cliente pulsa para sacarlo.",
-        "version":VERSION
-    }
-def import_pdf(request):
-    return {"ok":False,"message":"La recuperación por PDF no forma parte del recorrido principal.","version":VERSION}
-def export_data(data):
-    return {"ok":True,"data":_d(data),"version":VERSION}
-def add_source(data):
-    return {"ok":True,"source":_d(data)}
-def add_airline(data):
-    return {"ok":True,"airline":_d(data)}
-def health():
-    return {
-        "version":VERSION,
-        "gemini_configured":bool(GEMINI_KEY),
-        "gemini_model":GEMINI_MODEL,
-        "dviajeros":DVIAJEROS,
-        "visa":VISA
-    }
+
+def booking_simulation(data:Dict[str,Any])->Dict[str,Any]:
+    d=data or {};airline=_s(d.get("airline"))
+    return {"status":"ok","simulation":True,"real_booking":False,"payment":False,"official_submission":False,"notice":"Preparación de vuelo. Esta aplicación no compra, reserva ni cobra el boleto.","message":"Prepara la búsqueda y continúa en el proveedor oficial.","search":analyze_flight(d)["search"],"fields":["origin","destination","departure","return_date","passengers","airline","flight_type","cabin","fare"],"steps":_simulation_steps("flight",d),"next_action":"Completa el paso actual y revisa el proveedor oficial.","sources":_dedupe([_airline_source(airline)] if airline else get_airlines()+get_charters()),"official_url":official_url(airline) if airline else "","version":VERSION}
+
+def connection_analysis(data:Dict[str,Any])->Dict[str,Any]:
+    d=data or {};warnings=[]
+    try:
+        if d.get("connection_minutes") not in (None,"") and float(d["connection_minutes"])<90:warnings.append("Confirma con la aerolínea que el tiempo de conexión sea suficiente.")
+    except:pass
+    if _b(d.get("country_change")):warnings.append("Comprueba los requisitos del país de tránsito.")
+    if _b(d.get("bag_recheck")):warnings.append("Comprueba si debes volver a entregar el equipaje.")
+    return {"status":"review","message":"Revisa la conexión directamente con las aerolíneas del itinerario.","warnings":warnings,"next_action":"Comprueba terminal, puerta, equipaje y tránsito.","sources":_dedupe([_airline_source(d.get("airline")),_airline_source(d.get("next_airline"))])}
+
+def cuba_check(data:Dict[str,Any])->Dict[str,Any]:
+    d=data or {}
+    checks=[
+        ("Pasaporte","passport_number",_s(d.get("passport_number")),"Ten tu pasaporte disponible."),
+        ("Nacionalidad","nationality",_s(d.get("nationality")),"Indica tu nacionalidad."),
+        ("Visa","visa_checked",_b(d.get("visa_checked")),"Comprueba el proceso que corresponde a tu caso."),
+        ("D'Viajeros","dviajeros_done",_b(d.get("dviajeros_done")),"Completa el proceso oficial."),
+        ("Vuelo","airline",_s(d.get("airline")) or _s(d.get("flight_number")),"Ten los datos de tu vuelo."),
+        ("Documentos","documents_checked",_b(d.get("documents_checked")),"Revisa los documentos que correspondan.")
+    ]
+    rows=[{"name":a,"field":b,"ok":bool(c),"message":m} for a,b,c,m in checks]
+    pending=[a for a,b,c,m in checks if not c]
+    return {"status":"complete" if not pending else "incomplete","checklist":rows,"completed":len(rows)-len(pending),"total":len(rows),"progress":round((len(rows)-len(pending))/len(rows)*100,1),"pending":pending,"message":"Tu preparación básica está completa." if not pending else "Todavía hay elementos que debes comprobar.","next_action":pending[0] if pending else "Revisa y conserva tus comprobantes.","sources":_dedupe([_source("dviajeros"),_source("evisa_cuba"),_source("cuba_aduana"),_source("cuba_minrex")]),"version":VERSION}
+
+def cuba_entry(data:Dict[str,Any])->Dict[str,Any]:
+    return cuba_check(data)
+
+def build_guide(data:Dict[str,Any])->Dict[str,Any]:
+    d=data or {};c=cuba_check(d);pending=c["pending"][:]
+    if _s(d.get("last_item")):pending.append("Comprobar artículo: "+_s(d["last_item"]))
+    return {"status":"complete" if not pending else "incomplete","guide":{"title":APP,"promise":"Preparación sencilla para viajar a Cuba.","flight":{"origin":_s(d.get("origin")),"destination":_s(d.get("destination") or "Cuba"),"airline":_s(d.get("airline")),"flight_number":_s(d.get("flight_number")),"departure":_s(d.get("departure"))},"checklist":c["checklist"],"items":d.get("items",[]) if isinstance(d.get("items"),list) else [],"baggage":d.get("baggage",{}) if isinstance(d.get("baggage"),dict) else {},"practice":d.get("practice",{}) if isinstance(d.get("practice"),dict) else {}}, "pending":pending,"next_action":pending[0] if pending else "Puedes revisar tu PDF y continuar con los sitios oficiales.","sources":c["sources"],"version":VERSION}
+
+def solve(data:Dict[str,Any])->Dict[str,Any]:
+    d=data or {};q=_s(d.get("question"))
+    if not q:return {"status":"incomplete","message":"Escribe la pregunta que quieres resolver.","next_action":"Escribe una pregunta concreta.","sources":_sources("cuba"),"version":VERSION}
+    return item_analysis({"item":q,**d}) if any(x in _l(q) for x in ("llevar","puedo","comida","medic","bateria","batería","liquido","líquido","equipaje","laptop")) else {"status":"verify","message":"Necesito saber exactamente qué quieres comprobar.","next_action":"Escribe el artículo, documento o parte del viaje.","sources":answer_sources(q,"",_s(d.get("airline")),_s(d.get("destination") or "Cuba")),"version":VERSION}
+
+def answer(data:Dict[str,Any])->Dict[str,Any]:return solve(data)
+def health()->Dict[str,Any]:
+    return {"status":"ok","version":VERSION,"app":APP,"ready":True,"free":True,"login_required":False,"payment_required":False,"server_storage":False,"gemini_item_assistant":bool(GEMINI_API_KEY)}
+
+__all__=["VERSION","GEMINI_MODEL","cuba_check","cuba_entry","dviajeros_simulation","visa_simulation","practice_scenario","document_analysis","baggage_rules","item_analysis","analyze_flight","booking_simulation","connection_analysis","build_guide","solve","answer","health"]
