@@ -13,8 +13,16 @@ from reportlab.lib import colors
 from reportlab.lib.units import inch
 import cuba_engine as engine
 from schemas import *
-from source_registry import VERSION as SOURCE_VERSION,SOURCES,all_sources,source_by_id,get_sources,official_sources,get_airlines,get_charters,official_url,answer_sources
-
+SOURCE_VERSION=engine.VERSION
+SOURCES=engine.SOURCES
+all_sources=engine.all_sources
+source_by_id=engine.source_by_id
+get_sources=engine.get_sources
+official_sources=engine.official_sources
+get_airlines=engine.get_airlines
+get_charters=engine.get_charters
+official_url=engine.official_url
+answer_sources=engine.answer_sources
 VERSION="16.0.0"
 APP_NAME="¿QUÉ QUIERES LLEVAR?"
 STATIC_DIR="static"
