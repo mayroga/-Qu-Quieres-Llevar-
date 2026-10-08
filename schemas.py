@@ -1,57 +1,67 @@
-from typing import Any,Dict,List,Optional
-from pydantic import BaseModel,Field,ConfigDict
+from __future__ import annotations
+from typing import Any,Dict,List
+from pydantic import BaseModel,Field,ConfigDict,AliasChoices
 
-class Base(BaseModel):
-    model_config=ConfigDict(extra="allow")
+VERSION="16.0.0"
 
-class FlightRequest(Base):
+class BaseRequest(BaseModel):
+    model_config=ConfigDict(extra="allow",str_strip_whitespace=True)
+
+class FlightRequest(BaseRequest):
     origin:str=""
-    destination:str="Cuba"
+    destination:str=""
     airline:str=""
     flight_number:str=""
     flight_type:str=""
-    stops:Optional[int]=None
+    stops:Any=0
     departure:str=""
     return_date:str=""
-    passengers:int=1
+    return_:str=Field("",validation_alias=AliasChoices("return_date","return"))
+    passengers:Any=1
     cabin:str=""
     fare:str=""
     ticket_type:str=""
-    same_ticket:Optional[bool]=None
-    checked_bags:Optional[int]=None
-    carry_on:Optional[int]=None
+    same_ticket:bool=False
+    checked_bags:Any=0
+    carry_on:Any=0
     segments:List[Dict[str,Any]]=Field(default_factory=list)
-    language:str="es"
 
-class BookingRequest(Base):
+class BookingRequest(BaseRequest):
     origin:str=""
-    destination:str="Cuba"
+    destination:str=""
     departure:str=""
     return_date:str=""
-    passengers:int=1
+    return_:str=Field("",validation_alias=AliasChoices("return_date","return"))
+    passengers:Any=1
     cabin:str=""
     fare:str=""
-    bags:Optional[int]=None
-    nonstop:Optional[bool]=None
+    bags:Any=0
+    nonstop:bool=False
     flight_type:str=""
     airline:str=""
     flight_number:str=""
-    same_ticket:Optional[bool]=None
-    language:str="es"
+    same_ticket:bool=False
 
-class ConnectionRequest(Base):
+class ConnectionRequest(BaseRequest):
     origin:str=""
     destination:str=""
-    connection:str=""
+    airport:str=""
+    terminal:str=""
+    gate:str=""
+    arrival_gate:str=""
+    boarding_gate:str=""
+    next_flight:str=""
+    next_gate:str=""
+    next_terminal:str=""
+    same_ticket:bool=False
+    baggage:str=""
+    bag_recheck:bool=False
+    country_change:bool=False
     airline:str=""
-    flight_number:str=""
-    arrival_time:str=""
-    departure_time:str=""
-    same_ticket:Optional[bool]=None
-    bags:Optional[int]=None
-    language:str="es"
+    next_airline:str=""
+    connection_minutes:Any=None
 
-class BaggageRequest(Base):
+class BaggageRequest(BaseRequest):
     type:str=""
     baggage_type:str=""
     item:str=""
@@ -62,19 +72,17 @@ class BaggageRequest(Base):
     flight_type:str=""
     fare:str=""
     cabin:str=""
-    weight:Optional[float]=None
-    weight_unit:str="lb"
+    weight:str=""
     dimensions:str=""
-    pieces:Optional[int]=None
-    personal_item:Optional[bool]=None
-    carry_on:Optional[bool]=None
-    checked:Optional[bool]=None
-    international:Optional[bool]=None
+    pieces:Any=0
+    personal_item:Any=""
+    carry_on:Any=""
+    checked:Any=""
+    international:bool=False
     country_of_departure:str=""
     country_of_destination:str=""
-    language:str="es"
 
-class ItemRequest(Base):
+class ItemRequest(BaseRequest):
     item:str=""
     description:str=""
     airline:str=""
@@ -83,66 +91,83 @@ class ItemRequest(Base):
     baggage_type:str=""
     type:str=""
     purpose:str=""
-    quantity:Optional[int]=None
-    weight:Optional[float]=None
-    weight_unit:str=""
+    quantity:str=""
+    weight:str=""
     size:str=""
-    capacity:str=""
-    contains_battery:Optional[bool]=None
-    contains_liquid:Optional[bool]=None
-    contains_food:Optional[bool]=None
-    is_medication:Optional[bool]=None
-    is_animal:Optional[bool]=None
-    is_electronic:Optional[bool]=None
+    contains_battery:bool=False
+    contains_liquid:bool=False
+    contains_food:bool=False
+    is_medication:bool=False
+    is_animal:bool=False
+    is_electronic:bool=False
     country_of_departure:str=""
     country_of_destination:str=""
     cabin:str=""
     flight_number:str=""
     language:str="es"
 
-class CubaRequest(Base):
+class CubaRequest(BaseRequest):
+    origin:str=""
+    destination:str="Cuba"
     nationality:str=""
     passport_country:str=""
     passport_number:str=""
-    birth_date:str=""
-    destination:str="Cuba"
-    origin:str=""
-    arrival_date:str=""
-    departure_date:str=""
+    country_of_residence:str=""
+    residence_country:str=""
+    cuban_nationality:bool=False
+    dual_citizen:bool=False
+    flight_type:str=""
     airline:str=""
     flight_number:str=""
-    airport:str=""
-    dual_nationality:Optional[bool]=None
-    has_return_ticket:Optional[bool]=None
-    has_travel_insurance:Optional[bool]=None
+    purpose:str=""
+    arrival_date:str=""
+    departure_date:str=""
+    passport_valid_until:str=""
+    has_cuban_passport:bool=False
+    has_other_passport:bool=False
+    dviajeros_done:bool=False
+    visa_checked:bool=False
+    customs_checked:bool=False
+    baggage_checked:bool=False
+    documents_checked:bool=False
+    given_names:str=""
+    surnames:str=""
+    birth_date:str=""
+    sex:str=""
+    email:str=""
+    phone:str=""
+    arrival_airport:str=""
+    departure_airport:str=""
+    address_destination:str=""
     visa_number:str=""
     evisa_number:str=""
-    accommodation:str=""
-    province:str=""
-    municipality:str=""
-    language:str="es"
 
 class CubaEntryRequest(CubaRequest):
     entry_airport:str=""
-    return_ticket:Optional[bool]=None
-    travel_insurance:Optional[bool]=None
+    return_ticket:bool=False
+    travel_insurance:bool=False
 
-class DocumentRequest(Base):
-    document_type:str=""
+class VisaRequest(BaseRequest):
     nationality:str=""
-    destination:str="Cuba"
     passport_country:str=""
-    passport_expiration:str=""
+    passport_number:str=""
+    surname:str=""
+    surnames:str=""
+    given_names:str=""
     birth_date:str=""
-    airline:str=""
+    sex:str=""
+    email:str=""
+    phone:str=""
+    purpose:str=""
+    arrival_date:str=""
+    departure_date:str=""
+    destination:str="Cuba"
+    country_of_residence:str=""
+    visa_number:str=""
+    evisa_number:str=""
     language:str="es"
 
-class PracticeRequest(Base):
-    scenario:str=""
-    step:int=1
-    language:str="es"
-
-class DViajeroRequest(Base):
+class DViajeroRequest(BaseRequest):
     given_names:str=""
     surnames:str=""
     birth_date:str=""
@@ -168,88 +193,258 @@ class DViajeroRequest(Base):
     province:str=""
     municipality:str=""
     accommodation_name:str=""
-    medications:str=""
-    cash_over_5000:Optional[bool]=None
+    medications:bool=False
+    cash_over_5000:bool=False
     health_status:str=""
+    step:Any=0
     language:str="es"
 
-class VisaRequest(Base):
+class DocumentRequest(BaseRequest):
+    origin:str=""
+    destination:str=""
     nationality:str=""
     passport_country:str=""
-    passport_number:str=""
-    surname:str=""
-    surnames:str=""
-    given_names:str=""
-    birth_date:str=""
-    sex:str=""
-    email:str=""
-    phone:str=""
+    country_of_residence:str=""
+    cuban_nationality:bool=False
+    dual_citizen:bool=False
+    airline:str=""
+    flight_type:str=""
+    flight_number:str=""
     purpose:str=""
     arrival_date:str=""
     departure_date:str=""
-    destination:str="Cuba"
-    country_of_residence:str=""
-    visa_number:str=""
-    evisa_number:str=""
-    language:str="es"
+    passport_valid_until:str=""
+    visa_checked:bool=False
+    dviajeros_done:bool=False
+    documents_checked:bool=False
 
-class PDFRequest(Base):
+class PracticeRequest(BaseRequest):
+    scenario:str=""
+    item:str=""
+    state:str=""
+    step:Any=0
+    answer:str=""
+    language:str="es"
     data:Dict[str,Any]=Field(default_factory=dict)
-    lang:str="es"
-    title:str="Mi guía ¿Qué quieres llevar?"
 
-class PDFImportRequest(Base):
-    filename:str=""
-    text:str=""
-    recovery_data:Dict[str,Any]=Field(default_factory=dict)
+class AirportRequest(BaseRequest):
+    state:str=""
+    airport:str=""
+    terminal:str=""
+    gate:str=""
+    boarding_time:str=""
+    flight:str=""
+    destination:str=""
+    connection:str=""
+    arrival_time:str=""
+    next_flight:str=""
 
-class TripState(Base):
+class AirlineRequest(BaseRequest):
+    name:str=""
+    airline:str=""
+    origin:str=""
+    destination:str=""
+    country:str=""
+    topic:str=""
+
+class SourceRequest(BaseRequest):
+    topic:str="official"
+    query:str=""
+    country:str=""
+    airline:str=""
+
+class SolveRequest(BaseRequest):
+    question:str=""
     language:str="es"
+    data:Dict[str,Any]=Field(default_factory=dict)
+
+class GuideRequest(BaseRequest):
     origin:str=""
     destination:str="Cuba"
     airline:str=""
     flight_number:str=""
+    flight_type:str=""
+    stops:Any=0
+    nationality:str=""
+    passport_country:str=""
+    country_of_residence:str=""
+    cuban_nationality:bool=False
+    dual_citizen:bool=False
+    purpose:str=""
+    items:List[Any]=Field(default_factory=list)
+    baggage:Dict[str,Any]=Field(default_factory=dict)
+    dviajeros_done:bool=False
+    visa_checked:bool=False
+    customs_checked:bool=False
+    documents_checked:bool=False
+    baggage_checked:bool=False
+    arrival_date:str=""
+    departure_date:str=""
+    current_state:str=""
+    last_item:str=""
+    next_action:str=""
+    given_names:str=""
+    surnames:str=""
+    birth_date:str=""
+    sex:str=""
+    passport_number:str=""
+    email:str=""
+    phone:str=""
+    arrival_airport:str=""
+    departure_airport:str=""
+    address_destination:str=""
+    visa_number:str=""
+    evisa_number:str=""
+
+class TripState(BaseModel):
+    model_config=ConfigDict(extra="allow")
+    origin:str=""
+    destination:str="Cuba"
+    airline:str=""
+    flight_number:str=""
+    flight_type:str=""
+    stops:Any=0
     departure:str=""
     return_date:str=""
-    passengers:int=1
+    passengers:Any=1
     cabin:str=""
     fare:str=""
+    ticket_type:str=""
+    same_ticket:bool=False
+    checked_bags:Any=0
+    carry_on:Any=0
+    nationality:str=""
+    passport_country:str=""
+    country_of_residence:str=""
+    cuban_nationality:bool=False
+    dual_citizen:bool=False
+    passport_valid_until:str=""
+    has_cuban_passport:bool=False
+    has_other_passport:bool=False
+    purpose:str=""
+    arrival_date:str=""
+    departure_date:str=""
+    dviajeros_done:bool=False
+    visa_checked:bool=False
+    customs_checked:bool=False
+    documents_checked:bool=False
+    baggage_checked:bool=False
+    given_names:str=""
+    surnames:str=""
+    birth_date:str=""
+    sex:str=""
+    passport_number:str=""
+    email:str=""
+    phone:str=""
+    arrival_airport:str=""
+    departure_airport:str=""
+    address_destination:str=""
+    visa_number:str=""
+    evisa_number:str=""
+    accommodation_type:str=""
+    province:str=""
+    municipality:str=""
+    accommodation_name:str=""
+    medications:bool=False
+    cash_over_5000:bool=False
+    health_status:str=""
+    items:List[Any]=Field(default_factory=list)
     baggage:Dict[str,Any]=Field(default_factory=dict)
-    item:Dict[str,Any]=Field(default_factory=dict)
-    dviajeros:Dict[str,Any]=Field(default_factory=dict)
-    visa:Dict[str,Any]=Field(default_factory=dict)
-    documents:Dict[str,Any]=Field(default_factory=dict)
+    item_consultations:List[Dict[str,Any]]=Field(default_factory=list)
+    flight_searches:List[Dict[str,Any]]=Field(default_factory=list)
+    practice:Dict[str,Any]=Field(default_factory=dict)
+    current_state:str=""
+    last_item:str=""
+    next_action:str=""
+    pending:List[str]=Field(default_factory=list)
+    updated_at:str=""
 
-class Source(Base):
-    id:str=""
-    name:str=""
-    url:str=""
-    title:str=""
-    section:str=""
-    description:str=""
+class TripExportRequest(BaseRequest):
+    data:TripState
+
+class PDFRequest(BaseRequest):
+    data:Dict[str,Any]=Field(default_factory=dict)
+    lang:str="es"
+    title:str="¿QUÉ QUIERES LLEVAR?"
+
+class PDFImportRequest(BaseRequest):
+    filename:str=""
+    text:str=""
+    recovery_data:Dict[str,Any]=Field(default_factory=dict)
+
+class DeleteLocalRequest(BaseRequest):
+    confirm:bool=False
+
+class GenericResponse(BaseModel):
+    status:str="ok"
+    message:str=""
+    next_action:str=""
+    sources:List[Dict[str,Any]]=Field(default_factory=list)
+    data:Dict[str,Any]=Field(default_factory=dict)
+    version:str=VERSION
+
+class SourceResponse(BaseModel):
+    status:str="ok"
     topic:str=""
-    language:str="es"
+    sources:List[Dict[str,Any]]=Field(default_factory=list)
+    next_action:str=""
+    version:str=VERSION
 
-class ItemResponse(Base):
-    decision:str=""
-    decision_label:str=""
+class FlightResponse(BaseModel):
+    status:str="ok"
+    version:str=VERSION
+    message:str=""
+    search:Dict[str,Any]=Field(default_factory=dict)
+    missing:List[str]=Field(default_factory=list)
+    next_action:str=""
+    sources:List[Dict[str,Any]]=Field(default_factory=list)
+    airlines:List[Dict[str,Any]]=Field(default_factory=list)
+    charters:List[Dict[str,Any]]=Field(default_factory=list)
+    official_url:str=""
+    simulation:bool=True
+    real_booking:bool=False
+
+class BookingResponse(BaseModel):
+    status:str="ok"
+    simulation:bool=True
+    real_booking:bool=False
+    payment:bool=False
+    official_submission:bool=False
+    notice:str="Preparación de vuelo. La compra real se realiza en el sitio oficial."
+    message:str=""
+    search:Dict[str,Any]=Field(default_factory=dict)
+    fields:List[Any]=Field(default_factory=list)
+    steps:List[Dict[str,Any]]=Field(default_factory=list)
+    next_action:str=""
+    sources:List[Dict[str,Any]]=Field(default_factory=list)
+    official_url:str=""
+    version:str=VERSION
+
+class ItemResponse(BaseModel):
+    status:str="verify"
+    item:str=""
+    category:str=""
+    baggage_type:str=""
+    decision:str="verify"
+    decision_label:str="🔵 HAY QUE COMPROBARLO"
     message:str=""
     explanation:str=""
     conditions:List[str]=Field(default_factory=list)
     alternatives:List[str]=Field(default_factory=list)
     warnings:List[str]=Field(default_factory=list)
     gemini_used:bool=False
+    gemini_available:bool=False
     gemini_error:bool=False
-    confidence:str=""
-    final_decision:str=""
+    confidence:str="low"
+    final_decision:bool=False
     official_authority:str=""
-    verify_with:str=""
+    verify_with:List[Any]=Field(default_factory=list)
     next_action:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
-    version:str=""
+    version:str=VERSION
 
-class BaggageResponse(Base):
-    status:str=""
+class BaggageResponse(BaseModel):
+    status:str="review"
     type:str=""
     type_name:str=""
     airline:str=""
@@ -262,29 +457,135 @@ class BaggageResponse(Base):
     conditions:List[str]=Field(default_factory=list)
     next_action:str=""
     sources:List[Dict[str,Any]]=Field(default_factory=list)
-    version:str=""
+    version:str=VERSION
 
-class SimulationStep(Base):
-    number:int=1
+class CubaResponse(BaseModel):
+    status:str="incomplete"
+    profile:Dict[str,Any]=Field(default_factory=dict)
+    checklist:List[Dict[str,Any]]=Field(default_factory=list)
+    completed:int=0
+    total:int=0
+    progress:float=0
+    pending:List[str]=Field(default_factory=list)
+    details:Dict[str,Any]=Field(default_factory=dict)
+    message:str=""
+    next_action:str=""
+    sources:List[Dict[str,Any]]=Field(default_factory=list)
+    version:str=VERSION
+
+class DocumentResponse(BaseModel):
+    status:str="incomplete"
+    checks:List[Dict[str,Any]]=Field(default_factory=list)
+    pending:List[str]=Field(default_factory=list)
+    next_action:str=""
+    sources:List[Dict[str,Any]]=Field(default_factory=list)
+    version:str=VERSION
+
+class PracticeResponse(BaseModel):
+    mode:str="practice"
+    scenario:str=""
+    official_submission:bool=False
+    notice:str="Preparación independiente. El trámite real se realiza en el sitio oficial."
+    message:str=""
+    next_action:str=""
+    completed:int=0
+    pending:int=0
+    progress:float=0
+    sources:List[Dict[str,Any]]=Field(default_factory=list)
+    scenarios:List[Any]=Field(default_factory=list)
+    current_step:Dict[str,Any]=Field(default_factory=dict)
+    steps:List[Dict[str,Any]]=Field(default_factory=list)
+    step:int=0
+    total_steps:int=0
+    can_go_back:bool=True
+    can_go_home:bool=True
+    official_url:str=""
+    version:str=VERSION
+
+class GuideResponse(BaseModel):
+    status:str="incomplete"
+    guide:Dict[str,Any]=Field(default_factory=dict)
+    pending:List[str]=Field(default_factory=list)
+    next_action:str=""
+    sources:List[Dict[str,Any]]=Field(default_factory=list)
+    version:str=VERSION
+
+class HealthResponse(BaseModel):
+    status:str="ok"
+    version:str=VERSION
+    app:str="¿QUÉ QUIERES LLEVAR?"
+    ready:bool=True
+    free:bool=True
+    login_required:bool=False
+    payment_required:bool=False
+    server_storage:bool=False
+    gemini_item_assistant:bool=False
+
+class ErrorResponse(BaseModel):
+    status:str="error"
+    message:str=""
+    next_action:str=""
+    details:Dict[str,Any]=Field(default_factory=dict)
+    version:str=VERSION
+
+class SimulationStep(BaseModel):
+    step:int=0
     title:str=""
-    text:str=""
+    instruction:str=""
+    fields:List[str]=Field(default_factory=list)
+    options:List[str]=Field(default_factory=list)
+    completed:bool=False
     reference_image:str=""
     reference_type:str=""
-    official_step:str=""
-    link:str=""
+    official_step:bool=False
 
-class SimulationResponse(Base):
-    title:str=""
+class SimulationResponse(BaseModel):
+    status:str="ok"
+    scenario:str=""
+    simulation:bool=True
+    official_submission:bool=False
+    notice:str="Preparación independiente. El trámite real se realiza en el sitio oficial."
     message:str=""
-    steps:List[SimulationStep]=Field(default_factory=list)
+    step:int=0
+    progress:float=0
+    current_step:Dict[str,Any]=Field(default_factory=dict)
+    steps:List[Dict[str,Any]]=Field(default_factory=list)
+    next_action:str=""
+    sources:List[Dict[str,Any]]=Field(default_factory=list)
+    missing:List[str]=Field(default_factory=list)
+    prefilled:Dict[str,Any]=Field(default_factory=dict)
     official_url:str=""
-    official_label:str=""
-    airport_steps:List[SimulationStep]=Field(default_factory=list)
-    reference_images:List[str]=Field(default_factory=list)
-    language:str="es"
-    version:str=""
+    total_steps:int=0
+    can_go_back:bool=True
+    can_go_home:bool=True
+    reference_images:List[Dict[str,Any]]=Field(default_factory=list)
+    version:str=VERSION
 
-class APIMessage(Base):
-    ok:bool=True
+class AirlineResponse(BaseModel):
+    status:str="ok"
+    airlines:List[Dict[str,Any]]=Field(default_factory=list)
+    charters:List[Dict[str,Any]]=Field(default_factory=list)
+    next_action:str=""
+    version:str=VERSION
+
+class LegalResponse(BaseModel):
+    status:str="ok"
+    title:str="Aviso legal"
     message:str=""
-    data:Dict[str,Any]=Field(default_factory=dict)
+    points:List[str]=Field(default_factory=list)
+    version:str=VERSION
+
+class ConfigResponse(BaseModel):
+    status:str="ok"
+    app:str="¿QUÉ QUIERES LLEVAR?"
+    version:str=VERSION
+    language:str="es"
+    free:bool=True
+    login_required:bool=False
+    payment_required:bool=False
+    stripe_enabled:bool=False
+    server_storage:bool=False
+    features:Dict[str,bool]=Field(default_factory=dict)
+    official_sources:List[Dict[str,Any]]=Field(default_factory=list)
+
+__all__=[k for k in globals() if not k.startswith("_")]
