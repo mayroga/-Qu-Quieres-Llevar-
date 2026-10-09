@@ -412,58 +412,73 @@ if(id==="flightPanel")loadFlights();
 if(id==="breathePanel")initBreatheSession();
 }
 
-// Control del Ejercicio Respiratorio (1 Minuto / 10 Ejercicios Rotativos / Frases cada 6s)
+// Control del ejercicio respiratorio: la voz lee únicamente la frase visible.
+function breatheSpeak(text){
+    if(!("speechSynthesis" in window) || !text) return;
+    window.speechSynthesis.cancel();
+    var utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = lang === "en" ? "en-US" : "es-ES";
+    utterance.rate = 0.9;
+    utterance.pitch = 1.0;
+    utterance.volume = 1;
+    var voices = window.speechSynthesis.getVoices();
+    var wanted = lang === "en" ? /^en(-|_)/i : /^es(-|_)/i;
+    var voice = voices.find(function(v){ return wanted.test(v.lang) && /natural|neural|premium/i.test(v.name); })
+        || voices.find(function(v){ return wanted.test(v.lang); });
+    if(voice) utterance.voice = voice;
+    window.speechSynthesis.speak(utterance);
+}
+
 function initBreatheSession(){
     stopBreatheSession();
-    // Seleccionar un ejercicio aleatorio o rotativo entre los 10 respaldos
     currentExerciseIndex = Math.floor(Math.random() * wellnessExercises[lang].length);
     var exercise = wellnessExercises[lang][currentExerciseIndex];
-    
     var timeLeft = 60;
     var circle = $("breatheCircle");
     var word = $("circleWord");
     var phraseBox = $("breathePhrase");
     var timerBox = $("breatheTimer");
     var startBtn = $("breatheStartBtn");
-    
-    startBtn.textContent = lang==="en"?"Running...":"En curso...";
+
+    startBtn.textContent = lang === "en" ? "Running..." : "En curso...";
     startBtn.disabled = true;
-    
     var phraseIndex = 0;
     phraseBox.innerHTML = "<b>" + exercise.name + "</b><br>" + exercise.phrases[phraseIndex];
-    
-    // Frases cambian cada 6 segundos
+
+    // La voz dice solo la frase, nunca el título del ejercicio ni otros textos.
+    breatheSpeak(exercise.phrases[phraseIndex]);
     phraseInterval = setInterval(function(){
         phraseIndex = (phraseIndex + 1) % exercise.phrases.length;
         phraseBox.innerHTML = "<b>" + exercise.name + "</b><br>" + exercise.phrases[phraseIndex];
+        breatheSpeak(exercise.phrases[phraseIndex]);
     }, 6000);
-    
-    // Ciclo de respiración (Inhalar 4s / Exhalar 4s)
-    var isCozy = true;
+
+    // Se conserva la animación visual del círculo, sin instrucciones habladas adicionales.
+    var isInhale = true;
     function pulseCircle(){
-        if(isCozy){
+        if(isInhale){
             circle.className = "breathe-circle inhale";
-            word.textContent = lang==="en"?"Inhale...":"Inhala...";
+            word.textContent = lang === "en" ? "Breathe in" : "Inhala";
         } else {
             circle.className = "breathe-circle exhale";
-            word.textContent = lang==="en"?"Exhale...":"Exhala...";
+            word.textContent = lang === "en" ? "Breathe out" : "Exhala";
         }
-        isCozy = !isCozy;
+        isInhale = !isInhale;
     }
     pulseCircle();
-    breatheInterval = setInterval(pulseCircle, 4000);
-    
-    // Temporizador de 1 minuto (60 segundos)
+    breatheInterval = setInterval(pulseCircle, 5000);
+
     timerInterval = setInterval(function(){
         timeLeft--;
-        timerBox.textContent = (lang==="en"?"Time remaining: ":"Tiempo restante: ") + timeLeft + "s";
+        timerBox.textContent = (lang === "en" ? "Time remaining: " : "Tiempo restante: ") + timeLeft + "s";
         if(timeLeft <= 0){
             stopBreatheSession();
-            timerBox.textContent = lang==="en"?"¡Completed! Great job.":"¡Completado! Excelente trabajo.";
-            word.textContent = lang==="en"?"Ready":"Listo";
-            phraseBox.innerHTML = "<b>" + (lang==="en"?"You are ready to shine!":"¡Estás listo para triunfar!") + "</b>";
-            startBtn.textContent = lang==="en"?"Start Again":"Iniciar de Nuevo";
+            timerBox.textContent = lang === "en" ? "Completed! Well done." : "¡Completado! Muy bien.";
+            word.textContent = lang === "en" ? "Ready" : "Listo";
+            phraseBox.innerHTML = "<b>" + (lang === "en" ? "You are ready to go." : "Ya estás listo para continuar.") + "</b>";
+            startBtn.textContent = lang === "en" ? "Start Again" : "Iniciar de nuevo";
             startBtn.disabled = false;
+            // No se reproduce voz al terminar.
         }
     }, 1000);
 }
@@ -472,13 +487,13 @@ function stopBreatheSession(){
     if(breatheInterval) clearInterval(breatheInterval);
     if(phraseInterval) clearInterval(phraseInterval);
     if(timerInterval) clearInterval(timerInterval);
+    if("speechSynthesis" in window) window.speechSynthesis.cancel();
     var startBtn = $("breatheStartBtn");
     if(startBtn){
-        startBtn.textContent = lang==="en"?"Start Exercise":"Comenzar Ejercicio";
+        startBtn.textContent = lang === "en" ? "Start Exercise" : "Comenzar ejercicio";
         startBtn.disabled = false;
     }
 }
-
 async function loadFlights(){
 var box=$("flightList"),t=TX[lang];
 try{
@@ -520,4 +535,4 @@ window.openPanel=openPanel;window.closePanels=closePanels;window.setLang=setLang
 })();
 </script>
 </body>
-</html>
+</html
