@@ -8,13 +8,14 @@
 <style>
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#000;color:#fff;font-family:Arial,Helvetica,sans-serif}button,a{font:inherit}a{text-decoration:none}header{position:sticky;top:0;z-index:20;background:#000;border-bottom:1px solid #333}.nav{max-width:1100px;margin:auto;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}.logo{font-weight:900;font-size:18px}.lang{display:flex;gap:6px}.lang button{background:#111;color:#fff;border:1px solid #555;border-radius:8px;padding:8px 12px;cursor:pointer}.lang button.active{background:#fff;color:#000}main{max-width:1100px;margin:auto;padding:28px 16px 60px}.hero{padding:28px 0 24px}.hero h1{font-size:clamp(30px,6vw,54px);line-height:1;margin:0 0 15px;font-weight:900}.hero p{max-width:850px;color:#ccc;font-size:18px;line-height:1.55;margin:0}.hero-benefit{margin-top:20px;max-width:900px;font-size:20px;line-height:1.5;font-weight:800;color:#fff}.notice{border-left:4px solid #fff;padding:12px 15px;margin:22px 0;color:#ccc;line-height:1.5}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{background:#090909;border:1px solid #444;border-radius:14px;padding:20px;min-height:190px;display:flex;flex-direction:column;justify-content:space-between}.card h2{margin:0 0 10px;font-size:23px}.card p{color:#bbb;line-height:1.45;margin:0 0 18px}.btn{display:inline-flex;align-items:center;justify-content:center;background:#fff;color:#000;border:0;border-radius:9px;padding:12px 16px;font-weight:800;cursor:pointer}.btn.red{background:#d40000;color:#fff}.panel{display:none;margin-top:28px;border-top:1px solid #444;padding-top:25px}.panel.open{display:block}.panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;margin-bottom:20px}.panel h2{font-size:30px;margin:0 0 8px}.panel-head p{margin:0;color:#bbb;line-height:1.5}.close{background:#111;color:#fff;border:1px solid #555;border-radius:8px;padding:9px 12px;cursor:pointer}.steps{display:grid;gap:18px}.step{border:1px solid #444;border-radius:14px;background:#070707;overflow:hidden}.step-title{padding:16px 18px;border-bottom:1px solid #333}.step-title strong{font-size:21px}.step-title span{display:block;color:#aaa;margin-top:5px}.mock{padding:18px;background:#050505}.mock-window{background:#fff;color:#111;border-radius:8px;overflow:hidden;max-width:900px;margin:auto;box-shadow:0 0 0 1px #777}.mock-top{background:#eee;padding:9px 12px;font-size:12px;color:#444;border-bottom:1px solid #ccc}.mock-body{padding:18px}.mock-brand{font-weight:900;font-size:19px;margin-bottom:18px}.mock-section{border:1px solid #bbb;border-radius:5px;margin-bottom:14px;padding:13px}.mock-section h4{margin:0 0 12px;font-size:16px}.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{border:1px solid #aaa;border-radius:4px;padding:8px;min-height:43px;background:#fff}.field b{display:block;font-size:11px;color:#111;margin-bottom:4px;font-weight:800}.field span{font-size:13px;color:#222;font-weight:600}.field.full{grid-column:1/-1}.select:after{content:"▼";float:right;font-size:9px;color:#666}.check{display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.4}.mock-red{display:inline-block;background:#d40000;color:#fff;padding:10px 17px;border-radius:4px;font-weight:800;border:0}.qrbox{display:flex;align-items:center;gap:22px;flex-wrap:wrap}.qr{width:125px;height:125px;background:repeating-linear-gradient(0deg,#111 0 7px,#fff 7px 14px),repeating-linear-gradient(90deg,#111 0 7px,#fff 7px 14px);border:8px solid #fff;outline:1px solid #111}.explain{padding:15px 18px;color:#bbb;line-height:1.55;border-top:1px solid #333}.explain strong{color:#fff}.official{margin-top:22px;padding:18px;border:1px solid #555;border-radius:12px;background:#080808}.official h3{margin:0 0 8px}.official p{color:#bbb;line-height:1.5}.route-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.route{border:1px solid #444;border-radius:12px;padding:18px;background:#080808}.route h3{margin:0 0 8px;font-size:21px}.route p{color:#bbb;line-height:1.5}.route small{display:block;color:#888;line-height:1.4;margin:10px 0 15px}.flight-list{display:grid;gap:12px}.flight{border:1px solid #444;border-radius:12px;padding:16px;background:#080808;display:flex;justify-content:space-between;align-items:center;gap:15px}.flight h3{margin:0 0 5px}.flight p{margin:0;color:#aaa}.flight a{white-space:nowrap}.charter-list{display:grid;gap:12px}.charter{border:1px solid #444;border-radius:12px;padding:18px;background:#080808;display:flex;justify-content:space-between;align-items:center;gap:18px}.charter h3{margin:0 0 7px;font-size:21px}.charter p{margin:0;color:#aaa;line-height:1.5}.charter a{white-space:nowrap}.charter-note{margin-top:18px;border:1px solid #555;border-radius:12px;padding:18px;background:#080808;color:#bbb;line-height:1.55}.charter-note strong{color:#fff}.charter-intro{color:#bbb;line-height:1.6;margin:0 0 20px}.pdfbox{border:1px solid #444;border-radius:14px;padding:22px;background:#080808}.pdfbox p{color:#bbb;line-height:1.55}.legal-box{margin-top:22px;border-top:1px solid #333;padding-top:18px;color:#888;font-size:13px;line-height:1.55}.legal-box strong{color:#bbb}footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;font-size:13px;line-height:1.5}
 
-/* Círculo Respiratorio Unificado y Limpio */
+/* Círculo Respiratorio Natural Fluido (Animación suave y continua sin congelarse) */
 .breathe-container{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 10px;background:#050505;border-radius:12px;border:1px solid #333;margin-top:15px}
-.breathe-circle{width:180px;height:180px;border-radius:50%;background:radial-gradient(circle, #0077ff 0%, #002244 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#fff;font-weight:bold;box-shadow:0 0 30px rgba(0,119,255,0.7);transition:transform 4s cubic-bezier(0.4, 0, 0.2, 1);margin-bottom:20px}
-.breathe-circle.inhale{transform:scale(1.3)}
-.breathe-circle.hold{transform:scale(1.3)}
-.breathe-circle.exhale{transform:scale(0.85)}
-.breathe-word{font-size:22px;font-weight:900;margin-bottom:4px}
+.breathe-circle{width:180px;height:180px;border-radius:50%;background:radial-gradient(circle, #0077ff 0%, #002244 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;color:#fff;font-weight:bold;box-shadow:0 0 30px rgba(0,119,255,0.7);margin-bottom:20px;animation: breatheNatural 8s infinite ease-in-out;}
+@keyframes breatheNatural{
+  0%, 100% { transform: scale(0.9); }
+  50% { transform: scale(1.3); }
+}
+.breathe-word{font-size:22px;font-weight:900}
 .breathe-timer{font-size:14px;color:#aaa;margin-bottom:15px}
 .voice-toggle{display:inline-flex;align-items:center;gap:8px;background:#111;border:1px solid #0077ff;padding:8px 14px;border-radius:8px;color:#fff;cursor:pointer;font-weight:bold;margin-bottom:15px}
 
@@ -42,14 +43,14 @@
 <article class="card"><div><h2 id="visaCardTitle">Visa para Cuba</h2><p id="visaText">Mira las formas disponibles para obtener tu visa y entra directamente en la opción que prefieras.</p></div><button class="btn" id="visaBtn">Ver opciones</button></article>
 <article class="card"><div><h2 id="flightCardTitle">Vuelos a Cuba</h2><p id="flightText">Encuentra las aerolíneas disponibles y entra directamente en el sitio de la compañía que quieras elegir.</p></div><button class="btn" id="flightBtn">Ver vuelos</button></article>
 <article class="card"><div><h2 id="charterCardTitle">Vuelos chárter a Cuba</h2><p id="charterText">Encuentra opciones de vuelos chárter entre Florida y Cuba y entra directamente en cada sitio para escoger.</p></div><button class="btn" id="charterBtn">Ver charters</button></article>
-<!-- TARJETA DE BIENESTAR Y RESPIRACIÓN UNIFICADA -->
-<article class="card" style="border-color:#0077ff;"><div><h2 id="breatheCardTitle">Pausa de Bienestar y Energía</h2><p id="breatheCardText">Un minuto de respiración natural y voz unificada para eliminar nervios, darte confianza, salud y felicidad.</p></div><button class="btn" id="breatheBtn" style="background:#0077ff;color:#fff;">Iniciar 1 Minuto</button></article>
+<!-- TARJETA DE BIENESTAR Y RESPIRACIÓN NATURAL -->
+<article class="card" style="border-color:#0077ff;"><div><h2 id="breatheCardTitle">Pausa de Bienestar y Energía</h2><p id="breatheCardText">Un minuto de respiración natural y fluida para eliminar nervios, darte confianza, salud y felicidad.</p></div><button class="btn" id="breatheBtn" style="background:#0077ff;color:#fff;">Iniciar 1 Minuto</button></article>
 <article class="card"><div><h2 id="pdfCardTitle">Mi guía PDF</h2><p id="pdfText">Guarda en un solo documento los pasos principales de D’Viajeros y las opciones para la visa.</p></div><button class="btn red" id="pdfBtn">Crear PDF</button></article>
 </section>
 
-<!-- PANEL DE BIENESTAR UNIFICADO -->
+<!-- PANEL DE BIENESTAR NATURAL FLUÍDO -->
 <section id="breathePanel" class="panel">
-<div class="panel-head"><div><h2 id="breathePanelTitle">Pausa de Bienestar y Energía</h2><p id="breathePanelIntro">Sigue el círculo azul y la voz unificada para sentirte seguro, tranquilo y feliz.</p></div><button class="close" data-close="breathePanel" id="breatheClose">Cerrar</button></div>
+<div class="panel-head"><div><h2 id="breathePanelTitle">Pausa de Bienestar y Energía</h2><p id="breathePanelIntro">Sigue el círculo azul y la voz unificada a ritmo totalmente natural y seguro.</p></div><button class="close" data-close="breathePanel" id="breatheClose">Cerrar</button></div>
 <div class="breathe-container">
 <div class="breathe-timer" id="breatheTimer">Tiempo restante: 60s</div>
 <button class="voice-toggle" id="voiceToggleBtn">🔊 Voz Guía Activada</button>
@@ -291,11 +292,11 @@ dvText:"Mira paso a paso qué datos te pedirán, qué debes tener preparado y c�
 visaText:"Mira las formas disponibles para obtener tu visa y entra directamente en la opción que prefieras.",
 flightText:"Encuentra las aerolíneas disponibles y entra directamente en el sitio de la compañía que quieras elegir.",
 charterText:"Encuentra opciones de vuelos chárter entre Florida y Cuba y entra directamente en cada sitio para escoger.",
-breatheCardText:"Un minuto de respiración natural y voz unificada para eliminar nervios, darte confianza, salud y felicidad.",
+breatheCardText:"Un minuto de respiración natural y fluida para eliminar nervios, darte confianza, salud y felicidad.",
 pdfText:"Guarda en un solo documento los pasos principales de D’Viajeros y las opciones para la visa.",
 dvBtn:"Ver cómo se hace",visaBtn:"Ver opciones",flightBtn:"Ver vuelos",charterBtn:"Ver charters",breatheBtn:"Iniciar 1 Minuto",pdfBtn:"Crear PDF",
 dvPanelTitle:"D’Viajeros: así se hace",dvPanelIntro:"Mira cada parte del formulario y prepara con calma lo que vas a necesitar.",close:"Cerrar",
-breathePanelTitle:"Pausa de Bienestar y Energía",breathePanelIntro:"Sigue el círculo azul y la voz unificada para sentirte seguro, tranquilo y feliz.",
+breathePanelTitle:"Pausa de Bienestar y Energía",breathePanelIntro:"Sigue el círculo azul y la voz unificada a ritmo totalmente natural y seguro.",
 dv1t:"1. Tus datos",dv1s:"Primero escribes tus datos personales.",dv1e:"<strong>Ten cerca:</strong> tu pasaporte y tus datos escritos exactamente como aparecen en él.",
 dv2t:"2. Tu llegada a Cuba",dv2s:"Aquí escribes los datos de tu llegada.",dv2e:"<strong>Ten cerca:</strong> tu fecha de llegada, número de vuelo y nombre de la aerolínea.",
 dv3t:"3. Dónde te vas a quedar",dv3s:"Escribes dónde estarás durante tu viaje.",dv3e:"<strong>Ten cerca:</strong> el nombre y la dirección del lugar donde te quedarás.",
@@ -303,9 +304,9 @@ dv4t:"4. Lo que llevas contigo",dv4s:"Indicas si tienes algo que declarar.",dv4e
 dv5t:"5. Revisa y termina",dv5s:"Lees tus datos y confirmas que están correctos.",dv5e:"<strong>Antes de terminar:</strong> mira tus datos una vez más y confirma.",
 dv6t:"6. Guarda tu resultado",dv6s:"Al terminar podrás guardar la información de tu viaje.",dv6e:"<strong>Guarda tu PDF</strong> para tenerlo contigo durante el viaje.",
 dv7t:"7. Tu resultado con QR",dv7s:"El documento puede mostrar un código QR.",dv7e:"<strong>Listo:</strong> conserva tu resultado y tenlo a mano durante el viaje.",
-dvOfficialTitle:"Hazlo en D’Viajeros",dvOfficialText:"Cuando quieras comenzar, entra directamente en el sitio de D’Viajeros.",dvOfficialBtn:"Abrir D’Viajeros",
+dvOfficialTitle:"Hazlo en D’Viajeros",dvOfficialText:"Когда quieras comenzar, entra directamente en el sitio de D’Viajeros.",dvOfficialBtn:"Abrir D’Viajeros",
 m1top:"D’Viajeros · Datos Personales",m1brand:"Datos Personales",m1h:"Escribe tus datos",
-f11:"Primer Nombre",f11s:"Nombre",f12:"Segundo Nombre",f12s:"Si tienes",f13:"Primer Apellido",f13s:"Apellido",f14:"Segundo Apellido",f14s:"Si tienes",f15:"Fecha de nacimiento",f15s:"Día / Mes / Año",f16:"Género",f16s:"Seleccione",f17:"Ciudadanía",f17s:"Seleccione",f18:"Número de pasaporte",f18s:"Pasaporte con el que viajarás",f19:"País de residencia permanente",f19s:"Seleccione",f110:"Correo",f110s:"Correo electrónico",f111:"Teléfono",f111s:"Teléfono",
+f11:"Primer Nombre",f11s:"Nombre",f12:"Segundo Nombre",f12s:"Si tienes",f13:"Primer Apellido",f13s:"Apellido",f14:"Segundo Apellido",f14s:"Si tienes",f15:"Fecha de nacimiento",f15s:"Día / Mes / Año",f16:"Género",f16s:"Seleccione",f17:"Ciudadanía",f17s:"Seleccione",f18:"Número de pasaporte",f18s:"Pasaporte con el que viajarás",f19:"País de residencia permanente",f19s:"Seleccione",f110:"Correo",f110s:"Correo electrónico",f111:"Телефон",f111s:"Teléfono",
 m2top:"D’Viajeros · Tu llegada a Cuba",m2brand:"Información de llegada",m2h:"Datos de tu viaje",f21:"Fecha de llegada",f21s:"Día / Mes / Año",f22:"Vuelo",f22s:"Número de vuelo",f23:"Aerolínea",f23s:"Seleccione",f24:"País de donde vienes",f24s:"Seleccione",f25:"Entrada a Cuba",f25s:"Seleccione",f26:"Motivo del viaje",f26s:"Seleccione",
 m3top:"D’Viajeros · Dónde te vas a quedar",m3brand:"Dónde te vas a quedar",m3h:"Información de tu estancia",f31:"Lugar donde te quedarás",f31s:"Seleccione",f32:"Dirección",f32s:"Dirección",f33:"Provincia",f33s:"Seleccione",f34:"Municipio",f34s:"Seleccione",f35:"Países visitados en los últimos 15 días",f35s:"Seleccione",f36:"Cómo te has sentido durante los últimos 15 días",f36s:"Seleccione",f37:"Preguntas sobre tu viaje",f37s:"Seleccione",
 m4top:"D’Viajeros · Lo que llevas contigo",m4brand:"Lo que llevas contigo",m4h:"Elige una opción",f41:"¿Tienes algo que declarar?",f41s:"○ Sí&nbsp;&nbsp;&nbsp;&nbsp;○ No",
@@ -336,11 +337,11 @@ dvText:"See step by step what information you will enter, what to have ready and
 visaText:"See the available ways to get your visa and go directly to the option you prefer.",
 flightText:"Find available airlines and go directly to the site of the company you want to choose.",
 charterText:"Find charter flight options between Florida and Cuba and go directly to each site to choose.",
-breatheCardText:"One minute of natural breathing and unified voice to release nerves, bring confidence, health and happiness.",
+breatheCardText:"One minute of natural and fluid breathing to release nerves, bring confidence, health and happiness.",
 pdfText:"Keep the main D’Viajeros steps and visa options in one document.",
 dvBtn:"See how it works",visaBtn:"See options",flightBtn:"See flights",charterBtn:"See charters",breatheBtn:"Start 1 Minute",pdfBtn:"Create PDF",
 dvPanelTitle:"D’Viajeros: how it works",dvPanelIntro:"See each part of the form and calmly prepare what you will need.",close:"Close",
-breathePanelTitle:"Wellness & Energy Pause",breathePanelIntro:"Follow the blue circle and unified voice to feel secure, calm and happy.",
+breathePanelTitle:"Wellness & Energy Pause",breathePanelIntro:"Follow the blue circle and unified voice at a totally natural and safe rhythm.",
 dv1t:"1. Your information",dv1s:"First, enter your personal information.",dv1e:"<strong>Have ready:</strong> your passport and your information exactly as it appears in it.",
 dv2t:"2. Your arrival in Cuba",dv2s:"Enter the information about your arrival.",dv2e:"<strong>Have ready:</strong> your arrival date, flight number and airline name.",
 dv3t:"3. Where you will stay",dv3s:"Enter where you will stay during your trip.",dv3e:"<strong>Have ready:</strong> the name and address of the place where you will stay.",
@@ -353,45 +354,28 @@ flightPanelTitle:"Flights to Cuba",flightPanelIntro:"Find available airlines and
 charterPanelTitle:"Charter Flights to Cuba",charterPanelIntro:"Here you can find special flight options between Florida and Cuba.",charterIntro:"Go directly to each site to look at dates, destinations and available flights and choose the option you prefer.",aeroText:"Flights to Havana and several provinces.",xaelText:"Havana, Camagüey, Holguín, Santa Clara and Santiago de Cuba.",cuballamaText:"Flights from Miami and Tampa to Havana, Santa Clara, Camagüey, Holguín and Santiago de Cuba.",cubazulText:"Direct charter flights to Cuba.",aeroBtn:"Enter",xaelBtn:"Enter",cuballamaBtn:"View flights",cubazulBtn:"Enter",charterNote:"<strong>To choose your flight:</strong> look directly at the dates, destination, baggage and price shown on each site.",
 pdfPanelTitle:"My PDF Guide",pdfPanelIntro:"Save the main steps so you can check them whenever you want.",pdfBoxTitle:"D’Viajeros + Visa",pdfBoxText:"Your guide can bring together the D’Viajeros steps and visa options.",pdfCreate:"Create my PDF guide",
 legalTitle:"About the sites you find here",legalText:"This application brings access and guidance together in one place to help you prepare for your trip. Flights, visas, forms, payments, reservations and documents shown through links belong to their respective sites and providers. When you choose to continue, you complete that process directly with them. May Roga LLC does not provide those services through this application.",footerText:"May Roga LLC · A simple guide to help you prepare for your trip.",footerSub:"Forms, payments and documents are completed directly on the corresponding sites.",
-com1t:"Example 1: American Airlines", com1s:"See the steps on your phone when processing your trip for Alberto Perez Garcia.", com1h:"Example of what you will see on screen",
-com2t:"Example 2: Delta Air Lines", com2s:"See the steps on your phone when processing your trip for Alberto Perez Garcia.", com2h:"Example of what you will see on screen",
-com3t:"Example 3: Southwest Airlines", com3s:"See the steps on your phone when processing your trip for Alberto Perez Garcia.", com3h:"Example of what you will see on screen",
-cha1t:"Example 1: Aerocuba", cha1s:"See the steps on your phone to easily manage your trip.", cha1h:"Example of what you will see on screen",
-cha2t:"Example 2: Xael Charters", cha2s:"See the steps on your phone to easily manage your trip.", cha2h:"Example of what you will see on screen",
-cha3t:"Example 3: Cuballama (Travel)", cha3s:"See the steps on your phone to easily manage your trip.", cha3h:"Example of what you will see on screen",
-cha4t:"Example 4: Cubazul Air Charter", cha4s:"See the steps on your phone to easily manage your trip.", cha4h:"Example of what you will see on screen"
+com1t:"Ejemplo 1: American Airlines", com1s:"See the steps on your phone when processing your trip for Alberto Perez Garcia.", com1h:"Example of what you will see on screen",
+com2t:"Ejemplo 2: Delta Air Lines", com2s:"See the steps on your phone when processing your trip for Alberto Perez Garcia.", com2h:"Example of what you will see on screen",
+com3t:"Ejemplo 3: Southwest Airlines", com3s:"See the steps on your phone when processing your trip for Alberto Perez Garcia.", com3h:"Example of what you will see on screen",
+cha1t:"Ejemplo 1: Aerocuba", cha1s:"See the steps on your phone to easily manage your trip.", cha1h:"Example of what you will see on screen",
+cha2t:"Ejemplo 2: Xael Charters", cha2s:"See the steps on your phone to easily manage your trip.", cha2h:"Example of what you will see on screen",
+cha3t:"Ejemplo 3: Cuballama (Travel)", cha3s:"See the steps on your phone to easily manage your trip.", cha3h:"Example of what you will see on screen",
+cha4t:"Ejemplo 4: Cubazul Air Charter", cha4s:"See the steps on your phone to easily manage your trip.", cha4h:"Example of what you will see on screen"
 }};
 
-// 10 Ejercicios de bienestar y confianza con frases unificadas exactamente a la orden visual
-var wellnessExercises = {
+// Textos exactos y naturales de la respiración (Inhala / Exhala)
+var breathSteps = {
 es: [
-    { name: "1. Calma y Confianza", phrases: ["Inhala calma, exhala cualquier nervio.", "Siente la seguridad en ti.", "Todo está bajo control.", "Tu viaje será un éxito."] },
-    { name: "2. Energía y Alegría", phrases: ["Inhala alegría pura.", "Exhala tensiones y dudas.", "Tu corazón vibra de felicidad.", "Estás listo para viajar."] },
-    { name: "3. Seguridad y Paz", phrases: ["Inhala confianza plena.", "Exhala el estrés del día.", "Caminas con paso firme.", "La paz te acompaña."] },
-    { name: "4. Bienestar y Salud", phrases: ["Inhala salud y bienestar.", "Exhala cargas pesadas.", "Disfruta el momento presente.", "Te sientes fuerte y feliz."] },
-    { name: "5. Vitalidad Positiva", phrases: ["Inhala energía renovada.", "Exhala preocupaciones.", "La alegría llena tu ser.", "Todo marcha perfecto."] },
-    { name: "6. Esperanza y Armonía", phrases: ["Inhala esperanza y luz.", "Exhala prisas y dudas.", "Tu mente está clara y serena.", "Disfruta tu camino."] },
-    { name: "7. Fortaleza Interior", phrases: ["Inhala fuerza y valor.", "Exhala cualquier temor.", "Eres capaz y muy afortunado.", "La felicidad es tu guía."] },
-    { name: "8. Calma Absoluta", phrases: ["Inhala aire fresco y puro.", "Exhala con total suavidad.", "Estás seguro y protegido.", "Sonríe y avanza con fe."] },
-    { name: "9. Libertad y Liviandad", phrases: ["Inhala libertad absoluta.", "Exhala el peso acumulado.", "Tu mente es ligera y libre.", "Todo sale de maravilla."] },
-    { name: "10. Éxito y Felicidad Total", phrases: ["Inhala éxito y alegría.", "Exhala los nervios lejos.", "Tu futuro está lleno de luz.", "Disfruta y sé muy feliz."] }
+    { word: "Inhala", audio: "Inhala suave y profundo, siente la calma." },
+    { word: "Exhala", audio: "Exhala despacio, suelta toda tensión." }
 ],
 en: [
-    { name: "1. Calm and Confidence", phrases: ["Inhale calm, exhale any nerves.", "Feel security within you.", "Everything is under control.", "Your trip will be a success."] },
-    { name: "2. Energy and Joy", phrases: ["Inhale pure joy.", "Exhale tension and doubts.", "Your heart beats with happiness.", "You are ready to travel."] },
-    { name: "3. Safety and Peace", phrases: ["Inhale full confidence.", "Exhale daily stress.", "You walk with steady steps.", "Peace accompanies you."] },
-    { name: "4. Well-being and Health", phrases: ["Inhale health and well-being.", "Exhale heavy burdens.", "Enjoy the present moment.", "You feel strong and happy."] },
-    { name: "5. Positive Vitality", phrases: ["Inhale renewed energy.", "Exhale worries.", "Joy fills your entire being.", "Everything goes perfectly."] },
-    { name: "6. Hope and Harmony", phrases: ["Inhale hope and light.", "Exhale rush and doubt.", "Your mind is clear and serene.", "Enjoy your journey."] },
-    { name: "7. Inner Strength", phrases: ["Inhale strength and courage.", "Exhale any fear.", "You are capable and fortunate.", "Happiness is your guide."] },
-    { name: "8. Absolute Calm", phrases: ["Inhale fresh, pure air.", "Exhale with total gentleness.", "You are secure and safe.", "Smile and move forward with faith."] },
-    { name: "9. Freedom and Lightness", phrases: ["Inhale absolute freedom.", "Exhale accumulated weight.", "Your mind is light and free.", "Everything turns out wonderfully."] },
-    { name: "10. Success and Total Happiness", phrases: ["Inhale success and joy.", "Exhale nerves far away.", "Your future is full of light.", "Enjoy and be very happy."] }
+    { word: "Inhale", audio: "Inhale soft and deep, feel the calm." },
+    { word: "Exhale", audio: "Exhale slowly, release all tension." }
 ]
 };
 
-var breatheInterval = null;
-var phraseInterval = null;
+var stepInterval = null;
 var timerInterval = null;
 var voiceActive = true;
 
@@ -416,8 +400,7 @@ if(id==="flightPanel")loadFlights();
 if(id==="breathePanel")initBreatheSession();
 }
 
-// Síntesis de voz unificada y suave
-function speakPhrase(text){
+function speakExact(text){
     if(!voiceActive || !('speechSynthesis' in window)) return;
     window.speechSynthesis.cancel();
     var utterance = new SpeechSynthesisUtterance(text);
@@ -427,13 +410,10 @@ function speakPhrase(text){
     window.speechSynthesis.speak(utterance);
 }
 
-// Ciclo respiratorio natural unificado (Adulto 25 años: Inhalar 4s, Sostén 2s, Exhalar 4s)
+// Círculo fluido, natural y con la voz diciendo exactamente lo que el círculo muestra
 function initBreatheSession(){
     stopBreatheSession();
-    var exercise = wellnessExercises[lang][Math.floor(Math.random() * wellnessExercises[lang].length)];
-    
     var timeLeft = 60;
-    var circle = $("breatheCircle");
     var word = $("circleWord");
     var timerBox = $("breatheTimer");
     var startBtn = $("breatheStartBtn");
@@ -441,49 +421,27 @@ function initBreatheSession(){
     startBtn.textContent = lang==="en"?"Running...":"En curso...";
     startBtn.disabled = true;
     
-    var phraseIndex = 0;
-    var currentText = exercise.phrases[phraseIndex];
-    word.textContent = currentText;
-    speakPhrase(currentText);
+    var steps = breathSteps[lang];
+    var index = 0;
     
-    // Las frases unificadas cambian cada 6 segundos en perfecta sincronía con la orden visual del círculo
-    phraseInterval = setInterval(function(){
-        phraseIndex = (phraseIndex + 1) % exercise.phrases.length;
-        currentText = exercise.phrases[phraseIndex];
-        word.textContent = currentText;
-        speakPhrase(currentText);
-    }, 6000);
-    
-    // Animación visual natural del círculo
-    var state = 0;
-    function breathAnimation(){
-        if(state === 0){
-            circle.className = "breathe-circle inhale";
-            state = 1;
-        } else if(state === 1){
-            circle.className = "breathe-circle hold";
-            setTimeout(function(){
-                if(breatheInterval){
-                    circle.className = "breathe-circle exhale";
-                }
-            }, 2000);
-            state = 2;
-        } else {
-            state = 0;
-        }
+    function runStep(){
+        var current = steps[index];
+        word.textContent = current.word;
+        speakExact(current.audio);
+        index = (index + 1) % steps.length;
     }
-    breathAnimation();
-    breatheInterval = setInterval(breathAnimation, 5000);
     
-    // Temporizador de 1 minuto
+    runStep();
+    stepInterval = setInterval(runStep, 4000); // Cambia fluidamente cada 4 segundos exactos
+    
     timerInterval = setInterval(function(){
         timeLeft--;
         timerBox.textContent = (lang==="en"?"Time remaining: ":"Tiempo restante: ") + timeLeft + "s";
         if(timeLeft <= 0){
             stopBreatheSession();
             timerBox.textContent = lang==="en"?"¡Completed! Great job.":"¡Completado! Excelente trabajo.";
-            word.textContent = lang==="en"?"¡Ready & Happy!":"¡Listo y Feliz!";
-            speakPhrase(lang==="en"?"You are ready, confident and happy!":"¡Estás listo, con confianza y felicidad!");
+            word.textContent = lang==="en"?"¡Ready!":"¡Listo!";
+            speakExact(lang==="en"?"You are ready and confident!":"¡Estás listo y con confianza!");
             startBtn.textContent = lang==="en"?"Start Again":"Iniciar de Nuevo";
             startBtn.disabled = false;
         }
@@ -491,8 +449,7 @@ function initBreatheSession(){
 }
 
 function stopBreatheSession(){
-    if(breatheInterval) clearInterval(breatheInterval);
-    if(phraseInterval) clearInterval(phraseInterval);
+    if(stepInterval) clearInterval(stepInterval);
     if(timerInterval) clearInterval(timerInterval);
     if('speechSynthesis' in window) window.speechSynthesis.cancel();
     var startBtn = $("breatheStartBtn");
