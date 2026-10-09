@@ -1,538 +1,265 @@
-<!doctype html>
-<html lang="es">
-<head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>¿VAS PARA CUBA? | May Roga LLC</title>
-<meta name="description" content="Una guía sencilla para preparar tu viaje a Cuba: D’Viajeros, visa, vuelos y vuelos chárter, todo reunido en un solo lugar.">
-<style>
-*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:#000;color:#fff;font-family:Arial,Helvetica,sans-serif}button,a{font:inherit}a{text-decoration:none}header{position:sticky;top:0;z-index:20;background:#000;border-bottom:1px solid #333}.nav{max-width:1100px;margin:auto;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px}.logo{font-weight:900;font-size:18px}.lang{display:flex;gap:6px}.lang button{background:#111;color:#fff;border:1px solid #555;border-radius:8px;padding:8px 12px;cursor:pointer}.lang button.active{background:#fff;color:#000}main{max-width:1100px;margin:auto;padding:28px 16px 60px}.hero{padding:28px 0 24px}.hero h1{font-size:clamp(30px,6vw,54px);line-height:1;margin:0 0 15px;font-weight:900}.hero p{max-width:850px;color:#ccc;font-size:18px;line-height:1.55;margin:0}.hero-benefit{margin-top:20px;max-width:900px;font-size:20px;line-height:1.5;font-weight:800;color:#fff}.notice{border-left:4px solid #fff;padding:12px 15px;margin:22px 0;color:#ccc;line-height:1.5}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.card{background:#090909;border:1px solid #444;border-radius:14px;padding:20px;min-height:190px;display:flex;flex-direction:column;justify-content:space-between}.card h2{margin:0 0 10px;font-size:23px}.card p{color:#bbb;line-height:1.45;margin:0 0 18px}.btn{display:inline-flex;align-items:center;justify-content:center;background:#fff;color:#000;border:0;border-radius:9px;padding:12px 16px;font-weight:800;cursor:pointer}.btn.red{background:#d40000;color:#fff}.panel{display:none;margin-top:28px;border-top:1px solid #444;padding-top:25px}.panel.open{display:block}.panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;margin-bottom:20px}.panel h2{font-size:30px;margin:0 0 8px}.panel-head p{margin:0;color:#bbb;line-height:1.5}.close{background:#111;color:#fff;border:1px solid #555;border-radius:8px;padding:9px 12px;cursor:pointer}.steps{display:grid;gap:18px}.step{border:1px solid #444;border-radius:14px;background:#070707;overflow:hidden}.step-title{padding:16px 18px;border-bottom:1px solid #333}.step-title strong{font-size:21px}.step-title span{display:block;color:#aaa;margin-top:5px}.mock{padding:18px;background:#050505}.mock-window{background:#fff;color:#111;border-radius:8px;overflow:hidden;max-width:900px;margin:auto;box-shadow:0 0 0 1px #777}.mock-top{background:#eee;padding:9px 12px;font-size:12px;color:#444;border-bottom:1px solid #ccc}.mock-body{padding:18px}.mock-brand{font-weight:900;font-size:19px;margin-bottom:18px}.mock-section{border:1px solid #bbb;border-radius:5px;margin-bottom:14px;padding:13px}.mock-section h4{margin:0 0 12px;font-size:16px}.fields{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.field{border:1px solid #aaa;border-radius:4px;padding:8px;min-height:43px;background:#fff}.field b{display:block;font-size:11px;color:#111;margin-bottom:4px;font-weight:800}.field span{font-size:13px;color:#222;font-weight:600}.field.full{grid-column:1/-1}.select:after{content:"▼";float:right;font-size:9px;color:#666}.check{display:flex;gap:8px;align-items:flex-start;font-size:12px;line-height:1.4}.mock-red{display:inline-block;background:#d40000;color:#fff;padding:10px 17px;border-radius:4px;font-weight:800;border:0}.qrbox{display:flex;align-items:center;gap:22px;flex-wrap:wrap}.qr{width:125px;height:125px;background:repeating-linear-gradient(0deg,#111 0 7px,#fff 7px 14px),repeating-linear-gradient(90deg,#111 0 7px,#fff 7px 14px);border:8px solid #fff;outline:1px solid #111}.explain{padding:15px 18px;color:#bbb;line-height:1.55;border-top:1px solid #333}.explain strong{color:#fff}.official{margin-top:22px;padding:18px;border:1px solid #555;border-radius:12px;background:#080808}.official h3{margin:0 0 8px}.official p{color:#bbb;line-height:1.5}.route-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.route{border:1px solid #444;border-radius:12px;padding:18px;background:#080808}.route h3{margin:0 0 8px;font-size:21px}.route p{color:#bbb;line-height:1.5}.route small{display:block;color:#888;line-height:1.4;margin:10px 0 15px}.flight-list{display:grid;gap:12px}.flight{border:1px solid #444;border-radius:12px;padding:16px;background:#080808;display:flex;justify-content:space-between;align-items:center;gap:15px}.flight h3{margin:0 0 5px}.flight p{margin:0;color:#aaa}.flight a{white-space:nowrap}.charter-list{display:grid;gap:12px}.charter{border:1px solid #444;border-radius:12px;padding:18px;background:#080808;display:flex;justify-content:space-between;align-items:center;gap:18px}.charter h3{margin:0 0 7px;font-size:21px}.charter p{margin:0;color:#aaa;line-height:1.5}.charter a{white-space:nowrap}.charter-note{margin-top:18px;border:1px solid #555;border-radius:12px;padding:18px;background:#080808;color:#bbb;line-height:1.55}.charter-note strong{color:#fff}.charter-intro{color:#bbb;line-height:1.6;margin:0 0 20px}.pdfbox{border:1px solid #444;border-radius:14px;padding:22px;background:#080808}.pdfbox p{color:#bbb;line-height:1.55}.legal-box{margin-top:22px;border-top:1px solid #333;padding-top:18px;color:#888;font-size:13px;line-height:1.55}.legal-box strong{color:#bbb}footer{border-top:1px solid #333;padding:25px 16px;color:#777;text-align:center;font-size:13px;line-height:1.5}
+# cuba_engine.py | QQL | ¿QUÉ QUIERES LLEVAR?
+from __future__ import annotations
+import json,os,re,urllib.request
+from typing import Any
 
-/* Estilos para el Círculo Respiratorio de Bienestar */
-.breathe-container{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:30px 10px;background:#050505;border-radius:12px;border:1px solid #333;margin-top:15px}
-.breathe-circle{width:160px;height:160px;border-radius:50%;background:radial-gradient(circle, #0077ff 0%, #003366 100%);display:flex;align-items:center;justify-content:center;text-align:center;color:#fff;font-weight:bold;font-size:16px;box-shadow:0 0 25px rgba(0,119,255,0.6);transition:transform 4s ease-in-out;margin-bottom:20px}
-.breathe-circle.inhale{transform:scale(1.35)}
-.breathe-circle.exhale{transform:scale(0.9)}
-.breathe-text{font-size:18px;font-weight:800;color:#fff;text-align:center;min-height:50px;margin-bottom:15px;padding:0 10px}
-.breathe-timer{font-size:14px;color:#aaa;margin-bottom:15px}
+VERSION="17.1.0"
+APP="¿QUÉ QUIERES LLEVAR?"
+GEMINI_API_KEY=os.getenv("GEMINI_API_KEY","").strip()
+GEMINI_MODEL=os.getenv("GEMINI_MODEL","gemini-2.5-flash")
 
-@media(max-width:760px){.grid,.route-grid{grid-template-columns:1fr}.fields{grid-template-columns:1fr}.flight,.charter{align-items:flex-start;flex-direction:column}.panel-head{flex-direction:column}.mock-body{padding:10px}.hero-benefit{font-size:18px}}
-</style>
-</head>
-<body>
-<header>
-<div class="nav">
-<div class="logo" id="brand">¿VAS PARA CUBA?</div>
-<div class="lang"><button id="esBtn" class="active">ES</button><button id="enBtn">EN</button></div>
-</div>
-</header>
+OFFICIAL_URLS={
+ "dviajeros":"https://dviajeros.mitrans.gob.cu/",
+ "visa":"https://evisacuba.cu/",
+ "evisa":"https://evisacuba.cu/",
+ "consular":"https://misiones.cubaminrex.cu/",
+ "flights":"https://www.google.com/travel/flights",
+ "tsa":"https://www.tsa.gov/travel/security-screening/whatcanibring/all",
+ "faa":"https://www.faa.gov/hazmat/packsafe",
+ "iata":"https://www.iata.org/"
+}
 
-<main>
-<section class="hero">
-<h1 id="title">Viaja con una respuesta clara</h1>
-<p id="intro">Mira qué necesitas preparar para tu viaje a Cuba y entra directamente en el sitio donde puedes continuar.</p>
-<p class="hero-benefit" id="benefit">D’Viajeros, visa, vuelos y vuelos chárter reunidos en un solo lugar, para que encuentres lo que necesitas y elijas directamente cómo quieres viajar.</p>
-<div class="notice" id="notice">Aquí puedes conocer los pasos antes de comenzar. Cuando estés listo, entra directamente al sitio que necesitas.</div>
-</section>
-
-<section class="grid">
-<article class="card"><div><h2 id="dvCardTitle">D’Viajeros</h2><p id="dvText">Mira paso a paso qué datos te pedirán, qué debes tener preparado y cómo guardar el resultado final.</p></div><button class="btn" id="dvBtn">Ver cómo se hace</button></article>
-<article class="card"><div><h2 id="visaCardTitle">Visa para Cuba</h2><p id="visaText">Mira las formas disponibles para obtener tu visa y entra directamente en la opción que prefieras.</p></div><button class="btn" id="visaBtn">Ver opciones</button></article>
-<article class="card"><div><h2 id="flightCardTitle">Vuelos a Cuba</h2><p id="flightText">Encuentra las aerolíneas disponibles y entra directamente en el sitio de la compañía que quieras elegir.</p></div><button class="btn" id="flightBtn">Ver vuelos</button></article>
-<article class="card"><div><h2 id="charterCardTitle">Vuelos chárter a Cuba</h2><p id="charterText">Encuentra opciones de vuelos chárter entre Florida y Cuba y entra directamente en cada sitio para escoger.</p></div><button class="btn" id="charterBtn">Ver charters</button></article>
-<!-- NUEVA TARJETA DE BIENESTAR Y ENERGÍA -->
-<article class="card" style="border-color:#0077ff;"><div><h2 id="breatheCardTitle">Pausa de Bienestar y Energía</h2><p id="breatheCardText">Un minuto de respiración y enfoque para llenarte de tranquilidad, alegría y seguridad antes de tu viaje.</p></div><button class="btn" id="breatheBtn" style="background:#0077ff;color:#fff;">Iniciar 1 Minuto</button></article>
-<article class="card"><div><h2 id="pdfCardTitle">Mi guía PDF</h2><p id="pdfText">Guarda en un solo documento los pasos principales de D’Viajeros y las opciones para la visa.</p></div><button class="btn red" id="pdfBtn">Crear PDF</button></article>
-</section>
-
-<!-- NUEVO PANEL DE BIENESTAR Y RESPIRACIÓN -->
-<section id="breathePanel" class="panel">
-<div class="panel-head"><div><h2 id="breathePanelTitle">Pausa de Bienestar y Energía</h2><p id="breathePanelIntro">Sigue el círculo azul, respira con calma y recibe tu dosis de energía y felicidad para el viaje.</p></div><button class="close" data-close="breathePanel" id="breatheClose">Cerrar</button></div>
-<div class="breathe-container">
-<div class="breathe-timer" id="breatheTimer">Tiempo restante: 60s</div>
-<div class="breathe-circle" id="breatheCircle"><span id="circleWord">Respirar</span></div>
-<div class="breathe-text" id="breathePhrase">Carga tu energía positiva...</div>
-<button class="btn" id="breatheStartBtn" style="background:#0077ff;color:#fff;margin-top:10px;">Comenzar Ejercicio</button>
-</div>
-</section>
-
-<section id="dvPanel" class="panel">
-<div class="panel-head"><div><h2 id="dvPanelTitle">D’Viajeros: así se hace</h2><p id="dvPanelIntro">Mira cada parte del formulario y prepara con calma lo que vas a necesitar.</p></div><button class="close" data-close="dvPanel" id="dvClose">Cerrar</button></div>
-<div class="steps">
-
-<div class="step">
-<div class="step-title"><strong id="dv1t">1. Tus datos</strong><span id="dv1s">Primero escribes tus datos personales.</span></div>
-<div class="mock"><div class="mock-window"><div class="mock-top" id="m1top">D’Viajeros · Datos Personales</div><div class="mock-body"><div class="mock-brand" id="m1brand">Datos Personales</div><div class="mock-section"><h4 id="m1h">Escribe tus datos</h4><div class="fields">
-<div class="field"><b id="f11">Primer Nombre</b><span id="f11s">Nombre</span></div>
-<div class="field"><b id="f12">Segundo Nombre</b><span id="f12s">Si tienes</span></div>
-<div class="field"><b id="f13">Primer Apellido</b><span id="f13s">Apellido</span></div>
-<div class="field"><b id="f14">Segundo Apellido</b><span id="f14s">Si tienes</span></div>
-<div class="field"><b id="f15">Fecha de nacimiento</b><span id="f15s">Día / Mes / Año</span></div>
-<div class="field select"><b id="f16">Género</b><span id="f16s">Seleccione</span></div>
-<div class="field select"><b id="f17">Ciudadanía</b><span id="f17s">Seleccione</span></div>
-<div class="field"><b id="f18">Número de pasaporte</b><span id="f18s">Pasaporte con el que viajarás</span></div>
-<div class="field select"><b id="f19">País de residencia permanente</b><span id="f19s">Seleccione</span></div>
-<div class="field"><b id="f110">Correo</b><span id="f110s">Correo electrónico</span></div>
-<div class="field full"><b id="f111">Teléfono</b><span id="f111s">Teléfono</span></div>
-</div></div></div></div></div>
-<div class="explain" id="dv1e"><strong>Ten cerca:</strong> tu pasaporte y tus datos escritos exactamente como aparecen en él.</div>
-</div>
-
-<div class="step">
-<div class="step-title"><strong id="dv2t">2. Tu llegada a Cuba</strong><span id="dv2s">Aquí escribes los datos de tu llegada.</span></div>
-<div class="mock"><div class="mock-window"><div class="mock-top" id="m2top">D’Viajeros · Tu llegada a Cuba</div><div class="mock-body"><div class="mock-brand" id="m2brand">Información de llegada</div><div class="mock-section"><h4 id="m2h">Datos de tu viaje</h4><div class="fields">
-<div class="field"><b id="f21">Fecha de llegada</b><span id="f21s">Día / Mes / Año</span></div>
-<div class="field"><b id="f22">Vuelo</b><span id="f22s">Número de vuelo</span></div>
-<div class="field select"><b id="f23">Aerolínea</b><span id="f23s">Seleccione</span></div>
-<div class="field select"><b id="f24">País de donde vienes</b><span id="f24s">Seleccione</span></div>
-<div class="field select"><b id="f25">Entrada a Cuba</b><span id="f25s">Seleccione</span></div>
-<div class="field select"><b id="f26">Motivo del viaje</b><span id="f26s">Seleccione</span></div>
-</div></div></div></div></div>
-<div class="explain" id="dv2e"><strong>Ten cerca:</strong> tu fecha de llegada, número de vuelo y nombre de la aerolínea.</div>
-</div>
-
-<div class="step">
-<div class="step-title"><strong id="dv3t">3. Dónde te vas a quedar</strong><span id="dv3s">Escribes dónde estarás durante tu viaje.</span></div>
-<div class="mock"><div class="mock-window"><div class="mock-top" id="m3top">D’Viajeros · Dónde te vas a quedar</div><div class="mock-body"><div class="mock-brand" id="m3brand">Dónde te vas a quedar</div><div class="mock-section"><h4 id="m3h">Información de tu estancia</h4><div class="fields">
-<div class="field select"><b id="f31">Lugar donde te quedarás</b><span id="f31s">Seleccione</span></div>
-<div class="field"><b id="f32">Dirección</b><span id="f32s">Dirección</span></div>
-<div class="field select"><b id="f33">Provincia</b><span id="f33s">Seleccione</span></div>
-<div class="field select"><b id="f34">Municipio</b><span id="f34s">Seleccione</span></div>
-<div class="field full select"><b id="f35">Países visitados en los últimos 15 días</b><span id="f35s">Seleccione</span></div>
-<div class="field full select"><b id="f36">Cómo te has sentido durante los últimos 15 días</b><span id="f36s">Seleccione</span></div>
-<div class="field full select"><b id="f37">Preguntas sobre tu viaje</b><span id="f37s">Seleccione</span></div>
-</div></div></div></div></div>
-<div class="explain" id="dv3e"><strong>Ten cerca:</strong> el nombre y la dirección del lugar donde te quedarás.</div>
-</div>
-
-<div class="step">
-<div class="step-title"><strong id="dv4t">4. Lo que llevas contigo</strong><span id="dv4s">Indicas si tienes algo que declarar.</span></div>
-<div class="mock"><div class="mock-window"><div class="mock-top" id="m4top">D’Viajeros · Lo que llevas contigo</div><div class="mock-body"><div class="mock-brand" id="m4brand">Lo que llevas contigo</div><div class="mock-section"><h4 id="m4h">Elige una opción</h4><div class="field full"><b id="f41">¿Tienes algo que declarar?</b><span id="f41s">○ Sí &nbsp;&nbsp;&nbsp; ○ No</span></div></div></div></div></div>
-<div class="explain" id="dv4e"><strong>Solo tienes que elegir</strong> la respuesta que corresponde a lo que llevas contigo.</div>
-</div>
-
-<div class="step">
-<div class="step-title"><strong id="dv5t">5. Revisa y termina</strong><span id="dv5s">Lees tus datos y confirmas que están correctos.</span></div>
-<div class="mock"><div class="mock-window"><div class="mock-top" id="m5top">D’Viajeros · Revisa y termina</div><div class="mock-body"><div class="mock-brand" id="m5brand">Revisa y termina</div><div class="mock-section"><div class="check">□ <span id="f51">Confirmo que mis datos están correctos.</span></div><br><div class="check">□ <span id="f52">Estoy de acuerdo</span></div></div></div></div></div>
-<div class="explain" id="dv5e"><strong>Antes de terminar:</strong> mira tus datos una vez más y confirma.</div>
-</div>
-
-<div class="step">
-<div class="step-title"><strong id="dv6t">6. Guarda tu resultado</strong><span id="dv6s">Al terminar podrás guardar la información de tu viaje.</span></div>
-<div class="mock"><div class="mock-window"><div class="mock-top" id="m6top">D’Viajeros · Resultado</div><div class="mock-body"><div class="mock-brand" id="m6brand">Formulario terminado</div><div class="mock-section">
-<p id="f61" style="margin-top:0">Puedes guardar el resultado en PDF para llevarlo contigo.</p>
-<p id="f62">También puedes recibir un código para volver a entrar y hacer cambios.</p>
-<p id="f63">La información puede enviarse al correo que hayas indicado.</p>
-<button class="mock-red" id="f64">VER PDF</button>
-</div></div></div></div>
-<div class="explain" id="dv6e"><strong>Guarda tu PDF</strong> para tenerlo contigo durante el viaje.</div>
-</div>
-
-<div class="step">
-<div class="step-title"><strong id="dv7t">7. Tu resultado con QR</strong><span id="dv7s">El documento puede mostrar un código QR.</span></div>
-<div class="mock"><div class="mock-window"><div class="mock-top" id="m7top">D’Viajeros · Resultado</div><div class="mock-body"><div class="mock-brand" id="m7brand">Tu documento</div><div class="mock-section"><div class="qrbox"><div class="qr"></div><div><h3 id="f71" style="margin:0 0 8px">Código QR</h3><p id="f72" style="margin:0;color:#444;line-height:1.5">Guarda tu documento y tenlo disponible durante tu viaje.</p></div></div></div></div></div></div>
-<div class="explain" id="dv7e"><strong>Listo:</strong> conserva tu resultado y tenlo a mano durante el viaje.</div>
-</div>
-
-</div>
-<div class="official"><h3 id="dvOfficialTitle">Hazlo en D’Viajeros</h3><p id="dvOfficialText">Cuando quieras comenzar, entra directamente en el sitio de D’Viajeros.</p><a class="btn" href="https://dviajeros.mitrans.gob.cu/" target="_blank" rel="noopener noreferrer" id="dvOfficialBtn">Abrir D’Viajeros</a></div>
-</section>
-
-<section id="visaPanel" class="panel">
-<div class="panel-head"><div><h2 id="visaPanelTitle">Visa para Cuba</h2><p id="visaPanelIntro">Mira las opciones y elige dónde quieres continuar.</p></div><button class="close" data-close="visaPanel" id="visaClose">Cerrar</button></div>
-<div class="route-grid">
-<div class="route"><h3 id="evisaTitle">Visa electrónica</h3><p id="evisaText">Aquí puedes conocer la información sobre la visa electrónica para Cuba y continuar desde su sitio.</p><a class="btn" href="https://evisacuba.cu/" target="_blank" rel="noopener noreferrer" id="evisaBtn">Ver visa electrónica</a></div>
-<div class="route"><h3 id="consTitle">Consulado</h3><p id="consText">Si prefieres recibir orientación directamente de un consulado, aquí puedes consultar la información.</p><a class="btn" href="https://misiones.cubaminrex.cu/" target="_blank" rel="noopener noreferrer" id="consBtn">Ver información</a></div>
-</div>
-
-<!-- BLOQUES DE AEROLÍNEAS COMERCIALES (ESTILO TARJETAS CLARAS) -->
-<div class="steps" style="margin-top:22px">
-
-<div class="step">
-<div class="step-title"><strong id="com1t">Ejemplo 1: American Airlines</strong><span id="com1s">Así ves los pasos en tu teléfono al tramitar tu viaje para Alberto Perez Garcia.</span></div>
-<div class="mock"><div class="mock-window"><div class="mock-top">American Airlines · Visa y D'Viajeros</div><div class="mock-body"><div class="mock-brand">Paso a paso en tu teléfono</div><div class="mock-section"><h4 id="com1h">Ejemplo de lo que verás en pantalla</h4><div class="fields">
-<div class="field"><b>Tu código de reserva (PNR):</b> <span><b>Ejemplo: ABC123</b> (Lo recibes al comprar tu boleto)</span></div>
-<div class="field"><b>Paso 1: Entrar a tus viajes</b> <span>Abre la aplicación de la aerolínea, toca en la sección de viajes y escribe tu código de reserva y apellido. Verás una alerta de requisitos obligatorios para Cuba.</span></div>
-<div class="field"><b>Paso 2: Pedir tu visa</b> <span>Toca sobre la alerta y selecciona la opción para comprar tu tarjeta de turista o visa digital para tu vuelo del 2 de agosto de 2027.</span></div>
-<div class="field"><b>Paso 3: Tus datos personales</b> <span>Escribe la información del pasajero exactamente como está en el pasaporte:<br><b>Nombre: ALBERTO</b><br><b>Apellido: PEREZ GARCIA</b><br><b>Pasaporte: 34567821</b><br><b>Nacimiento: 05/10/2018</b></span></div>
-<div class="field full"><b>Paso 4 y 5: Rellenar D'Viajeros y Pago seguro</b> <span>Escribe tu correo <b>alberto@gmail.com</b>, teléfono <b>798-345-6789</b> y tu dirección en Cuba (Boyeros, La Habana). Al final verás el total a pagar (<b>$75.00 USD</b>); solo ahí pones tu tarjeta y recibes tu código de confirmación.</span></div>
-</div></div></div></div></div>
-<div class="explain"><strong>Muy fácil:</strong> Solo sigue estos pasos directo en la aplicación de tu aerolínea cuando vayas a viajar.</div>
-</div>
-
-<div class="step">
-<div class="step-title"><strong id="com2t">Ejemplo 2: Delta Air Lines</strong><span id="com2s">Así ves los pasos en tu teléfono al tramitar tu viaje para Alberto Perez Garcia.</span></div>
-<div class="mock"><div class="mock-window"><div class="mock-top">Delta Air Lines · Visa y D'Viajeros</div><div class="mock-body"><div class="mock-brand">Paso a paso en tu teléfono</div><div class="mock-section"><h4 id="com2h">Ejemplo de lo que verás en pantalla</h4><div class="fields">
-<div class="field"><b>Tu código de reserva:</b> <span><b>Ejemplo: DL9876</b> (En tu correo de confirmación de vuelo)</span></div>
-<div class="field"><b>Paso 1: Buscar tu vuelo</b> <span>Entra a la aplicación con tu código y apellido. El sistema te avisará de inmediato que necesitas la visa y el registro de entrada.</span></div>
-<div class="field"><b>Paso 2: Abrir trámites de viaje</b> <span>Entra al menú de documentos internacionales de tu vuelo para iniciar tu visado electrónico.</span></div>
-<div class="field"><b>Paso 3: Datos del pasajero</b> <span>Escribe los datos del menor y sus padres:<br><b>Pasajero: ALBERTO PEREZ GARCIA</b><br><b>Pasaporte: 34567821</b><br><b>Nacimiento: 05/10/2018</b></span></div>
-<div class="field full"><b>Paso 4 y 5: Datos en Cuba y Pago</b> <span>Anota tu dirección en Boyeros, La Habana, tu correo <b>alberto@gmail.com</b> y teléfono. Revisa el monto total en la pantalla final, ingresa tu tarjeta y obtén tu pase autorizado.</span></div>
-</div></div></div></div></div>
-<div class="explain"><strong>Muy fácil:</strong> Ten a mano los datos de tu pasaporte para terminar en pocos minutos.</div>
-</div>
-
-<div class="step">
-<div class="step-title"><strong id="com3t">Ejemplo 3: Southwest Airlines</strong><span id="com3s">Así ves los pasos en tu teléfono al tramitar tu viaje para Alberto Perez Garcia.</span></div>
-<div class="mock"><div class="mock-window"><div class="mock-top">Southwest Airlines · Visa y D'Viajeros</div><div class="mock-body"><div class="mock-brand">Paso a paso en tu teléfono</div><div class="mock-section"><h4 id="com3h">Ejemplo de lo que verás en pantalla</h4><div class="fields">
-<div class="field"><b>Tu código de reserva:</b> <span><b>Ejemplo: SWA456</b> (Disponible en tu itinerario)</span></div>
-<div class="field"><b>Paso 1: Revisar tu reserva</b> <span>Entra a la plataforma con tu código de confirmación para ver los avisos sobre los documentos de entrada a Cuba.</span></div>
-<div class="field"><b>Paso 2: Elegir tarjeta de turista</b> <span>Selecciona la opción de servicios y complementos para adquirir tu visa digital para las fechas del 2 al 5 de agosto de 2027.</span></div>
-<div class="field"><b>Paso 3: Rellenar identidad</b> <span>Ingresa los datos exactos:<br><b>Nombre: ALBERTO PEREZ GARCIA</b><br><b>Pasaporte: 34567821</b><br><b>Nacimiento: 05/10/2018</b></span></div>
-<div class="field full"><b>Paso 4 y 5: Estancia y Pago final</b> <span>Completa tu dirección en Boyeros, La Habana, correo <b>alberto@gmail.com</b> y teléfono <b>798-345-6789</b>. Paga al final de la pantalla y guarda tu código digital.</span></div>
-</div></div></div></div></div>
-<div class="explain"><strong>Muy fácil:</strong> Todo queda registrado de forma segura en tu teléfono antes de ir al aeropuerto.</div>
-</div>
-
-</div>
-
-<div class="official"><h3 id="visaChooseTitle">Elige cómo quieres continuar</h3><p id="visaChooseText">Puedes escoger la opción que mejor se adapte a ti y continuar directamente desde su sitio.</p></div>
-</section>
-
-<section id="flightPanel" class="panel">
-<div class="panel-head"><div><h2 id="flightPanelTitle">Vuelos a Cuba</h2><p id="flightPanelIntro">Encuentra las aerolíneas disponibles y entra directamente en el sitio de la compañía que quieras elegir.</p></div><button class="close" data-close="flightPanel" id="flightClose">Cerrar</button></div>
-<div id="flightList" class="flight-list"><div class="flight"><div><h3 id="loadingFlights">Buscando aerolíneas...</h3><p id="loadingFlightsText">Espera un momento.</p></div></div></div>
-<div class="official"><h3 id="searchFlightTitle">Buscar un vuelo</h3><p id="searchFlightText">Puedes comenzar buscando fechas y vuelos y después entrar en el sitio de la compañía que prefieras.</p><a class="btn" href="https://www.google.com/travel/flights" target="_blank" rel="noopener noreferrer" id="searchFlightBtn">Buscar vuelos</a></div>
-</section>
-
-<section id="charterPanel" class="panel">
-<div class="panel-head"><div><h2 id="charterPanelTitle">Vuelos chárter a Cuba</h2><p id="charterPanelIntro">Aquí puedes encontrar opciones especiales de vuelos entre Florida y Cuba.</p></div><button class="close" data-close="charterPanel" id="charterClose">Cerrar</button></div>
-<p class="charter-intro" id="charterIntro">Entra directamente en cada sitio para mirar fechas, destinos y vuelos disponibles y escoger la opción que prefieras.</p>
-<div class="charter-list">
-<div class="charter"><div><h3>Aerocuba</h3><p id="aeroText">Vuelos a La Habana y diversas provincias.</p></div><a class="btn" href="https://www.aerocuba.com/" target="_blank" rel="noopener noreferrer" id="aeroBtn">Entrar</a></div>
-<div class="charter"><div><h3>Xael Charters</h3><p id="xaelText">La Habana, Camagüey, Holguín, Santa Clara y Santiago de Cuba.</p></div><a class="btn" href="https://www.xaelcharter.com/" target="_blank" rel="noopener noreferrer" id="xaelBtn">Entrar</a></div>
-<div class="charter"><div><h3>Cuballama (Viajes)</h3><p id="cuballamaText">Vuelos desde Miami y Tampa hacia La Habana, Santa Clara, Camagüey, Holguín y Santiago de Cuba.</p></div><a class="btn" href="https://www.cuballama.com/viajes/vuelos/charters" target="_blank" rel="noopener noreferrer" id="cuballamaBtn">Ver vuelos</a></div>
-<div class="charter"><div><h3>Cubazul Air Charter</h3><p id="cubazulText">Vuelos chárter directos hacia Cuba.</p></div><a class="btn" href="https://cubazulaircharter.com/" target="_blank" rel="noopener noreferrer" id="cubazulBtn">Entrar</a></div>
-</div>
-<div class="charter-note" id="charterNote"><strong>Para elegir tu vuelo:</strong> mira directamente las fechas, el destino, el equipaje y el precio que aparecen en cada sitio.</div>
-
-<!-- BLOQUES DE AEROLÍNEAS CHÁRTERS -->
-<div class="steps" style="margin-top:22px">
-
-<div class="step">
-<div class="step-title"><strong id="cha1t">Ejemplo 1: Aerocuba</strong><span id="cha1s">Así ves los pasos en tu teléfono para gestionar tu viaje de forma sencilla.</span></div>
-<div class="mock"><div class="mock-window"><div class="mock-top">Aerocuba · Visa y D'Viajeros</div><div class="mock-body"><div class="mock-brand">Paso a paso en tu teléfono</div><div class="mock-section"><h4 id="cha1h">Ejemplo de lo que verás en pantalla</h4><div class="fields">
-<div class="field"><b>Tu código de reserva:</b> <span><b>Ejemplo: AC-8821</b> (Número de tu boleto chárter)</span></div>
-<div class="field"><b>Paso 1: Entrar al portal</b> <span>Entra a la sección de trámites o gestión de vuelos en la página de la agencia.</span></div>
-<div class="field"><b>Paso 2: Escribir tus datos</b> <span>Ingresa los datos exactos del pasajero:<br><b>Nombre: ALBERTO PEREZ GARCIA</b><br><b>Pasaporte: 34567821</b><br><b>Nacimiento: 05/10/2018</b></span></div>
-<div class="field"><b>Paso 3: Fechas de vuelo</b> <span>Confirma tu salida desde Miami el 2 de agosto de 2027 y tu retorno desde La Habana el 5 de agosto de 2027.</span></div>
-<div class="field full"><b>Paso 4 y 5: Hospedaje y Pago</b> <span>Anota tu dirección en Boyeros, La Habana, tu correo <b>alberto@gmail.com</b> y teléfono. Paga de forma segura al final y recibe tu comprobante.</span></div>
-</div></div></div></div></div>
-<div class="explain"><strong>Muy fácil:</strong> Sigue las indicaciones en pantalla para completar tu trámite sin enredos.</div>
-</div>
-
-<div class="step">
-<div class="step-title"><strong id="cha2t">Ejemplo 2: Xael Charters</strong><span id="cha2s">Así ves los pasos en tu teléfono para gestionar tu viaje de forma sencilla.</span></div>
-<div class="mock"><div class="mock-window"><div class="mock-top">Xael Charters · Visa y D'Viajeros</div><div class="mock-body"><div class="mock-brand">Paso a paso en tu teléfono</div><div class="mock-section"><h4 id="cha2h">Ejemplo de lo que verás en pantalla</h4><div class="fields">
-<div class="field"><b>Tu código de reserva:</b> <span><b>Ejemplo: XAE-3341</b> (En tu comprobante de viaje)</span></div>
-<div class="field"><b>Paso 1: Servicios en línea</b> <span>Selecciona la opción de documentos y tarjeta de turista para tu viaje a Cuba.</span></div>
-<div class="field"><b>Paso 2: Datos del pasajero</b> <span>Registra la información personal:<br><b>Pasajero: ALBERTO PEREZ GARCIA</b><br><b>Documento: 34567821</b><br><b>Nacimiento: 05/10/2018</b></span></div>
-<div class="field"><b>Paso 3: Estancia y salud</b> <span>Indica que te quedarás en Boyeros, La Habana, y responde las preguntas de salud obligatorias.</span></div>
-<div class="field full"><b>Paso 4 y 5: Revisar y Pagar</b> <span>Verifica el monto total de tus cargos, ingresa tu tarjeta de crédito al final y obtén tu código de confirmación.</span></div>
-</div></div></div></div></div>
-<div class="explain"><strong>Muy fácil:</strong> Tu comprobante digital quedará listo para mostrarlo al viajar.</div>
-</div>
-
-<div class="step">
-<div class="step-title"><strong id="cha3t">Ejemplo 3: Cuballama (Viajes)</strong><span id="cha3s">Así ves los pasos en tu teléfono para gestionar tu viaje de forma sencilla.</span></div>
-<div class="mock"><div class="mock-window"><div class="mock-top">Cuballama · Visa y D'Viajeros</div><div class="mock-body"><div class="mock-brand">Paso a paso en tu teléfono</div><div class="mock-section"><h4 id="cha3h">Ejemplo de lo que verás en pantalla</h4><div class="fields">
-<div class="field"><b>Tu código de reserva:</b> <span><b>Ejemplo: CUB-7789</b> (Recibido al apartar tu vuelo)</span></div>
-<div class="field"><b>Paso 1: Portal de viajes</b> <span>Entra a la sección de charters y servicios para pasajeros en la plataforma.</span></div>
-<div class="field"><b>Paso 2: Datos de identidad</b> <span>Escribe los datos tal como piden:<br><b>Nombre: ALBERTO PEREZ GARCIA</b><br><b>Pasaporte: 34567821</b><br><b>Nacimiento: 05/10/2018</b></span></div>
-<div class="field"><b>Paso 3: Hospedaje y contacto</b> <span>Escribe tu dirección en Boyeros, correo <b>alberto@gmail.com</b> y teléfono <b>798-345-6789</b>.</span></div>
-<div class="field full"><b>Paso 4 y 5: Pago final y PDF</b> <span>Realiza el pago con tu tarjeta en la pantalla de cierre y guarda tu documento con código QR.</span></div>
-</div></div></div></div></div>
-<div class="explain"><strong>Muy fácil:</strong> Todo se hace directo desde tu celular de forma ordenada y rápida.</div>
-</div>
-
-<div class="step">
-<div class="step-title"><strong id="cha4t">Ejemplo 4: Cubazul Air Charter</strong><span id="cha4s">Así ves los pasos en tu teléfono para gestionar tu viaje de forma sencilla.</span></div>
-<div class="mock"><div class="mock-window"><div class="mock-top">Cubazul Air Charter · Visa y D'Viajeros</div><div class="mock-body"><div class="mock-brand">Paso a paso en tu teléfono</div><div class="mock-section"><h4 id="cha4h">Ejemplo de lo que verás en pantalla</h4><div class="fields">
-<div class="field"><b>Tu código de reserva:</b> <span><b>Ejemplo: CBZ-5520</b> (En tu itinerario de vuelo)</span></div>
-<div class="field"><b>Paso 1: Sitio oficial</b> <span>Entra al sitio web de la aerolínea y busca la opción de asistencia para visa.</span></div>
-<div class="field"><b>Paso 2: Formulario de pasajero</b> <span>Llena los datos requeridos:<br><b>Nombre: ALBERTO PEREZ GARCIA</b><br><b>Pasaporte: 34567821</b><br><b>Nacimiento: 05/10/2018</b></span></div>
-<div class="field"><b>Paso 3: Formulario integrado</b> <span>Confirma tu estancia en Boyeros, La Habana, y valida tu estado de salud.</span></div>
-<div class="field full"><b>Paso 4 y 5: Pago y autorización</b> <span>Revisa el costo total en pantalla, ingresa tus datos bancarios y recibe tu código de autorización digital.</span></div>
-</div></div></div></div></div>
-<div class="explain"><strong>Muy fácil:</strong> Ten tu tarjeta lista para finalizar el proceso sin contratiempos.</div>
-</div>
-
-</div>
-
-</section>
-
-<section id="pdfPanel" class="panel">
-<div class="panel-head"><div><h2 id="pdfPanelTitle">Mi guía PDF</h2><p id="pdfPanelIntro">Guarda los pasos principales para consultarlos cuando quieras.</p></div><button class="close" data-close="pdfPanel" id="pdfClose">Cerrar</button></div>
-<div class="pdfbox"><h3 id="pdfBoxTitle">D’Viajeros + Visa</h3><p id="pdfBoxText">Tu guía puede reunir los pasos de D’Viajeros y las opciones para la visa.</p><button class="btn red" id="pdfCreateBtn">Crear mi guía PDF</button><p id="pdfStatus"></p></div>
-</section>
-
-<section class="legal-box"><strong id="legalTitle">Sobre los sitios que encuentras aquí</strong> <span id="legalText">Esta aplicación reúne en un solo lugar accesos y orientación para ayudarte a preparar tu viaje. Los vuelos, visas, formularios, pagos, reservas y documentos que aparecen mediante enlaces pertenecen a sus respectivos sitios y proveedores. Cuando eliges continuar, realizas ese proceso directamente con ellos. May Roga LLC no realiza esos servicios por medio de esta aplicación.</span></section>
-</main>
-
-<footer><span id="footerText">May Roga LLC · Guía sencilla para ayudarte a preparar tu viaje.</span><br><span id="footerSub">Los formularios, pagos y documentos se realizan directamente en los sitios correspondientes.</span></footer>
-
-<script>
-(function(){
-"use strict";
-var API="",lang=localStorage.getItem("qql_lang")||"es";
-var TX={
-es:{
-brand:"¿VAS PARA CUBA?",
-title:"Viaja con una respuesta clara",
-intro:"Mira qué necesitas preparar para tu viaje a Cuba y entra directamente en el sitio donde puedes continuar.",
-benefit:"D’Viajeros, visa, vuelos y vuelos chárter reunidos en un solo lugar, para que encuentres lo que necesitas y elijas directamente cómo quieres viajar.",
-notice:"Aquí puedes conocer los pasos antes de comenzar. Cuando estés listo, entra directamente al sitio que necesitas.",
-dvCardTitle:"D’Viajeros",visaCardTitle:"Visa para Cuba",flightCardTitle:"Vuelos a Cuba",charterCardTitle:"Vuelos chárter a Cuba",breatheCardTitle:"Pausa de Bienestar y Energía",pdfCardTitle:"Mi guía PDF",
-dvText:"Mira paso a paso qué datos te pedirán, qué debes tener preparado y cómo guardar el resultado final.",
-visaText:"Mira las formas disponibles para obtener tu visa y entra directamente en la opción que prefieras.",
-flightText:"Encuentra las aerolíneas disponibles y entra directamente en el sitio de la compañía que quieras elegir.",
-charterText:"Encuentra opciones de vuelos chárter entre Florida y Cuba y entra directamente en cada sitio para escoger.",
-breatheCardText:"Un minuto de respiración y enfoque para llenarte de tranquilidad, alegría y seguridad antes de tu viaje.",
-pdfText:"Guarda en un solo documento los pasos principales de D’Viajeros y las opciones para la visa.",
-dvBtn:"Ver cómo se hace",visaBtn:"Ver opciones",flightBtn:"Ver vuelos",charterBtn:"Ver charters",breatheBtn:"Iniciar 1 Minuto",pdfBtn:"Crear PDF",
-dvPanelTitle:"D’Viajeros: así se hace",dvPanelIntro:"Mira cada parte del formulario y prepara con calma lo que vas a necesitar.",close:"Cerrar",
-breathePanelTitle:"Pausa de Bienestar y Energía",breathePanelIntro:"Sigue el círculo azul, respira con calma y recibe tu dosis de energía y felicidad para el viaje.",
-dv1t:"1. Tus datos",dv1s:"Primero escribes tus datos personales.",dv1e:"<strong>Ten cerca:</strong> tu pasaporte y tus datos escritos exactamente como aparecen en él.",
-dv2t:"2. Tu llegada a Cuba",dv2s:"Aquí escribes los datos de tu llegada.",dv2e:"<strong>Ten cerca:</strong> tu fecha de llegada, número de vuelo y nombre de la aerolínea.",
-dv3t:"3. Dónde te vas a quedar",dv3s:"Escribes dónde estarás durante tu viaje.",dv3e:"<strong>Ten cerca:</strong> el nombre y la dirección del lugar donde te quedarás.",
-dv4t:"4. Lo que llevas contigo",dv4s:"Indicas si tienes algo que declarar.",dv4e:"<strong>Solo tienes que elegir</strong> la respuesta que corresponde a lo que llevas contigo.",
-dv5t:"5. Revisa y termina",dv5s:"Lees tus datos y confirmas que están correctos.",dv5e:"<strong>Antes de terminar:</strong> mira tus datos una vez más y confirma.",
-dv6t:"6. Guarda tu resultado",dv6s:"Al terminar podrás guardar la información de tu viaje.",dv6e:"<strong>Guarda tu PDF</strong> para tenerlo contigo durante el viaje.",
-dv7t:"7. Tu resultado con QR",dv7s:"El documento puede mostrar un código QR.",dv7e:"<strong>Listo:</strong> conserva tu resultado y tenlo a mano durante el viaje.",
-dvOfficialTitle:"Hazlo en D’Viajeros",dvOfficialText:"Cuando quieras comenzar, entra directamente en el sitio de D’Viajeros.",dvOfficialBtn:"Abrir D’Viajeros",
-m1top:"D’Viajeros · Datos Personales",m1brand:"Datos Personales",m1h:"Escribe tus datos",
-f11:"Primer Nombre",f11s:"Nombre",f12:"Segundo Nombre",f12s:"Si tienes",f13:"Primer Apellido",f13s:"Apellido",f14:"Segundo Apellido",f14s:"Si tienes",f15:"Fecha de nacimiento",f15s:"Día / Mes / Año",f16:"Género",f16s:"Seleccione",f17:"Ciudadanía",f17s:"Seleccione",f18:"Número de pasaporte",f18s:"Pasaporte con el que viajarás",f19:"País de residencia permanente",f19s:"Seleccione",f110:"Correo",f110s:"Correo electrónico",f111:"Teléfono",f111s:"Teléfono",
-m2top:"D’Viajeros · Tu llegada a Cuba",m2brand:"Información de llegada",m2h:"Datos de tu viaje",f21:"Fecha de llegada",f21s:"Día / Mes / Año",f22:"Vuelo",f22s:"Número de vuelo",f23:"Aerolínea",f23s:"Seleccione",f24:"País de donde vienes",f24s:"Seleccione",f25:"Entrada a Cuba",f25s:"Seleccione",f26:"Motivo del viaje",f26s:"Seleccione",
-m3top:"D’Viajeros · Dónde te vas a quedar",m3brand:"Dónde te vas a quedar",m3h:"Información de tu estancia",f31:"Lugar donde te quedarás",f31s:"Seleccione",f32:"Dirección",f32s:"Dirección",f33:"Provincia",f33s:"Seleccione",f34:"Municipio",f34s:"Seleccione",f35:"Países visitados en los últimos 15 días",f35s:"Seleccione",f36:"Cómo te has sentido durante los últimos 15 días",f36s:"Seleccione",f37:"Preguntas sobre tu viaje",f37s:"Seleccione",
-m4top:"D’Viajeros · Lo que llevas contigo",m4brand:"Lo que llevas contigo",m4h:"Elige una opción",f41:"¿Tienes algo que declarar?",f41s:"○ Sí&nbsp;&nbsp;&nbsp;&nbsp;○ No",
-m5top:"D’Viajeros · Revisa y termina",m5brand:"Revisa y termina",f51:"Confirmo que mis datos están correctos.",f52:"Estoy de acuerdo",
-m6top:"D’Viajeros · Resultado",m6brand:"Formulario terminado",f61:"Puedes guardar el resultado en PDF para llevarlo contigo.",f62:"También puedes recibir un código para volver a entrar y hacer cambios.",f63:"La información puede enviarse al correo que hayas indicado.",f64:"VER PDF",
-m7top:"D’Viajeros · Resultado",m7brand:"Tu documento",f71:"Código QR",f72:"Guarda tu documento y tenlo disponible durante tu viaje.",
-visaPanelTitle:"Visa para Cuba",visaPanelIntro:"Mira las opciones y elige dónde quieres continuar.",evisaTitle:"Visa electrónica",evisaText:"Aquí puedes conocer la información sobre la visa electrónica para Cuba y continuar desde su sitio.",evisaBtn:"Ver visa electrónica",consTitle:"Consulado",consText:"Si prefieres recibir orientación directamente de un consulado, aquí puedes consultar la información.",consBtn:"Ver información",visaChooseTitle:"Elige cómo quieres continuar",visaChooseText:"Puedes escoger la opción que mejor se adapte a ti y continuar directamente desde su sitio.",
-flightPanelTitle:"Vuelos a Cuba",flightPanelIntro:"Encuentra las aerolíneas disponibles y entra directamente en el sitio de la compañía que quieras elegir.",loadingFlights:"Buscando aerolíneas...",loadingFlightsText:"Espera un momento.",searchFlightTitle:"Buscar un vuelo",searchFlightText:"Puedes comenzar buscando fechas y vuelos y después entrar en el sitio de la compañía que prefieras.",searchFlightBtn:"Buscar vuelos",
-charterPanelTitle:"Vuelos chárter a Cuba",charterPanelIntro:"Aquí puedes encontrar opciones especiales de vuelos entre Florida y Cuba.",charterIntro:"Entra directamente en cada sitio para mirar fechas, destinos y vuelos disponibles y escoger la opción que prefieras.",aeroText:"Vuelos a La Habana y diversas provincias.",xaelText:"Vuelos a La Habana y diversas provincias.",xaelText:"La Habana, Camagüey, Holguín, Santa Clara y Santiago de Cuba.",cuballamaText:"Vuelos desde Miami y Tampa hacia La Habana, Santa Clara, Camagüey, Holguín y Santiago de Cuba.",cubazulText:"Vuelos chárter directos hacia Cuba.",aeroBtn:"Entrar",xaelBtn:"Entrar",cuballamaBtn:"Ver vuelos",cubazulBtn:"Entrar",charterNote:"<strong>Para elegir tu vuelo:</strong> mira directamente las fechas, el destino, el equipaje y el precio que aparecen en cada sitio.",
-pdfPanelTitle:"Mi guía PDF",pdfPanelIntro:"Guarda los pasos principales para consultarlos cuando quieras.",pdfBoxTitle:"D’Viajeros + Visa",pdfBoxText:"Tu guía puede reunir los pasos de D’Viajeros y las opciones para la visa.",pdfCreate:"Crear mi guía PDF",
-legalTitle:"Sobre los sitios que encuentras aquí",legalText:"Esta aplicación reúne en un solo lugar accesos y orientación para ayudarte a preparar tu viaje. Los vuelos, visas, formularios, pagos, reservas y documentos que aparecen mediante enlaces pertenecen a sus respectivos sitios y proveedores. Cuando eliges continuar, realizas ese proceso directamente con ellos. May Roga LLC no realiza esos servicios por medio de esta aplicación.",footerText:"May Roga LLC · Guía sencilla para ayudarte a preparar tu viaje.",footerSub:"Los formularios, pagos y documentos se realizan directamente en los sitios correspondientes.",
-com1t:"Ejemplo 1: American Airlines", com1s:"Así ves los pasos en tu teléfono al tramitar tu viaje para Alberto Perez Garcia.", com1h:"Ejemplo de lo que verás en pantalla",
-com2t:"Ejemplo 2: Delta Air Lines", com2s:"Así ves los pasos en tu teléfono al tramitar tu viaje para Alberto Perez Garcia.", com2h:"Ejemplo de lo que verás en pantalla",
-com3t:"Ejemplo 3: Southwest Airlines", com3s:"Así ves los pasos en tu teléfono al tramitar tu viaje para Alberto Perez Garcia.", com3h:"Ejemplo de lo que verás en pantalla",
-cha1t:"Ejemplo 1: Aerocuba", cha1s:"Así ves los pasos en tu teléfono para gestionar tu viaje de forma sencilla.", cha1h:"Ejemplo de lo que verás en pantalla",
-cha2t:"Ejemplo 2: Xael Charters", cha2s:"Así ves los pasos en tu teléfono para gestionar tu viaje de forma sencilla.", cha2h:"Ejemplo de lo que verás en pantalla",
-cha3t:"Ejemplo 3: Cuballama (Viajes)", cha3s:"Así ves los pasos en tu teléfono para gestionar tu viaje de forma sencilla.", cha3h:"Ejemplo de lo que verás en pantalla",
-cha4t:"Ejemplo 4: Cubazul Air Charter", cha4s:"Así ves los pasos en tu teléfono para gestionar tu viaje de forma sencilla.", cha4h:"Ejemplo de lo que verás en pantalla"
-},
-en:{
-brand:"Are you going to Cuba?",
-title:"Travel with a clear answer",
-intro:"See what you need to prepare for your trip to Cuba and go directly to the place where you can continue.",
-benefit:"D’Viajeros, visa, flights and charter flights brought together in one place, so you can find what you need and choose directly how you want to travel.",
-notice:"See the steps before you begin. When you are ready, go directly to the site you need.",
-dvCardTitle:"D’Viajeros",visaCardTitle:"Visa for Cuba",flightCardTitle:"Flights to Cuba",charterCardTitle:"Charter flights to Cuba",breatheCardTitle:"Wellness & Energy Pause",pdfCardTitle:"My PDF guide",
-dvText:"See step by step what information you will enter, what to have ready and how to save your final result.",
-visaText:"See the available ways to get your visa and go directly to the option you prefer.",
-flightText:"Find available airlines and go directly to the site of the company you want to choose.",
-charterText:"Find charter flight options between Florida and Cuba and go directly to each site to choose.",
-breatheCardText:"One minute of breathing and focus to fill you with peace, joy and confidence before your trip.",
-pdfText:"Keep the main D’Viajeros steps and visa options in one document.",
-dvBtn:"See how it works",visaBtn:"See options",flightBtn:"See flights",charterBtn:"See charters",breatheBtn:"Start 1 Minute",pdfBtn:"Create PDF",
-dvPanelTitle:"D’Viajeros: how it works",dvPanelIntro:"See each part of the form and calmly prepare what you will need.",close:"Close",
-breathePanelTitle:"Wellness & Energy Pause",breathePanelIntro:"Follow the blue circle, breathe calmly and receive your dose of energy and happiness for the trip.",
-dv1t:"1. Your information",dv1s:"First, enter your personal information.",dv1e:"<strong>Have ready:</strong> your passport and your information exactly as it appears in it.",
-dv2t:"2. Your arrival in Cuba",dv2s:"Enter the information about your arrival.",dv2e:"<strong>Have ready:</strong> your arrival date, flight number and airline name.",
-dv3t:"3. Where you will stay",dv3s:"Enter where you will stay during your trip.",dv3e:"<strong>Have ready:</strong> the name and address of the place where you will stay.",
-dv4t:"4. What you are bringing",dv4s:"Indicate whether you have something to declare.",dv4e:"<strong>Just choose</strong> the answer that matches what you are bringing.",
-dv5t:"5. Review and finish",dv5s:"Read your information and confirm that it is correct.",dv5e:"<strong>Before finishing:</strong> look over your information once more and confirm.",
-dv6t:"6. Save your result",dv6s:"When you finish, you can save your travel information.",dv6e:"<strong>Save your PDF</strong> so you have it with you during your trip.",
-dv7t:"7. Your result with QR",dv7s:"The document may show a QR code.",dv7e:"<strong>Done:</strong> keep your result available during your trip.",
-visaPanelTitle:"Visa for Cuba",visaPanelIntro:"See the options and choose where you want to continue.",evisaTitle:"Electronic Visa",evisaText:"Learn about the electronic visa for Cuba and continue from its site.",evisaBtn:"View electronic visa",consTitle:"Consulate",consText:"If you prefer to receive guidance directly from a consulate, you can find the information here.",consBtn:"View information",visaChooseTitle:"Choose how you want to continue",visaChooseText:"Choose the option that works best for you and continue directly from its site.",
-flightPanelTitle:"Flights to Cuba",flightPanelIntro:"Find available airlines and go directly to the site of the company you want to choose.",loadingFlights:"Finding airlines...",loadingFlightsText:"Please wait.",searchFlightTitle:"Search for a flight",searchFlightText:"Start by looking at dates and flights, then go directly to the site of the company you prefer.",searchFlightBtn:"Search flights",
-charterPanelTitle:"Charter Flights to Cuba",charterPanelIntro:"Here you can find special flight options between Florida and Cuba.",charterIntro:"Go directly to each site to look at dates, destinations and available flights and choose the option you prefer.",aeroText:"Flights to Havana and several provinces.",xaelText:"Havana, Camagüey, Holguín, Santa Clara and Santiago de Cuba.",cuballamaText:"Flights from Miami and Tampa to Havana, Santa Clara, Camagüey, Holguín and Santiago de Cuba.",cubazulText:"Direct charter flights to Cuba.",aeroBtn:"Enter",xaelBtn:"Enter",cuballamaBtn:"View flights",cubazulBtn:"Enter",charterNote:"<strong>To choose your flight:</strong> look directly at the dates, destination, baggage and price shown on each site.",
-pdfPanelTitle:"My PDF Guide",pdfPanelIntro:"Save the main steps so you can check them whenever you want.",pdfBoxTitle:"D’Viajeros + Visa",pdfBoxText:"Your guide can bring together the D’Viajeros steps and visa options.",pdfCreate:"Create my PDF guide",
-legalTitle:"About the sites you find here",legalText:"This application brings access and guidance together in one place to help you prepare for your trip. Flights, visas, forms, payments, reservations and documents shown through links belong to their respective sites and providers. When you choose to continue, you complete that process directly with them. May Roga LLC does not provide those services through this application.",footerText:"May Roga LLC · A simple guide to help you prepare for your trip.",footerSub:"Forms, payments and documents are completed directly on the corresponding sites.",
-com1t:"Example 1: American Airlines", com1s:"See the steps on your phone when processing your trip for Alberto Perez Garcia.", com1h:"Example of what you will see on screen",
-com2t:"Example 2: Delta Air Lines", com2s:"See the steps on your phone when processing your trip for Alberto Perez Garcia.", com2h:"Example of what you will see on screen",
-com3t:"Example 3: Southwest Airlines", com3s:"See the steps on your phone when processing your trip for Alberto Perez Garcia.", com3h:"Example of what you will see on screen",
-cha1t:"Example 1: Aerocuba", cha1s:"See the steps on your phone to easily manage your trip.", cha1h:"Example of what you will see on screen",
-cha2t:"Example 2: Xael Charters", cha2s:"See the steps on your phone to easily manage your trip.", cha2h:"Example of what you will see on screen",
-cha3t:"Example 3: Cuballama (Travel)", cha3s:"See the steps on your phone to easily manage your trip.", cha3h:"Example of what you will see on screen",
-cha4t:"Example 4: Cubazul Air Charter", cha4s:"See the steps on your phone to easily manage your trip.", cha4h:"Example of what you will see on screen"
-}};
-
-// 10 Ejercicios de bienestar y energía diferentes que rotan al abrir o iniciar
-var wellnessExercises = {
-es: [
-    { name: "1. Calma y Enfoque Total", phrases: ["Respira hondo, tu viaje está bajo control.", "Siente la seguridad en cada paso que das.", "La tranquilidad te abre todas las puertas.", "Tu energía positiva ilumina tu camino hoy."] },
-    { name: "2. Energía y Alegría Renovada", phrases: ["Inhala alegría, exhala cualquier duda.", "Una gran sonrisa te acompaña a tu destino.", "Tu corazón vibra con la emoción del reencuentro.", "Eres fuerte, capaz y estás listo para viajar."] },
-    { name: "3. Confianza y Seguridad Plena", phrases: ["Cada respiración te llena de absoluta seguridad.", "Tienes todo lo necesario para triunfar hoy.", "Caminas con paso firme hacia la felicidad.", "Todo marcha de manera perfecta y segura."] },
-    { name: "4. Paz Interior y Bienestar", phrases: ["Suelta las tensiones, solo existe el presente.", "La paz habita dentro de ti en este instante.", "Siente cómo tu cuerpo se relaja por completo.", "La armonía y el bienestar guían tus pasos."] },
-    { name: "5. Vitalidad y Fuerza Positiva", phrases: ["Una energía brillante recorre todo tu ser.", "Eres un viajero afortunado y bendecido.", "Tu mente está clara, despejada y brillante.", "La alegría de viajar llena cada rincón de ti."] },
-    { name: "6. Armonía y Esperanza", phrases: ["El futuro se abre ante ti lleno de esperanza.", "Respira hondo y siente la libertad de avanzar.", "Cada momento te acerca más a tus seres queridos.", "La felicidad es tu estado natural hoy."] },
-    { name: "7. Fortaleza y Seguridad en Ti", phrases: ["Confía plenamente en tu capacidad de resolver.", "Tu intuición y sabiduría te guían con acierto.", "La fuerza interior te acompaña a todas partes.", "Estás protegido, seguro y en paz."] },
-    { name: "8. Alegría de Vivir y Compartir", phrases: ["El reencuentro familiar está lleno de luz.", "Tu corazón late con ilusión y gratitud.", "La alegría fluye libremente en tu interior.", "Cada segundo de tu viaje será maravilloso."] },
-    { name: "9. Libertad y Bienestar Ligero", phrases: ["Siente tu mente ligera como una pluma.", "El estrés se evapora con cada exhalación.", "Disfruta el proceso con absoluta calma.", "La vida te sonríe en este hermoso viaje."] },
-    { name: "10. Éxito, Magia y Felicidad", phrases: ["Todo lo que emprendes hoy sale perfecto.", "La magia del viaje comienza en tu interior.", "Estás rodeado de abundancia y bienestar.", "Sonríe, tu camino está lleno de bendiciones."] }
-],
-en: [
-    { name: "1. Total Calm and Focus", phrases: ["Breathe deeply, your trip is in good hands.", "Feel absolute confidence in every step.", "Peace of mind opens all doors for you.", "Your positive energy lights your path today."] },
-    { name: "2. Renewed Energy and Joy", phrases: ["Inhale joy, exhale any hesitation.", "A bright smile accompanies you forward.", "Your heart beats with the thrill of reunion.", "You are strong, capable, and ready to travel."] },
-    { name: "3. Full Confidence and Safety", phrases: ["Every breath fills you with total security.", "You have everything needed to succeed today.", "You walk firmly toward happiness and success.", "Everything is unfolding perfectly and safely."] },
-    { name: "4. Inner Peace and Well-being", phrases: ["Release all tension, only the present matters.", "Peace lives within you right at this moment.", "Feel your body relax completely and deeply.", "Harmony and well-being guide your steps."] },
-    { name: "5. Vitality and Positive Strength", phrases: ["A brilliant energy flows through your entire being.", "You are a fortunate and blessed traveler.", "Your mind is clear, sharp, and bright.", "The joy of traveling fills every part of you."] },
-    { name: "6. Harmony and Hope", phrases: ["The future opens before you full of hope.", "Breathe deeply and feel the freedom to move.", "Every moment brings you closer to your loved ones.", "Happiness is your natural state today."] },
-    { name: "7. Inner Strength and Self-Assurance", phrases: ["Trust completely in your ability to handle things.", "Your intuition and wisdom guide you wisely.", "Inner strength accompanies you everywhere.", "You are protected, secure, and at peace."] },
-    { name: "8. Joy of Living and Sharing", phrases: ["The family reunion is filled with bright light.", "Your heart beats with excitement and gratitude.", "Joy flows freely deep inside your spirit.", "Every second of your journey will be wonderful."] },
-    { name: "9. Freedom and Light Well-being", phrases: ["Feel your mind as light as a feather.", "Stress evaporates away with each exhale.", "Enjoy the process with absolute calm.", "Life is smiling at you on this beautiful trip."] },
-    { name: "10. Success, Magic, and Happiness", phrases: ["Everything you undertake today turns out perfectly.", "The magic of travel begins right inside you.", "You are surrounded by abundance and well-being.", "Smile, your path is filled with blessings."] }
+SOURCES=[
+ {"id":"dviajeros","name":"D'Viajeros","title":"Formulario de entrada a Cuba","url":OFFICIAL_URLS["dviajeros"],"official":True,"type":"entrada"},
+ {"id":"evisa","name":"eVisa Cuba","title":"Visa electrónica para Cuba","url":OFFICIAL_URLS["evisa"],"official":True,"type":"visa"},
+ {"id":"cubaminrex","name":"Ministerio de Relaciones Exteriores de Cuba","title":"Información consular","url":OFFICIAL_URLS["consular"],"official":True,"type":"consular"},
+ {"id":"google_flights","name":"Google Flights","title":"Búsqueda de vuelos","url":OFFICIAL_URLS["flights"],"official":False,"type":"vuelos"},
+ {"id":"tsa","name":"TSA","title":"Información sobre artículos y equipaje","url":OFFICIAL_URLS["tsa"],"official":True,"type":"equipaje"},
+ {"id":"faa","name":"FAA","title":"Baterías y seguridad aérea","url":OFFICIAL_URLS["faa"],"official":True,"type":"equipaje"},
+ {"id":"iata","name":"IATA","title":"Información general de aerolíneas","url":OFFICIAL_URLS["iata"],"official":True,"type":"vuelos"},
 ]
-};
 
-var currentExerciseIndex = 0;
-var breatheInterval = null;
-var phraseInterval = null;
-var timerInterval = null;
+AIRLINES=[
+ {"id":"american","name":"American Airlines","url":"https://www.aa.com/","source_id":"aa"},
+ {"id":"delta","name":"Delta Air Lines","url":"https://www.delta.com/","source_id":"delta"},
+ {"id":"southwest","name":"Southwest Airlines","url":"https://www.southwest.com/","source_id":"southwest"},
+ {"id":"jetblue","name":"JetBlue","url":"https://www.jetblue.com/","source_id":"jetblue"},
+ {"id":"united","name":"United Airlines","url":"https://www.united.com/","source_id":"united"},
+ {"id":"spirit","name":"Spirit Airlines","url":"https://www.spirit.com/","source_id":"spirit"},
+]
 
-function $(id){return document.getElementById(id)}
-function put(id,v,html){var e=$(id);if(!e)return;if(html)e.innerHTML=v;else e.textContent=v}
+CHARTERS=[
+ {"id":"charter_general","name":"Vuelos chárter a Cuba","description":"Consulta el operador, aeropuerto, fecha y disponibilidad antes de comprar.","url":OFFICIAL_URLS["flights"],"source_id":"google_flights"}
+]
 
-function setLang(next){
-lang=next==="en"?"en":"es";localStorage.setItem("qql_lang",lang);var t=TX[lang];
-Object.keys(t).forEach(function(k){if($(k))put(k,t[k],k==="dv1e"||k==="dv2e"||k==="dv3e"||k==="dv4e"||k==="dv5e"||k==="dv6e"||k==="dv7e"||k==="opaExplain"||k==="charterNote")});
-$("esBtn").classList.toggle("active",lang==="es");$("enBtn").classList.toggle("active",lang==="en");document.documentElement.lang=lang;
-if($("flightPanel").classList.contains("open"))loadFlights();
-}
+def _text(v:Any,d=""):
+ return d if v is None else str(v).strip()
 
-function closePanels(){
-document.querySelectorAll(".panel").forEach(function(p){p.classList.remove("open")});
-stopBreatheSession();
-}
+def _lang(data:Any=None):
+ if isinstance(data,dict) and _text(data.get("language") or data.get("lang")).lower().startswith("en"): return "en"
+ return "es"
 
-function openPanel(id){
-closePanels();var p=$(id);if(!p)return;p.classList.add("open");setTimeout(function(){p.scrollIntoView({behavior:"smooth",block:"start"})},30);
-if(id==="flightPanel")loadFlights();
-if(id==="breathePanel")initBreatheSession();
-}
+def _localized(lang,es,en):
+ return en if lang=="en" else es
 
-// Control del ejercicio respiratorio: la voz lee únicamente la frase visible.
-function breatheSpeak(text){
-    if(!("speechSynthesis" in window) || !text) return;
-    window.speechSynthesis.cancel();
-    var utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = lang === "en" ? "en-US" : "es-ES";
-    utterance.rate = 0.9;
-    utterance.pitch = 1.0;
-    utterance.volume = 1;
-    var voices = window.speechSynthesis.getVoices();
-    var wanted = lang === "en" ? /^en(-|_)/i : /^es(-|_)/i;
-    var voice = voices.find(function(v){ return wanted.test(v.lang) && /natural|neural|premium/i.test(v.name); })
-        || voices.find(function(v){ return wanted.test(v.lang); });
-    if(voice) utterance.voice = voice;
-    window.speechSynthesis.speak(utterance);
-}
+def _source(i):
+ for x in SOURCES:
+  if x["id"]==_text(i): return dict(x)
+ return {"id":_text(i),"name":_text(i),"title":_text(i),"url":"","official":False,"type":"general"}
 
-function initBreatheSession(){
-    stopBreatheSession();
-    currentExerciseIndex = Math.floor(Math.random() * wellnessExercises[lang].length);
-    var exercise = wellnessExercises[lang][currentExerciseIndex];
-    var timeLeft = 60;
-    var circle = $("breatheCircle");
-    var word = $("circleWord");
-    var phraseBox = $("breathePhrase");
-    var timerBox = $("breatheTimer");
-    var startBtn = $("breatheStartBtn");
+def source_by_id(i): return _source(i)
+def get_sources(*a,**k): return [dict(x) for x in SOURCES]
+def all_sources(*a,**k): return get_sources()
+def official_sources(*a,**k): return [dict(x) for x in SOURCES if x.get("official")]
+def answer_sources(*a,**k): return official_sources()
+def get_airlines(*a,**k): return [dict(x) for x in AIRLINES]
+def get_charters(*a,**k): return [dict(x) for x in CHARTERS]
+def official_url(name=""): return OFFICIAL_URLS.get(_text(name).lower(),"")
+def sources(*a,**k): return get_sources()
 
-    startBtn.textContent = lang === "en" ? "Running..." : "En curso...";
-    startBtn.disabled = true;
-    var phraseIndex = 0;
-    phraseBox.innerHTML = "<b>" + exercise.name + "</b><br>" + exercise.phrases[phraseIndex];
+def _sources(ids):
+ r=[];seen=set()
+ for i in ids:
+  if i in seen: continue
+  seen.add(i);x=_source(i)
+  if x.get("url"): r.append(x)
+ return r
 
-    // La voz dice solo la frase, nunca el título del ejercicio ni otros textos.
-    breatheSpeak(exercise.phrases[phraseIndex]);
-    phraseInterval = setInterval(function(){
-        phraseIndex = (phraseIndex + 1) % exercise.phrases.length;
-        phraseBox.innerHTML = "<b>" + exercise.name + "</b><br>" + exercise.phrases[phraseIndex];
-        breatheSpeak(exercise.phrases[phraseIndex]);
-    }, 6000);
+def _response(ok=True,message="",data=None,language="es",**extra):
+ r={"ok":bool(ok),"success":bool(ok),"message":message,"language":language,"version":VERSION}
+ if isinstance(data,dict): r.update(data)
+ elif data is not None: r["data"]=data
+ r.update(extra)
+ return r
 
-    // Se conserva la animación visual del círculo, sin instrucciones habladas adicionales.
-    var isInhale = true;
-    function pulseCircle(){
-        if(isInhale){
-            circle.className = "breathe-circle inhale";
-            word.textContent = lang === "en" ? "Breathe in" : "Inhala";
-        } else {
-            circle.className = "breathe-circle exhale";
-            word.textContent = lang === "en" ? "Breathe out" : "Exhala";
-        }
-        isInhale = !isInhale;
-    }
-    pulseCircle();
-    breatheInterval = setInterval(pulseCircle, 5000);
+def _step(n,tes,xes,ten,xen,url=""):
+ return {"step":n,"number":n,"title":tes,"text":xes,"title_es":tes,"text_es":xes,"title_en":ten,"text_en":xen,"url":url}
 
-    timerInterval = setInterval(function(){
-        timeLeft--;
-        timerBox.textContent = (lang === "en" ? "Time remaining: " : "Tiempo restante: ") + timeLeft + "s";
-        if(timeLeft <= 0){
-            stopBreatheSession();
-            timerBox.textContent = lang === "en" ? "Completed! Well done." : "¡Completado! Muy bien.";
-            word.textContent = lang === "en" ? "Ready" : "Listo";
-            phraseBox.innerHTML = "<b>" + (lang === "en" ? "You are ready to go." : "Ya estás listo para continuar.") + "</b>";
-            startBtn.textContent = lang === "en" ? "Start Again" : "Iniciar de nuevo";
-            startBtn.disabled = false;
-            // No se reproduce voz al terminar.
-        }
-    }, 1000);
-}
+DVIAJEROS_STEPS=[
+ _step(1,"Entra al sitio oficial","Abre D'Viajeros antes de tu viaje.","Open the official site","Open D'Viajeros before your trip.",OFFICIAL_URLS["dviajeros"]),
+ _step(2,"Completa tus datos","Escribe los datos que el formulario oficial te solicita.","Enter your information","Enter the information requested by the official form.",OFFICIAL_URLS["dviajeros"]),
+ _step(3,"Revisa lo escrito","Mira cada dato antes de continuar y corrige cualquier error.","Review your information","Check each detail before continuing and correct any mistake.",OFFICIAL_URLS["dviajeros"]),
+ _step(4,"Termina el formulario","Sigue las instrucciones que aparecen en el sitio oficial.","Finish the form","Follow the instructions shown on the official site.",OFFICIAL_URLS["dviajeros"]),
+ _step(5,"Guarda el resultado","Conserva el comprobante o código que te entregue el sitio.","Save the result","Keep the confirmation or code provided by the site.",OFFICIAL_URLS["dviajeros"])
+]
 
-function stopBreatheSession(){
-    if(breatheInterval) clearInterval(breatheInterval);
-    if(phraseInterval) clearInterval(phraseInterval);
-    if(timerInterval) clearInterval(timerInterval);
-    if("speechSynthesis" in window) window.speechSynthesis.cancel();
-    var startBtn = $("breatheStartBtn");
-    if(startBtn){
-        startBtn.textContent = lang === "en" ? "Start Exercise" : "Comenzar ejercicio";
-        startBtn.disabled = false;
-    }
-}
-async function loadFlights(){
-var box=$("flightList"),t=TX[lang];
-try{
-var r=await fetch(API+"/api/airlines-cuba",{cache:"no-store"});if(!r.ok)throw new Error("HTTP");
-var data=await r.json(),list=Array.isArray(data)?data:(data.airlines||data.results||[]);
-if(!list.length)throw new Error("EMPTY");
-box.innerHTML="";
-list.forEach(function(x){
-var name=x.name||x.airline||x.nombre||(lang==="en"?"Airline":"Aerolínea"),url=x.url||x.official_url||x.official||"",type=x.type||x.kind||"",d=document.createElement("div"),left=document.createElement("div"),h=document.createElement("h3"),p=document.createElement("p");
-d.className="flight";h.textContent=name;p.textContent=type||(lang==="en"?"Open the company's site to see its flights.":"Entra en el sitio de la compañía para mirar sus vuelos.");left.appendChild(h);left.appendChild(p);d.appendChild(left);
-if(url){var a=document.createElement("a");a.className="btn";a.href=url;a.target="_blank";a.rel="noopener noreferrer";a.textContent=lang==="en"?"Enter":"Entrar";d.appendChild(a)}
-box.appendChild(d)
-})
-}catch(e){box.innerHTML='<div class="flight"><div><h3>'+t.searchFlightTitle+'</h3><p>'+t.searchFlightText+'</p></div></div>'}
-}
+def dviajeros_simulation(data=None,**kwargs):
+ lang=_lang(data);steps=[]
+ for x in DVIAJEROS_STEPS:
+  y=dict(x);y["title"]=x["title_en"] if lang=="en" else x["title_es"];y["text"]=x["text_en"] if lang=="en" else x["text_es"];steps.append(y)
+ return _response(True,_localized(lang,"Aquí tienes la secuencia sencilla para hacer D'Viajeros en el sitio oficial.","Here is the simple sequence to complete D'Viajeros on the official website."),language=lang,steps=steps,simulation=steps,official_url=OFFICIAL_URLS["dviajeros"],source=_source("dviajeros"))
 
-async function createPDF(){
-var s=$("pdfStatus");s.textContent=lang==="en"?"Creating your guide...":"Creando tu guía...";
-try{
-var r=await fetch(API+"/api/pdf",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({lang:lang,language:lang,title:lang==="en"?"WHAT DO YOU WANT TO BRING?":"¿QUÉ QUIERES LLEVAR?",data:{guide:true,dviajeros:true,visa:true,charters:true}})});
-if(!r.ok)throw new Error("PDF");
-var blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=lang==="en"?"travel-guide-what-do-you-want-to-bring.pdf":"guia-que-quieres-llevar.pdf";document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},3000);s.textContent=lang==="en"?"Your PDF was created.":"Tu PDF fue creado.";
-}catch(e){s.textContent=lang==="en"?"The guide could not be created right now.":"No se pudo crear la guía en este momento."}
-}
+VISA_ROUTES=[
+ {"id":"evisa","name":"Visa electrónica","title_es":"Visa electrónica","title_en":"Electronic visa","description_es":"Consulta y realiza el proceso desde el sitio oficial de eVisa Cuba.","description_en":"Check and complete the process through the official eVisa Cuba website.","url":OFFICIAL_URLS["evisa"]},
+ {"id":"consular","name":"Consulado","title_es":"Consulado","title_en":"Consulate","description_es":"Si necesitas la vía consular, consulta las instrucciones actuales del consulado correspondiente.","description_en":"If you need the consular route, check the current instructions from the appropriate consulate.","url":OFFICIAL_URLS["consular"]},
+ {"id":"airport","name":"Aeropuerto","title_es":"Aeropuerto","title_en":"Airport","description_es":"Si esta opción está disponible para tu viaje, confirma directamente con la aerolínea antes de viajar.","description_en":"If this option is available for your trip, confirm directly with the airline before traveling.","url":"https://www.miami-airport.com/"}
+]
 
-$("esBtn").addEventListener("click",function(){setLang("es")});
-$("enBtn").addEventListener("click",function(){setLang("en")});
-$("dvBtn").addEventListener("click",function(){openPanel("dvPanel")});
-$("visaBtn").addEventListener("click",function(){openPanel("visaPanel")});
-$("flightBtn").addEventListener("click",function(){openPanel("flightPanel")});
-$("charterBtn").addEventListener("click",function(){openPanel("charterPanel")});
-$("breatheBtn").addEventListener("click",function(){openPanel("breathePanel")});
-$("breatheStartBtn").addEventListener("click",initBreatheSession);
-$("pdfBtn").addEventListener("click",function(){openPanel("pdfPanel")});
-$("pdfCreateBtn").addEventListener("click",createPDF);
-document.querySelectorAll("[data-close]").forEach(function(b){b.addEventListener("click",closePanels)});
-setLang(lang);
-window.openPanel=openPanel;window.closePanels=closePanels;window.setLang=setLang;window.createPDF=createPDF;
-})();
-</script>
-</body>
-</html
+def visa_simulation(data=None,**kwargs):
+ lang=_lang(data)
+ raw=[
+  _step(1,"Revisa qué opción tienes","La forma de obtener la visa puede depender de tu situación y del viaje.","First check which option applies","The way to obtain the visa can depend on your situation and trip.",OFFICIAL_URLS["evisa"]),
+  _step(2,"Visa electrónica","Abre el sitio oficial y sigue las instrucciones que aparecen allí.","Electronic visa","Open the official site and follow the instructions shown there.",OFFICIAL_URLS["evisa"]),
+  _step(3,"Vía consular","Si corresponde al consulado, usa sus instrucciones actuales antes de preparar documentos o pagos.","Consular route","If the consular route applies, use its current instructions before preparing documents or payment.",OFFICIAL_URLS["consular"]),
+  _step(4,"Opción en aeropuerto","Si tu aerolínea ofrece esta posibilidad, confirma antes del viaje cómo funciona y qué debes llevar.","Airport option","If your airline offers this option, confirm before the trip how it works and what you need.","https://www.miami-airport.com/"),
+  _step(5,"Guarda tu comprobante","Cuando termines, conserva el resultado que te entregue el proceso.","Save your confirmation","When finished, keep the result provided by the process.",OFFICIAL_URLS["evisa"])
+ ]
+ steps=[]
+ for x in raw:
+  y=dict(x);y["title"]=x["title_en"] if lang=="en" else x["title_es"];y["text"]=x["text_en"] if lang=="en" else x["text_es"];steps.append(y)
+ routes=[]
+ for x in VISA_ROUTES:
+  y=dict(x);y["title"]=x["title_en"] if lang=="en" else x["title_es"];y["description"]=x["description_en"] if lang=="en" else x["description_es"];routes.append(y)
+ return _response(True,_localized(lang,"Estas son las principales vías de visa. Confirma los requisitos actuales en el sitio oficial.","These are the main visa routes. Confirm current requirements on the official site."),language=lang,steps=steps,simulation=steps,routes=routes,official_url=OFFICIAL_URLS["evisa"],source=_source("evisa"),sources=_sources(["evisa","cubaminrex"]))
+
+def practice_scenario(data=None,**kwargs):
+ s=_text(data.get("scenario") or data.get("type") or data.get("kind"),"dviajeros").lower() if isinstance(data,dict) else "dviajeros"
+ return visa_simulation(data) if s in ("visa","evisa") else dviajeros_simulation(data)
+
+def dviajeros_analysis(data=None,**kwargs): return dviajeros_simulation(data,**kwargs)
+def visa_analysis(data=None,**kwargs): return visa_simulation(data,**kwargs)
+
+def document_analysis(data=None,**kwargs):
+ lang=_lang(data)
+ docs=[
+  {"id":"passport","name":"Pasaporte","title_es":"Pasaporte","title_en":"Passport","description_es":"Revisa que tengas tu pasaporte y que cumpla las condiciones aplicables a tu viaje.","description_en":"Make sure you have your passport and that it meets the conditions applicable to your trip."},
+  {"id":"dviajeros","name":"D'Viajeros","title_es":"D'Viajeros","title_en":"D'Viajeros","description_es":"Completa el formulario oficial cuando corresponda.","description_en":"Complete the official form when applicable."},
+  {"id":"visa","name":"Visa","title_es":"Visa para Cuba","title_en":"Visa for Cuba","description_es":"Confirma qué vía de visa corresponde a tu situación.","description_en":"Confirm which visa route applies to your situation."}
+ ]
+ for x in docs:
+  x["title"]=x["title_en"] if lang=="en" else x["title_es"];x["description"]=x["description_en"] if lang=="en" else x["description_es"]
+ return _response(True,_localized(lang,"Guía de documentos","Document guidance"),language=lang,documents=docs,sources=_sources(["dviajeros","evisa","cubaminrex"]))
+
+def baggage_rules(data=None,**kwargs):
+ lang=_lang(data)
+ carry={"title":_localized(lang,"Equipaje de mano","Carry-on baggage"),"text":_localized(lang,"Las medidas, peso y cantidad permitidos dependen de la aerolínea y del boleto.","Size, weight and quantity depend on the airline and ticket.")}
+ checked={"title":_localized(lang,"Equipaje facturado","Checked baggage"),"text":_localized(lang,"El peso, tamaño y cantidad dependen de la aerolínea y del boleto.","Weight, size and quantity depend on the airline and ticket.")}
+ msg=_localized(lang,"Para saber exactamente cuánto puedes llevar, revisa las condiciones de tu aerolínea.","To know exactly what you can bring, check your airline's conditions.")
+ return _response(True,msg,language=lang,carry_on=carry,checked=checked,important=msg,sources=_sources(["tsa","faa"]))
+
+def baggage_analysis(data=None,**kwargs): return baggage_rules(data,**kwargs)
+
+def _fallback_item(item,lang):
+ return {
+  "item":item,
+  "answer":_localized(lang,"Revisa las reglas oficiales de equipaje y las condiciones de tu aerolínea antes de viajar.","Check the official baggage rules and your airline's conditions before traveling."),
+  "allowed":None,"carry_on":None,"checked":None,
+  "reason":_localized(lang,"La regla exacta depende del artículo y de los requisitos vigentes.","The exact rule depends on the item and current requirements."),
+  "sources":_sources(["tsa","faa"])
+ }
+
+def _gemini_prompt(item,lang):
+ return f"""Travel orientation assistant. User item: {item}
+Language: {lang}
+Do not invent rules. Do not claim certainty when unclear. Give a short plain-language answer. Separate carry-on and checked baggage when possible. Official rules have priority. Return JSON only with item,answer,allowed,carry_on,checked,reason."""
+
+def _gemini_item(item,lang):
+ if not GEMINI_API_KEY:return None
+ url=f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent?key={GEMINI_API_KEY}"
+ body={"contents":[{"parts":[{"text":_gemini_prompt(item,lang)}]}],"generationConfig":{"temperature":0.1,"responseMimeType":"application/json"}}
+ try:
+  req=urllib.request.Request(url,data=json.dumps(body).encode(),headers={"Content-Type":"application/json"},method="POST")
+  with urllib.request.urlopen(req,timeout=20) as r: p=json.loads(r.read().decode())
+  c=p.get("candidates") or []
+  if not c:return None
+  t="".join(x.get("text","") for x in c[0].get("content",{}).get("parts",[])).strip()
+  t=re.sub(r"^```json\s*|^```\s*|\s*```$","",t,flags=re.I)
+  x=json.loads(t)
+  if not isinstance(x,dict):return None
+  x["item"]=item;x["sources"]=_sources(["tsa","faa"])
+  return x
+ except Exception:return None
+
+def item_analysis(data=None,**kwargs):
+ lang=_lang(data);item=""
+ if isinstance(data,dict):item=_text(data.get("item") or data.get("name") or data.get("question"))
+ elif data is not None:item=_text(data)
+ if not item:return _response(False,_localized(lang,"Escribe el artículo que quieres consultar.","Write the item you want to check."),language=lang)
+ ai=_gemini_item(item,lang)
+ if ai:return _response(True,ai.get("answer",""),language=lang,item=item,result=ai,sources=ai.get("sources",_sources(["tsa","faa"])))
+ x=_fallback_item(item,lang)
+ return _response(True,x["answer"],language=lang,item=item,result=x,**x)
+
+def item_check(data=None,**kwargs): return item_analysis(data,**kwargs)
+
+def analyze_flight(data=None,**kwargs):
+ lang=_lang(data);origin="";destination="Cuba";date=""
+ if isinstance(data,dict):
+  origin=_text(data.get("origin") or data.get("from"))
+  destination=_text(data.get("destination") or data.get("to"),"Cuba")
+  date=_text(data.get("date") or data.get("departure_date") or data.get("departure"))
+ return _response(True,_localized(lang,"Usa la búsqueda de vuelos y confirma la ruta directamente con la aerolínea.","Use flight search and confirm the route directly with the airline."),language=lang,origin=origin,destination=destination,date=date,search_url=OFFICIAL_URLS["flights"],airlines=get_airlines(),charters=get_charters(),sources=_sources(["google_flights"]))
+
+def flight_analysis(data=None,**kwargs): return analyze_flight(data,**kwargs)
+
+def booking_simulation(data=None,**kwargs):
+ lang=_lang(data)
+ raw=[
+  _step(1,"Busca el vuelo","Busca opciones para tu ruta.","Search for the flight","Search options for your route.",OFFICIAL_URLS["flights"]),
+  _step(2,"Abre la página de la aerolínea","Revisa la información directamente con la aerolínea.","Open the airline website","Review the information directly with the airline.",""),
+  _step(3,"Revisa el vuelo","Comprueba fecha, horario, pasajeros y equipaje.","Review the flight","Check the date, time, passengers and baggage.",""),
+  _step(4,"Compra solo si quieres","La aplicación no compra ni paga vuelos.","Buy only if you want to","This application does not buy or pay for flights.","")
+ ]
+ steps=[]
+ for x in raw:
+  y=dict(x);y["title"]=x["title_en"] if lang=="en" else x["title_es"];y["text"]=x["text_en"] if lang=="en" else x["text_es"];steps.append(y)
+ return _response(True,_localized(lang,"Simulación de preparación. No es una compra real.","Preparation simulation. This is not a real purchase."),language=lang,steps=steps,simulation=steps,official=False,sources=_sources(["google_flights"]))
+
+def booking_analysis(data=None,**kwargs): return booking_simulation(data,**kwargs)
+
+def connection_analysis(data=None,**kwargs):
+ lang=_lang(data)
+ return _response(True,_localized(lang,"Revisa cada tramo, la fecha y el tiempo entre vuelos directamente con la aerolínea.","Check each flight segment, date and connection time directly with the airline."),language=lang,sources=_sources(["google_flights"]))
+
+def airport_analysis(data=None,**kwargs): return analyze_flight(data,**kwargs)
+
+def cuba_check(data=None,**kwargs):
+ lang=_lang(data)
+ return _response(True,_localized(lang,"Para viajar a Cuba, revisa primero D'Viajeros, la visa que corresponda y tu vuelo.","For travel to Cuba, first check D'Viajeros, the applicable visa and your flight."),language=lang,dviajeros={"url":OFFICIAL_URLS["dviajeros"],"steps":dviajeros_simulation(data).get("steps",[])},visa={"url":OFFICIAL_URLS["evisa"],"routes":VISA_ROUTES},flights={"url":OFFICIAL_URLS["flights"],"airlines":get_airlines(),"charters":get_charters()},sources=_sources(["dviajeros","evisa","cubaminrex","google_flights"]))
+
+def cuba_entry(data=None,**kwargs): return dviajeros_simulation(data,**kwargs)
+def cuba_analysis(data=None,**kwargs): return cuba_check(data,**kwargs)
+
+def build_guide(data=None,**kwargs):
+ lang=_lang(data)
+ d=dviajeros_simulation(data);v=visa_simulation(data)
+ return _response(True,_localized(lang,"Guía básica para preparar un viaje a Cuba.","Basic guide for preparing a trip to Cuba."),language=lang,sections=[
+  {"id":"dviajeros","title":"D'Viajeros","url":OFFICIAL_URLS["dviajeros"],"steps":d.get("steps",[])},
+  {"id":"visa","title":_localized(lang,"Visa para Cuba","Visa for Cuba"),"url":OFFICIAL_URLS["evisa"],"routes":v.get("routes",[]),"steps":v.get("steps",[])},
+  {"id":"flights","title":_localized(lang,"Vuelos a Cuba","Flights to Cuba"),"url":OFFICIAL_URLS["flights"],"airlines":get_airlines(),"charters":get_charters()}
+ ],sources=_sources(["dviajeros","evisa","cubaminrex","google_flights"]))
+
+def solve(data=None,**kwargs):
+ lang=_lang(data);q=""
+ if isinstance(data,dict):q=_text(data.get("question") or data.get("query") or data.get("message"))
+ if not q:return build_guide(data,**kwargs)
+ l=q.lower()
+ if "dviajero" in l or "d'viajero" in l:return dviajeros_simulation(data)
+ if "visa" in l:return visa_simulation(data)
+ if any(x in l for x in ("vuelo","volar","aerolínea","aerolinea","flight")):return analyze_flight(data)
+ if any(x in l for x in ("llevar","equipaje","maleta","batería","bateria")):return item_analysis({"language":lang,"item":q})
+ return _response(True,_localized(lang,"Revisa D'Viajeros, la visa y el vuelo en los sitios correspondientes.","Check D'Viajeros, the visa and the flight on the corresponding websites."),language=lang,sources=_sources(["dviajeros","evisa","google_flights"]))
+
+def answer(data=None,**kwargs): return solve(data,**kwargs)
+
+def health(*a,**k):
+ return {"ok":True,"success":True,"status":"ok","engine":"cuba_engine","version":VERSION,"source_registry_dependency":False,"gemini_configured":bool(GEMINI_API_KEY)}
+
+__all__=[
+ "VERSION","APP","SOURCES","AIRLINES","CHARTERS","OFFICIAL_URLS",
+ "source_by_id","get_sources","all_sources","official_sources","answer_sources","official_url","get_airlines","get_charters","sources",
+ "dviajeros_simulation","dviajeros_analysis","visa_simulation","visa_analysis","practice_scenario","document_analysis",
+ "baggage_rules","baggage_analysis","item_analysis","item_check","analyze_flight","flight_analysis",
+ "booking_simulation","booking_analysis","connection_analysis","cuba_check","cuba_entry","cuba_analysis",
+ "build_guide","solve","answer","health","airport_analysis"
+]
