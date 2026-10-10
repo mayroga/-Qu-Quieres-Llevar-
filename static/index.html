@@ -762,6 +762,23 @@ var blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement("
 }catch(e){s.textContent=lang==="en"?"The guide could not be created right now.":"No se pudo crear la guía en este momento."}
 }
 
+// MANTENER PANTALLA ENCENDIDA (Screen Wake Lock API)
+var wakeLock = null;
+async function requestWakeLock() {
+  try {
+    if ('wakeLock' in navigator) {
+      wakeLock = await navigator.wakeLock.request('screen');
+    }
+  } catch (err) {}
+}
+document.addEventListener("click", requestWakeLock, { once: true });
+document.addEventListener("touchstart", requestWakeLock, { once: true });
+document.addEventListener("visibilitychange", async function() {
+  if (wakeLock !== null && document.visibilityState === 'visible') {
+    await requestWakeLock();
+  }
+});
+
 $("esBtn").addEventListener("click",function(){setLang("es")});
 $("enBtn").addEventListener("click",function(){setLang("en")});
 $("dvBtn").addEventListener("click",function(){openPanel("dvPanel")});
