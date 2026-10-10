@@ -1,5 +1,5 @@
 from __future__ import annotations
-import os,json,io,datetime,time,hmac,hashlib,base64
+import os,json,io,datetime,time,hmac,hashlib,base64,re
 from typing import Any
 from urllib.parse import urlparse
 from fastapi import FastAPI,Request
@@ -18,7 +18,7 @@ except ImportError:
     stripe=None
 from schemas import *
 
-VERSION="17.0.0"
+VERSION="17.1.0"
 APP_NAME="¿QUÉ QUIERES LLEVAR?"
 STATIC_DIR="static"
 SOURCE_VERSION=engine.VERSION
@@ -51,12 +51,14 @@ if stripe and STRIPE_SECRET_KEY:
 
 def now():
     return datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
+
 def model_dict(x):
     if x is None:return {}
     if isinstance(x,dict):return x
     if hasattr(x,"model_dump"):return x.model_dump(exclude_none=False)
     if hasattr(x,"dict"):return x.dict()
     return dict(x)
+
 def normalize_result(result,default_sources=None):
     if result is None:result={}
     if hasattr(result,"model_dump"):result=result.model_dump()
@@ -64,6 +66,7 @@ def normalize_result(result,default_sources=None):
     result=dict(result)
     if not isinstance(result.get("sources"),list):result["sources"]=default_sources or []
     return result
+
 def call_engine(name,data=None):
     fn=getattr(engine,name,None)
     if not fn:return {"status":"error","message":f"Función no disponible: {name}","next_action":"Revisa la aplicación."}
@@ -71,13 +74,12 @@ def call_engine(name,data=None):
     try:return normalize_result(fn(d))
     except TypeError:
         try:return normalize_result(fn(**d))
-        except Exception:
-            return {"status":"error","message":"La operación no pudo completarse.","next_action":"Inténtalo nuevamente."}
-    except Exception:
-        return {"status":"error","message":"La operación no pudo completarse.","next_action":"Inténtalo nuevamente."}
+        except Exception:return {"status":"error","message":"La operación no pudo completarse.","next_action":"Inténtalo nuevamente."}
+    except Exception:return {"status":"error","message":"La operación no pudo completarse.","next_action":"Inténtalo nuevamente."}
 
 def signing_key():
     return (SESSION_SIGNING_SECRET or STRIPE_SECRET_KEY or ADMIN_PASSWORD or "").encode()
+
 def make_token(data,max_age):
     key=signing_key()
     if not key:raise RuntimeError("Falta SESSION_SIGNING_SECRET en Render.")
@@ -86,6 +88,7 @@ def make_token(data,max_age):
     raw=base64.urlsafe_b64encode(json.dumps(payload,separators=(",",":"),ensure_ascii=False).encode()).decode().rstrip("=")
     sig=hmac.new(key,raw.encode(),hashlib.sha256).hexdigest()
     return raw+"."+sig
+
 def read_token(token):
     if not token or "." not in token or not signing_key():return None
     try:
@@ -96,48 +99,63 @@ def read_token(token):
         if int(data.get("exp",0))<int(time.time()):return None
         return data
     except Exception:return None
+
 def get_access(request):
     return read_token(request.cookies.get(COOKIE_NAME,""))
+
 def get_entitlement(request):
     return read_token(request.cookies.get(ENTITLEMENT_COOKIE,""))
+
 def set_access_cookie(response,kind,extra=None):
     data={"kind":kind,"issued":int(time.time())}
     if extra:data.update(extra)
     response.set_cookie(COOKIE_NAME,make_token(data,SESSION_SECONDS),max_age=SESSION_SECONDS,httponly=True,secure=COOKIE_SECURE,samesite="lax",path="/")
+
 def set_entitlement_cookie(response,kind,extra=None):
     data={"kind":kind,"issued":int(time.time())}
     if extra:data.update(extra)
     age=SUB_ENTITLEMENT_SECONDS if kind=="subscription" else SESSION_SECONDS
     response.set_cookie(ENTITLEMENT_COOKIE,make_token(data,age),max_age=age,httponly=True,secure=COOKIE_SECURE,samesite="lax",path="/")
+
 def clear_access_cookies(response):
     response.delete_cookie(COOKIE_NAME,path="/")
     response.delete_cookie(ENTITLEMENT_COOKIE,path="/")
+
 def safe_stripe_object(obj):
     if hasattr(obj,"to_dict_recursive"):return obj.to_dict_recursive()
     if isinstance(obj,dict):return obj
     return {}
+
 def stripe_ready():
     return bool(stripe and STRIPE_SECRET_KEY)
+
 def price_for(plan):
     if plan in ("single","1","one_time"):return STRIPE_PRICE_ID1,"payment"
     if plan in ("subscription","2","monthly"):return STRIPE_PRICE_ID2,"subscription"
     return None,None
+
 def stripe_subscription_active(subscription_id):
     if not stripe_ready() or not subscription_id:return False
     try:
         sub=safe_stripe_object(stripe.Subscription.retrieve(subscription_id))
         return sub.get("status") in ("active","trialing")
     except Exception:return False
+
 def response_error(message,status=400):
     return JSONResponse({"status":"error","allowed":False,"message":message},status_code=status)
 
+# Acceso público limitado a configuración, pagos y autenticación.
 PUBLIC_API={
     "/api/config","/api/health","/api/ping","/api/legal",
     "/api/v1/access/status","/api/v1/access/verify",
     "/api/v1/access/restore","/api/v1/stripe/create-checkout",
-    "/api/v1/admin/login","/api/v1/stripe/webhook"
+    "/api/v1/admin/login","/api/v1/stripe/webhook",
+    "/api/access-status","/api/payment/options",
+    "/api/payment/verify","/api/create-checkout-session",
+    "/api/session/resume","/api/login"
 }
 PUBLIC_PREFIXES=("/api/v1/access/","/api/v1/stripe/")
+
 @app.middleware("http")
 async def require_service_access(request:Request,call_next):
     path=request.url.path
@@ -151,12 +169,69 @@ async def require_service_access(request:Request,call_next):
             return JSONResponse({"status":"session_expired","message":"Tu sesión de 20 minutos terminó."},status_code=401)
     return await call_next(request)
 
+# Botón pequeño de administración inyectado en la página sin reemplazar el HTML.
+ADMIN_CORNER=r"""
+<style>
+#qql-admin-corner{position:fixed;top:5px;right:7px;z-index:2147483000;font:11px Arial,sans-serif}
+#qql-admin-open{border:1px solid #777;border-radius:4px;background:#111;color:#fff;padding:3px 6px;font-size:9px;opacity:.38;cursor:pointer}
+#qql-admin-open:hover,#qql-admin-open:focus{opacity:1}
+#qql-admin-box{display:none;position:absolute;top:22px;right:0;width:235px;padding:12px;background:#111;color:#fff;border:1px solid #666;border-radius:7px;box-shadow:0 5px 20px #0008}
+#qql-admin-box input{box-sizing:border-box;width:100%;margin:5px 0;padding:9px;background:#fff;color:#111;border:1px solid #aaa;border-radius:4px;font-size:14px}
+#qql-admin-box button{cursor:pointer;padding:7px 10px;border:1px solid #888;border-radius:4px}
+#qql-admin-submit{background:#fff;color:#111}
+#qql-admin-close{float:right;background:#333;color:#fff}
+#qql-admin-message{font-size:11px;overflow-wrap:anywhere;margin-top:7px}
+</style>
+<div id="qql-admin-corner">
+<button id="qql-admin-open" type="button" aria-label="Acceso privado de administración" title="Acceso privado">Acceso</button>
+<div id="qql-admin-box" role="dialog" aria-label="Entrada gratuita de administración">
+<button id="qql-admin-close" type="button">×</button>
+<strong>Acceso privado gratuito</strong>
+<form id="qql-admin-form" autocomplete="on">
+<input name="username" type="text" placeholder="USERNAME" aria-label="USERNAME" autocomplete="username" required>
+<input name="password" type="password" placeholder="PASSWORD" aria-label="PASSWORD" autocomplete="current-password" required>
+<button id="qql-admin-submit" type="submit">Entrar</button>
+<div id="qql-admin-message" role="status"></div>
+</form>
+</div>
+</div>
+<script>
+(function(){
+const open=document.getElementById("qql-admin-open");
+const box=document.getElementById("qql-admin-box");
+const close=document.getElementById("qql-admin-close");
+const form=document.getElementById("qql-admin-form");
+const msg=document.getElementById("qql-admin-message");
+if(!open||!box||!form)return;
+open.addEventListener("click",()=>{box.style.display=box.style.display==="block"?"none":"block";});
+close.addEventListener("click",()=>{box.style.display="none";});
+form.addEventListener("submit",async function(e){
+e.preventDefault();msg.textContent="Verificando…";
+const fd=new FormData(form);
+try{
+const r=await fetch("/api/v1/admin/login",{method:"POST",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify({username:fd.get("username"),password:fd.get("password")})});
+const d=await r.json();
+if(r.ok&&d.status==="ok"&&d.allowed){msg.textContent="Acceso autorizado.";location.reload();return;}
+msg.textContent=d.message||"No se pudo iniciar sesión.";
+}catch(e){msg.textContent="No se pudo conectar. Inténtalo de nuevo.";}
+});
+})();
+</script>
+"""
+
 @app.get("/",response_class=HTMLResponse)
 async def home():
     path=os.path.join(STATIC_DIR,"index.html")
     try:
-        with open(path,"r",encoding="utf-8") as f:return HTMLResponse(f.read())
-    except Exception:return HTMLResponse("<h1>¿QUÉ QUIERES LLEVAR?</h1><p>No se pudo cargar la aplicación.</p>",status_code=500)
+        with open(path,"r",encoding="utf-8") as f:
+            page=f.read()
+        if "qql-admin-corner" not in page:
+            if re.search(r"</body\s*>",page,re.I):
+                page=re.sub(r"</body\s*>",lambda m:ADMIN_CORNER+m.group(0),page,count=1,flags=re.I)
+            else:page+=ADMIN_CORNER
+        return HTMLResponse(page)
+    except Exception:
+        return HTMLResponse("<h1>¿QUÉ QUIERES LLEVAR?</h1><p>No se pudo cargar la aplicación.</p>",status_code=500)
 
 @app.get("/health")
 @app.get("/api/health")
@@ -168,6 +243,7 @@ async def config():
     return {"status":"ok","app":APP_NAME,"version":VERSION,"language":"es","free":False,"login_required":True,"payment_required":True,"session_minutes":20,"server_storage":False,"features":{"dviajeros":True,"visa":True,"flights":True,"airlines":True,"charters":True,"pdf":True,"official_sources":True},"official_sources":official_sources()}
 
 @app.post("/api/v1/stripe/create-checkout")
+@app.post("/api/create-checkout-session")
 async def create_checkout(request:Request):
     if not stripe_ready():return response_error("El pago no está configurado. Contacta al administrador.",503)
     try:
@@ -175,34 +251,36 @@ async def create_checkout(request:Request):
         plan=str(data.get("plan",""))
         price_id,mode=price_for(plan)
         if not price_id:return response_error("El plan solicitado no está disponible.")
-        session=stripe.checkout.Session.create(
-            mode=mode,
-            line_items=[{"price":price_id,"quantity":1}],
-            success_url=APP_URL+"/?session_id={CHECKOUT_SESSION_ID}",
-            cancel_url=APP_URL+"/",
-            client_reference_id="qql",
-            metadata={"app":"qql","plan":plan},
-            subscription_data={"metadata":{"app":"qql","plan":"subscription"}} if mode=="subscription" else None,
-            allow_promotion_codes=True
-        )
+        params={
+            "mode":mode,
+            "line_items":[{"price":price_id,"quantity":1}],
+            "success_url":APP_URL+"/?session_id={CHECKOUT_SESSION_ID}",
+            "cancel_url":APP_URL+"/",
+            "client_reference_id":"qql",
+            "metadata":{"app":"qql","plan":plan},
+            "allow_promotion_codes":True
+        }
+        if mode=="subscription":params["subscription_data"]={"metadata":{"app":"qql","plan":"subscription"}}
+        session=stripe.checkout.Session.create(**params)
         return {"status":"ok","url":session.url,"session_id":session.id}
-    except Exception:
-        return response_error("No se pudo iniciar el pago. Comprueba la configuración de Stripe.",502)
+    except Exception:return response_error("No se pudo iniciar el pago. Comprueba la configuración de Stripe.",502)
 
 @app.get("/api/v1/access/status")
+@app.get("/api/access-status")
 async def access_status(request:Request):
     access=get_access(request)
     if access:
         kind=access.get("kind","single")
-        if kind=="admin":return {"status":"ok","allowed":True,"kind":"admin","session_expired":False}
+        if kind=="admin":return {"status":"ok","allowed":True,"kind":"admin","admin":True,"free":True,"session_expired":False}
         return {"status":"ok","allowed":True,"kind":kind,"session_expired":False,"expires_at":access.get("exp")}
     entitlement=get_entitlement(request)
     if entitlement and entitlement.get("kind")=="subscription":
         active=stripe_subscription_active(entitlement.get("subscription_id"))
-        if active:return {"status":"ok","allowed":True,"kind":"subscription","session_expired":True,"subscription_active":True}
+        if active:return {"status":"ok","allowed":False,"kind":"subscription","session_expired":True,"subscription_active":True}
     return {"status":"ok","allowed":False,"session_expired":True}
 
 @app.post("/api/v1/access/verify")
+@app.post("/api/payment/verify")
 async def verify_payment(request:Request):
     if not stripe_ready():return response_error("Stripe no está configurado.",503)
     try:
@@ -234,10 +312,10 @@ async def verify_payment(request:Request):
             set_entitlement_cookie(response,"subscription",extra)
             return response
         return response_error("El tipo de pago no es válido.",400)
-    except Exception:
-        return response_error("No se pudo verificar el pago. Inténtalo nuevamente.",502)
+    except Exception:return response_error("No se pudo verificar el pago. Inténtalo nuevamente.",502)
 
 @app.post("/api/v1/access/restore")
+@app.post("/api/session/resume")
 async def restore_access(request:Request):
     entitlement=get_entitlement(request)
     if not entitlement or entitlement.get("kind")!="subscription":
@@ -245,8 +323,7 @@ async def restore_access(request:Request):
     sub_id=entitlement.get("subscription_id")
     if not stripe_subscription_active(sub_id):
         response=JSONResponse({"status":"error","allowed":False,"message":"La suscripción no está activa. Comprueba su estado en Stripe."},status_code=403)
-        response.delete_cookie(COOKIE_NAME,path="/")
-        response.delete_cookie(ENTITLEMENT_COOKIE,path="/")
+        clear_access_cookies(response)
         return response
     extra={"subscription_id":sub_id,"customer_id":entitlement.get("customer_id")}
     response=JSONResponse({"status":"ok","allowed":True,"kind":"subscription","session_minutes":20})
@@ -255,6 +332,7 @@ async def restore_access(request:Request):
     return response
 
 @app.post("/api/v1/admin/login")
+@app.post("/api/login")
 async def admin_login(request:Request):
     if not ADMIN_USERNAME or not ADMIN_PASSWORD or not SESSION_SIGNING_SECRET:
         return response_error("El acceso de administración no está configurado correctamente.",503)
@@ -264,7 +342,7 @@ async def admin_login(request:Request):
     password=str(data.get("password",""))
     if not hmac.compare_digest(username,ADMIN_USERNAME) or not hmac.compare_digest(password,ADMIN_PASSWORD):
         return response_error("Usuario o contraseña incorrectos.",401)
-    response=JSONResponse({"status":"ok","allowed":True,"kind":"admin"})
+    response=JSONResponse({"status":"ok","allowed":True,"kind":"admin","free":True,"session_minutes":20})
     set_access_cookie(response,"admin",{"admin":True})
     return response
 
@@ -280,6 +358,10 @@ async def stripe_webhook(request:Request):
             return {"status":"ok","received":True,"event":event_type}
         return {"status":"ok","received":True}
     except Exception:return response_error("Firma del webhook no válida.",400)
+
+@app.get("/api/payment/options")
+async def payment_options():
+    return {"status":"ok","payment_required":True,"session_minutes":20,"options":[{"id":"single","plan":"single","available":bool(STRIPE_PRICE_ID1)},{"id":"subscription","plan":"subscription","available":bool(STRIPE_PRICE_ID2)}]}
 
 @app.post("/api/flight")
 async def flight(data:FlightRequest):return call_engine("analyze_flight",data)
@@ -336,12 +418,14 @@ STYLES=getSampleStyleSheet()
 STYLE=STYLES["BodyText"]
 TITLE=STYLES["Title"]
 TITLE.alignment=TA_CENTER
+
 def add_line(story,label,value):
     if value in ("",None,False,[],{}):return
     if isinstance(value,(dict,list)):value=json.dumps(value,ensure_ascii=False)
     safe_label=str(label).replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
     safe_value=str(value).replace("&","&amp;").replace("<","&lt;").replace(">","&gt;")
     story.extend([Paragraph(f"<b>{safe_label}:</b> {safe_value}",STYLE),Spacer(1,4)])
+
 def make_pdf(data,lang="es",title=None):
     b=io.BytesIO()
     doc=SimpleDocTemplate(b,pagesize=letter,rightMargin=.55*inch,leftMargin=.55*inch,topMargin=.55*inch,bottomMargin=.55*inch)
@@ -363,29 +447,40 @@ def make_pdf(data,lang="es",title=None):
             u=s.get("exact_url") or s.get("deep_url") or s.get("section_url") or s.get("url")
             if u:add_line(story,s.get("title") or s.get("name") or "Official source",u)
     story.extend([Spacer(1,12),Paragraph(f"Generated: {now()} — {APP_NAME} | May Roga LLC",STYLE)])
-    doc.build(story);b.seek(0);return b
+    doc.build(story)
+    b.seek(0)
+    return b
+
 @app.post("/api/pdf")
 async def pdf(data:PDFRequest):
     b=make_pdf(model_dict(data.data),data.lang,data.title)
     return StreamingResponse(b,media_type="application/pdf",headers={"Content-Disposition":"attachment; filename=mi-guia-que-quieres-llevar.pdf"})
+
 @app.post("/api/pdf/import")
 async def pdf_import(data:PDFImportRequest):
     return {"status":"verify","recovered":False,"data":{},"next_action":"Esta versión utiliza el PDF como guía de pasos. Revisa siempre el sitio oficial."}
+
 @app.post("/api/export")
 async def export_trip(data:TripExportRequest):
     return {"status":"ok","data":model_dict(data.data),"next_action":"Puedes conservar esta información localmente."}
+
 @app.post("/api/local-data")
 async def local_data(data:DeleteLocalRequest):
     return {"status":"ok","message":"La aplicación no necesita conservar tus datos personales en el servidor."}
+
 @app.get("/api/legal")
 async def legal():
     return {"status":"ok","title":"Aviso legal","message":"¿QUÉ QUIERES LLEVAR? es una herramienta independiente de orientación y preparación de May Roga LLC.","points":["No es una agencia de viajes.","No es una aerolínea ni operador charter.","No realiza trámites oficiales en nombre del viajero.","No vende ni emite boletos.","No sustituye a las autoridades ni a los proveedores oficiales.","La información puede cambiar y debe comprobarse en la fuente oficial."]}
+
 @app.get("/api/ping")
 async def ping():return {"status":"ok","version":VERSION,"time":now()}
+
 @app.exception_handler(RequestValidationError)
 async def validation_error(request:Request,exc:RequestValidationError):
     return JSONResponse(status_code=422,content={"status":"error","message":"Faltan o no son válidos algunos datos.","next_action":"Revisa los datos e inténtalo nuevamente.","details":exc.errors()})
+
 @app.exception_handler(Exception)
 async def global_error(request:Request,exc:Exception):
     return JSONResponse(status_code=500,content={"status":"error","message":"La operación no pudo completarse.","next_action":"Inténtalo nuevamente."})
+
 __all__=["app"]
