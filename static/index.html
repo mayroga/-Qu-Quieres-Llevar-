@@ -34,30 +34,39 @@
 </head>
 <body>
 
-<!-- PANTALLA DE ANUNCIO Y BIENVENIDA (ESPAÑOL E INGLÉS JUNTO) -->
-<div id="welcomeOverlay" class="paywall-overlay" style="display:flex;">
+<!-- MURO DE STRIPE CON AUTOPROPAGANDA EN ESPAÑOL E INGLÉS -->
+<div id="paywallOverlay" class="paywall-overlay" style="display:flex;">
 <div class="paywall-box">
-<h2 style="margin-bottom:8px;">Prepárate para Cuba</h2>
-<p style="margin-bottom:12px; line-height:1.4; font-size:15px;">Evita retrasos o que te dejen en el aeropuerto. Te guiamos paso a paso para llenar el formulario oficial D’Viajeros, obtener tu Visa electrónica y elegir las mejores opciones de vuelos y chárters entre Florida y Cuba. Todo reunido en un solo lugar, claro, rápido y seguro.</p>
+<h2 style="margin-bottom:8px;">Prepárate para Cuba / Prepare for Cuba</h2>
 
-<hr style="border:0; border-top:1px solid #333; margin:16px 0;">
+<!-- Propaganda en Español -->
+<p style="margin-bottom:12px; line-height:1.4; font-size:15px; text-align:left;">
+Evita retrasos o que te dejen en el aeropuerto. Te guiamos paso a paso para llenar el formulario oficial D’Viajeros, obtener tu Visa electrónica y elegir las mejores opciones de vuelos y chárters entre Florida y Cuba. Todo reunido en un solo lugar, claro, rápido y seguro.
+</p>
 
-<h2 style="margin-bottom:8px; font-size:22px; color:#aaa;">Prepare your trip to Cuba</h2>
-<p style="margin-bottom:20px; line-height:1.4; font-size:14px; color:#aaa;">Avoid delays or issues at check-in. Get clear step-by-step guidance for your official D’Viajeros declaration, electronic Tourist Visa, and top commercial & charter flight options between Florida and Cuba. All in one organized, easy-to-use place.</p>
+<hr style="border:0; border-top:1px solid #333; margin:14px 0;">
 
-<button class="paywall-btn sub" onclick="goToPaywall()" style="width:100%; font-size:18px; text-align:center;">Continuar / Continue &rarr;</button>
+<!-- Propaganda en Inglés -->
+<p style="margin-bottom:18px; line-height:1.4; font-size:14px; text-align:left; color:#ccc;">
+Avoid delays or issues at check-in. Get clear step-by-step guidance for your official D’Viajeros declaration, electronic Tourist Visa, and top commercial & charter flight options between Florida and Cuba. All in one organized, easy-to-use place.
+</p>
+
+<div style="color:#fff; font-size:15px; font-weight:bold; margin-bottom:14px; text-align:left;">
+Selecciona tu opción / Select your option:
 </div>
-</div>
-    
-<!-- MURO DE STRIPE -->
-<div id="paywallOverlay" class="paywall-overlay" style="display:none;">
-<div class="paywall-box">
-<h2 id="paywallTitle">Acceso al Servicio</h2>
-<p id="paywallText">Selecciona tu modalidad de acceso para continuar disfrutando de la aplicación.</p>
+
 <div class="paywall-options">
-<button class="paywall-btn" onclick="checkout(1)" id="paywallBtn1">Servicio Único (20 Minutos) — $15.99</button>
-<button class="paywall-btn sub" onclick="checkout(2)" id="paywallBtn2">Suscripción Mensual (30 Días) — $25.99</button>
+<button class="paywall-btn" onclick="checkout(1)" id="paywallBtn1" style="text-align:left; line-height:1.3;">
+<b>Pase Rápido (20 Minutos) / Quick Pass — $15.99</b><br>
+<small style="font-weight:normal; opacity:0.85;">Ideal para organizar tu viaje hoy mismo / Perfect to organize your trip today</small>
+</button>
+
+<button class="paywall-btn sub" onclick="checkout(2)" id="paywallBtn2" style="text-align:left; line-height:1.3;">
+<b>Acceso Completo (30 Días) / Full Access — $25.99</b><br>
+<small style="font-weight:normal; opacity:0.9;">Ideal si viajas seguido o ayudas a familiares / Best for frequent travelers</small>
+</button>
 </div>
+
 </div>
 </div>
 
@@ -345,15 +354,17 @@ document.addEventListener("click", handleMultiTap);
 document.addEventListener("touchstart", handleMultiTap, {passive: true});
 
 function checkAccess(){
-var auth = localStorage.getItem("qql_auth");
-if(auth === "true") return;
-var params = new URLSearchParams(window.location.search);
-if(params.get("success") === "true"){
-localStorage.setItem("qql_auth", "true");
-return;
-}
-var pw = document.getElementById("paywallOverlay");
-if(pw) pw.style.display = "flex";
+    var auth = localStorage.getItem("qql_auth");
+    if(auth === "true") return;
+    
+    var params = new URLSearchParams(window.location.search);
+    if(params.get("success") === "true"){
+        localStorage.setItem("qql_auth", "true");
+        return;
+    }
+    
+    var paywall = document.getElementById("paywallOverlay");
+    if(paywall) paywall.style.display = "flex";
 }
 
 window.checkout = async function(type){
@@ -432,9 +443,6 @@ var timerInterval = null;
 
 var TX={
 es:{
-welcomeTitle: "Prepárate para Cuba",
-welcomeText: "Evita retrasos o que te dejen en el aeropuerto. Te guiamos paso a paso para llenar el formulario oficial D’Viajeros, obtener tu Visa electrónica y elegir las mejores opciones de vuelos y chárters entre Florida y Cuba. Todo reunido en un solo lugar, claro, rápido y seguro.",
-welcomeBtn: "Continuar &rarr;",    
 brand:"¿VAS PARA CUBA?",
 title:"Viaja con una respuesta clara",
 intro:"Mira qué necesitas preparar para tu viaje a Cuba y entra directamente en el sitio donde puedes continuar.",
@@ -530,9 +538,6 @@ cha4_f5:"Paso 4 y 5: Pago y autorización", cha4_s5:"Revisa el costo total en pa
 cha4e:"<strong>Muy fácil:</strong> Ten tu tarjeta lista para finalizar el proceso sin contratiempos."
 },
 en:{
-welcomeTitle: "Prepare your trip to Cuba",
-welcomeText: "Avoid delays or issues at check-in. Get clear step-by-step guidance for your official D’Viajeros declaration, electronic Tourist Visa, and top commercial & charter flight options between Florida and Cuba. All in one organized, easy-to-use place.",
-welcomeBtn: "Continue &rarr;",    
 brand:"ARE YOU GOING TO CUBA?",
 title:"Travel with a clear answer",
 intro:"See what you need to prepare for your trip to Cuba and go directly to the place where you can continue.",
@@ -757,14 +762,6 @@ var blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement("
 }catch(e){s.textContent=lang==="en"?"The guide could not be created right now.":"No se pudo crear la guía en este momento."}
 }
 
-window.goToPaywall = function(){
-    document.getElementById("welcomeOverlay").style.display = "none";
-    var auth = localStorage.getItem("qql_auth");
-    if(auth !== "true"){
-        document.getElementById("paywallOverlay").style.display = "flex";
-    }
-};
-    
 $("esBtn").addEventListener("click",function(){setLang("es")});
 $("enBtn").addEventListener("click",function(){setLang("en")});
 $("dvBtn").addEventListener("click",function(){openPanel("dvPanel")});
