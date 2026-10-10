@@ -387,7 +387,6 @@ en: [
 };
 
 <!-- ACCESO Y PAGOS — MAY ROGA LLC -->
-<style>
 #qql-access{position:fixed;right:12px;bottom:12px;z-index:99999;background:#111;color:#fff;border:1px solid #555;border-radius:12px;padding:12px;width:min(320px,calc(100vw - 24px));font:14px Arial,sans-serif;box-shadow:0 4px 18px #0008}
 #qql-access h3{margin:0 0 10px;font-size:17px}
 #qql-access button{display:block;width:100%;margin:7px 0;padding:11px;border:0;border-radius:7px;font-weight:bold;cursor:pointer}
@@ -397,7 +396,7 @@ en: [
 #qql-admin-form{display:none;border-top:1px solid #555;margin-top:8px;padding-top:8px}
 #qql-admin-form input{box-sizing:border-box;width:100%;padding:10px;margin:5px 0;background:#222;color:#fff;border:1px solid #666;border-radius:6px}
 #qql-access-msg{font-size:12px;line-height:1.4;overflow-wrap:anywhere}
-</style>
+
 
 <section id="qql-access" aria-label="Acceso al servicio">
   <h3>Acceso al servicio</h3>
@@ -414,7 +413,6 @@ en: [
   <p id="qql-access-msg" role="status" aria-live="polite"></p>
 </section>
 
-<script>
 (function(){
   "use strict";
   const panel=document.getElementById("qql-access");
@@ -500,7 +498,7 @@ en: [
 
   checkStripeReturn();
 })();
-</script>
+
 <!-- FIN DEL BLOQUE DE ACCESO -->
     
 var currentExerciseIndex = 0;
