@@ -1,6 +1,7 @@
 from __future__ import annotations
 import os,json,re,io,datetime
 from typing import Any,Dict
+import stripe
 from fastapi import FastAPI,Request
 from fastapi.responses import HTMLResponse,JSONResponse,StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -13,6 +14,7 @@ from reportlab.lib import colors
 from reportlab.lib.units import inch
 import cuba_engine as engine
 from schemas import *
+
 SOURCE_VERSION=engine.VERSION
 SOURCES=engine.SOURCES
 all_sources=engine.all_sources
@@ -26,6 +28,14 @@ answer_sources=engine.answer_sources
 VERSION="16.0.0"
 APP_NAME="¿QUÉ QUIERES LLEVAR?"
 STATIC_DIR="static"
+
+stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
+STRIPE_PRICE_ID1 = os.getenv("STRIPE_PRICE_ID1", "")
+STRIPE_PRICE_ID2 = os.getenv("STRIPE_PRICE_ID2", "")
+ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
+ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
+APP_URL = os.getenv("APP_URL", "https://qu-quieres-llevar.onrender.com")
+
 app=FastAPI(title=APP_NAME,version=VERSION)
 app.mount("/static",StaticFiles(directory=STATIC_DIR),name="static")
 
@@ -36,6 +46,7 @@ def model_dict(x):
     if hasattr(x,"model_dump"):return x.model_dump(exclude_none=False)
     if hasattr(x,"dict"):return x.dict()
     return dict(x)
+
 def normalize_result(result,default_sources=None):
     if result is None:result={}
     if hasattr(result,"model_dump"):result=result.model_dump()
@@ -43,6 +54,7 @@ def normalize_result(result,default_sources=None):
     result=dict(result)
     if not isinstance(result.get("sources"),list):result["sources"]=default_sources or []
     return result
+
 def call_engine(name,data=None):
     fn=getattr(engine,name,None)
     if not fn:return {"status":"error","message":f"Función no disponible: {name}","next_action":"Revisa la aplicación."}
@@ -66,7 +78,57 @@ async def health():
 
 @app.get("/api/config")
 async def config():
-    return {"status":"ok","app":APP_NAME,"version":VERSION,"language":"es","free":True,"login_required":False,"payment_required":False,"server_storage":False,"features":{"dviajeros":True,"visa":True,"flights":True,"airlines":True,"charters":True,"pdf":True,"official_sources":True},"official_sources":official_sources()}
+    return {"status":"ok","app":APP_NAME,"version":VERSION,"language":"es","free":False,"payment_required":True,"server_storage":False,"features":{"dviajeros":True,"visa":True,"flights":True,"airlines":True,"charters":True,"pdf":True,"official_sources":True},"official_sources":official_sources()}
+
+@app.post("/api/stripe/create-checkout-session")
+async def create_checkout_session(request: Request):
+    try:
+        body = await request.json()
+        price_type = body.get("price_type", "1")
+        price_id = STRIPE_PRICE_ID1 if str(price_type) == "1" else STRIPE_PRICE_ID2
+        if not price_id:
+            return JSONResponse(status_code=400, content={"status": "error", "message": "Price ID not configured"})
+        session = stripe.checkout.Session.create(
+            line_items=[{"price": price_id, "quantity": 1}],
+            mode="subscription" if str(price_type) == "2" else "payment",
+            success_url=f"{APP_URL}/?success=true",
+            cancel_url=f"{APP_URL}/?canceled=true",
+        )
+        return {"status": "ok", "url": session.url}
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
+
+@app.post("/api/stripe/webhook")
+async def stripe_webhook(request: Request):
+    payload = await request.body()
+    sig_header = request.headers.get("stripe-signature")
+    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
+    event = None
+    if webhook_secret:
+        try:
+            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
+        except Exception as e:
+            return JSONResponse(status_code=400, content={"status": "error", "message": str(e)})
+    else:
+        try:
+            event = json.loads(payload.decode("utf-8"))
+        except Exception:
+            return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid payload"})
+    if event and event.get("type") == "checkout.session.completed":
+        pass
+    return {"status": "success"}
+
+@app.post("/api/admin/login")
+async def admin_login(request: Request):
+    try:
+        body = await request.json()
+        username = body.get("username", "")
+        password = body.get("password", "")
+        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+            return {"status": "ok", "message": "Acceso concedido"}
+        return JSONResponse(status_code=401, content={"status": "error", "message": "Credenciales incorrectas"})
+    except Exception as e:
+        return JSONResponse(status_code=400, content={"status": "error", "message": str(e)})
 
 @app.post("/api/flight")
 async def flight(data:FlightRequest):return call_engine("analyze_flight",data)
