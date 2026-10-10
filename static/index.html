@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#000">
 <meta name="description" content="Guía independiente para preparar un viaje a Cuba: D’Viajeros, visa, vuelos, equipaje y documentos.">
 <title>¿VAS PARA CUBA? | May Roga LLC</title>
-<script>document.documentElement.classList.add("access-locked");</script>
+<script>document.documentElement.classList.add("access-locked")</script>
 <style>
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -23,7 +23,7 @@ header{position:sticky;top:0;z-index:30;background:#000;border-bottom:1px solid 
 .lang button{background:#111;color:#fff;border:1px solid #555;border-radius:7px;padding:7px 10px}
 .lang button.active{background:#fff;color:#000}
 #adminAccessBtn{font-size:9px;opacity:.38;padding:3px 5px;background:transparent;border:0;color:#aaa}
-#adminAccessBtn:hover{opacity:1}
+#adminAccessBtn:hover,#adminAccessBtn:focus{opacity:1}
 main{max-width:1100px;margin:auto;padding:25px 16px 55px}
 .hero{padding:22px 0}
 .hero h1{font-size:clamp(30px,6vw,54px);line-height:1.08;margin:0 0 14px}
@@ -39,7 +39,7 @@ main{max-width:1100px;margin:auto;padding:25px 16px 55px}
 .btn.red{background:#d40000;color:#fff;border-color:#d40000}
 .btn.blue{background:#087bff;color:#fff;border-color:#087bff}
 .btn.secondary{background:#111;color:#fff;border-color:#555}
-.panel{display:none;margin-top:25px;padding:20px}
+.panel{display:none;margin-top:25px;padding:20px;scroll-margin-top:75px}
 .panel.open{display:block}
 .panel-head{display:flex;justify-content:space-between;align-items:flex-start;gap:15px;margin-bottom:20px}
 .panel h2{font-size:clamp(24px,4vw,32px);margin:0 0 8px}
@@ -48,8 +48,6 @@ main{max-width:1100px;margin:auto;padding:25px 16px 55px}
 .step{border:1px solid #444;border-radius:10px;padding:16px;background:#050505}
 .step h3{margin:0 0 7px}
 .step p{color:#ccc;margin:5px 0}
-.step-number{font-weight:900;color:#fff}
-.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:15px}
 .official{padding:17px;margin-top:18px}
 .official h3{margin:0 0 8px}
 .routes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
@@ -64,10 +62,11 @@ main{max-width:1100px;margin:auto;padding:25px 16px 55px}
 .field-label{display:block;font-weight:800;margin:12px 0 5px}
 .field-input{display:block;width:100%;padding:12px;background:#000;color:#fff;border:1px solid #555;border-radius:8px}
 textarea.field-input{min-height:90px;resize:vertical}
-.result{padding:15px;margin-top:15px;line-height:1.6}
+.result{padding:15px;margin-top:15px;line-height:1.6;overflow-wrap:anywhere}
+.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:15px}
 .breathe-container{display:flex;flex-direction:column;align-items:center;text-align:center;padding:25px 10px}
 .breathe-circle{width:155px;height:155px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle,#087bff,#003366);box-shadow:0 0 25px #087bff77;font-size:18px;font-weight:900;transition:transform 4s ease-in-out}
-.breathe-circle.inhale{transform:scale(1.25)}
+.breathe-circle.inhale{transform:scale(1.2)}
 .breathe-circle.exhale{transform:scale(.9)}
 .breathe-text{font-size:18px;font-weight:800;min-height:55px;margin:20px 0 10px}
 .breathe-timer{color:#bbb;margin-bottom:15px}
@@ -92,6 +91,7 @@ textarea.field-input{min-height:90px;resize:vertical}
 .legal-box strong{color:#ccc}
 footer{border-top:1px solid #333;text-align:center;padding:24px 16px;color:#777;font-size:13px}
 html.access-locked main,html.access-locked footer{visibility:hidden}
+:focus-visible{outline:2px solid #087bff;outline-offset:3px}
 @media(max-width:650px){.grid,.routes{grid-template-columns:1fr}.panel-head{flex-direction:column}.flight,.charter{align-items:flex-start;flex-direction:column}.nav{padding:10px}.logo{font-size:15px}.access-card{padding:18px}}
 </style>
 </head>
@@ -100,8 +100,8 @@ html.access-locked main,html.access-locked footer{visibility:hidden}
 <div class="nav">
 <div class="logo" id="brand">¿VAS PARA CUBA?</div>
 <div class="lang">
-<button id="esBtn" class="active" type="button">ES</button>
-<button id="enBtn" type="button">EN</button>
+<button id="esBtn" class="active" type="button" aria-pressed="true">ES</button>
+<button id="enBtn" type="button" aria-pressed="false">EN</button>
 <button id="adminAccessBtn" type="button" aria-label="Acceso de administración" title="Acceso de administración">•</button>
 </div>
 </div>
@@ -138,7 +138,6 @@ html.access-locked main,html.access-locked footer{visibility:hidden}
 <span id="sessionClock">Tiempo restante de sesión: 20:00</span>
 <button id="sessionNewBtn" class="btn" type="button" hidden>Iniciar otra sesión</button>
 </div>
-
 <section class="hero">
 <h1 id="title">Prepara tu viaje a Cuba paso a paso</h1>
 <p id="intro">Encuentra los pasos que necesitas y continúa directamente en el sitio correspondiente.</p>
@@ -147,38 +146,17 @@ html.access-locked main,html.access-locked footer{visibility:hidden}
 </section>
 
 <section class="grid">
-<article class="card">
-<div><h2 id="dvCardTitle">D’Viajeros</h2><p id="dvText">Prepara tus datos y sigue una guía sencilla para completar el formulario oficial.</p></div>
-<button class="btn" id="dvBtn" type="button">Ver los pasos</button>
-</article>
-<article class="card">
-<div><h2 id="visaCardTitle">Visa para Cuba</h2><p id="visaText">Consulta las opciones y continúa en el sitio oficial correspondiente.</p></div>
-<button class="btn" id="visaBtn" type="button">Ver opciones</button>
-</article>
-<article class="card">
-<div><h2 id="flightCardTitle">Vuelos a Cuba</h2><p id="flightText">Busca vuelos y abre los sitios de las aerolíneas.</p></div>
-<button class="btn" id="flightBtn" type="button">Ver vuelos</button>
-</article>
-<article class="card">
-<div><h2 id="charterCardTitle">Vuelos chárter</h2><p id="charterText">Consulta los sitios de operadores que ofrecen información sobre viajes a Cuba.</p></div>
-<button class="btn" id="charterBtn" type="button">Ver opciones</button>
-</article>
-<article class="card">
-<div><h2 id="itemCardTitle">¿Qué quieres llevar?</h2><p id="itemText">Describe un artículo para consultar la orientación disponible y las fuentes correspondientes.</p></div>
-<button class="btn" id="itemBtn" type="button">Consultar artículo</button>
-</article>
-<article class="card">
-<div><h2 id="breatheCardTitle">Pausa de bienestar</h2><p id="breatheCardText">Un minuto para respirar con calma antes de continuar preparando el viaje.</p></div>
-<button class="btn blue" id="breatheBtn" type="button">Iniciar 1 minuto</button>
-</article>
-<article class="card">
-<div><h2 id="pdfCardTitle">Mi guía PDF</h2><p id="pdfText">Crea una guía para conservar o imprimir los pasos principales.</p></div>
-<button class="btn red" id="pdfBtn" type="button">Crear PDF</button>
-</article>
+<article class="card"><div><h2 id="dvCardTitle">D’Viajeros</h2><p id="dvText">Prepara tus datos y sigue una guía sencilla para completar el formulario oficial.</p></div><button class="btn" id="dvBtn" type="button">Ver los pasos</button></article>
+<article class="card"><div><h2 id="visaCardTitle">Visa para Cuba</h2><p id="visaText">Consulta las opciones y continúa en el sitio oficial correspondiente.</p></div><button class="btn" id="visaBtn" type="button">Ver opciones</button></article>
+<article class="card"><div><h2 id="flightCardTitle">Vuelos a Cuba</h2><p id="flightText">Busca vuelos y abre los sitios de las aerolíneas.</p></div><button class="btn" id="flightBtn" type="button">Ver vuelos</button></article>
+<article class="card"><div><h2 id="charterCardTitle">Vuelos chárter</h2><p id="charterText">Consulta los sitios de operadores que ofrecen información sobre viajes a Cuba.</p></div><button class="btn" id="charterBtn" type="button">Ver opciones</button></article>
+<article class="card"><div><h2 id="itemCardTitle">¿Qué quieres llevar?</h2><p id="itemText">Describe un artículo para consultar la orientación disponible y las fuentes correspondientes.</p></div><button class="btn" id="itemBtn" type="button">Consultar artículo</button></article>
+<article class="card"><div><h2 id="breatheCardTitle">Pausa de bienestar</h2><p id="breatheCardText">Un minuto para respirar con calma antes de continuar preparando el viaje.</p></div><button class="btn blue" id="breatheBtn" type="button">Iniciar 1 minuto</button></article>
+<article class="card"><div><h2 id="pdfCardTitle">Mi guía PDF</h2><p id="pdfText">Crea una guía para conservar o imprimir los pasos principales.</p></div><button class="btn red" id="pdfBtn" type="button">Crear PDF</button></article>
 </section>
 
 <section id="dvPanel" class="panel">
-<div class="panel-head"><div><h2 id="dvPanelTitle">D’Viajeros: prepara tus datos</h2><p id="dvPanelIntro">Estos son ejemplos para ayudarte a reconocer la información que puede solicitar el formulario. Sigue siempre las instrucciones actuales del sitio oficial.</p></div><button class="close" data-close type="button">Cerrar</button></div>
+<div class="panel-head"><div><h2 id="dvPanelTitle">D’Viajeros: prepara tus datos</h2><p id="dvPanelIntro">Estos son ejemplos para ayudarte a reconocer la información que puede solicitar el formulario. Sigue siempre las instrucciones actuales del sitio oficial.</p></div><button class="close" data-close type="button" id="dvClose">Cerrar</button></div>
 <div class="steps">
 <div class="step"><h3 id="dvStep1">Paso 1. Datos personales</h3><p id="dvStep1Text">Ten cerca el pasaporte y escribe tus datos exactamente como aparecen en él.</p></div>
 <div class="step"><h3 id="dvStep2">Paso 2. Información del viaje</h3><p id="dvStep2Text">Prepara la fecha de llegada, el número de vuelo y el nombre de la aerolínea.</p></div>
@@ -191,7 +169,7 @@ html.access-locked main,html.access-locked footer{visibility:hidden}
 </section>
 
 <section id="visaPanel" class="panel">
-<div class="panel-head"><div><h2 id="visaPanelTitle">Visa para Cuba</h2><p id="visaPanelIntro">Consulta los requisitos actuales antes de comenzar.</p></div><button class="close" data-close type="button">Cerrar</button></div>
+<div class="panel-head"><div><h2 id="visaPanelTitle">Visa para Cuba</h2><p id="visaPanelIntro">Consulta los requisitos actuales antes de comenzar.</p></div><button class="close" data-close type="button" id="visaClose">Cerrar</button></div>
 <div class="routes">
 <div class="route"><h3 id="evisaTitle">Visa electrónica</h3><p id="evisaText">Consulta el portal oficial para conocer el procedimiento disponible y sus requisitos.</p><a class="btn" href="https://evisacuba.cu/" target="_blank" rel="noopener noreferrer" id="evisaBtn">Abrir eVisa Cuba</a></div>
 <div class="route"><h3 id="consTitle">Información consular</h3><p id="consText">Consulta la información publicada por las representaciones oficiales de Cuba.</p><a class="btn" href="https://misiones.cubaminrex.cu/" target="_blank" rel="noopener noreferrer" id="consBtn">Consultar información</a></div>
@@ -200,13 +178,13 @@ html.access-locked main,html.access-locked footer{visibility:hidden}
 </section>
 
 <section id="flightPanel" class="panel">
-<div class="panel-head"><div><h2 id="flightPanelTitle">Vuelos a Cuba</h2><p id="flightPanelIntro">Busca vuelos y consulta directamente las condiciones de la aerolínea.</p></div><button class="close" data-close type="button">Cerrar</button></div>
+<div class="panel-head"><div><h2 id="flightPanelTitle">Vuelos a Cuba</h2><p id="flightPanelIntro">Busca vuelos y consulta directamente las condiciones de la aerolínea.</p></div><button class="close" data-close type="button" id="flightClose">Cerrar</button></div>
 <div id="flightList" class="flight-list"><div class="flight"><div><h3 id="loadingFlights">Cargando aerolíneas...</h3><p id="loadingFlightsText">Espera un momento.</p></div></div></div>
 <div class="official"><h3 id="searchFlightTitle">Buscar vuelos</h3><p id="searchFlightText">Puedes comparar fechas y rutas antes de continuar con el proveedor.</p><a class="btn" href="https://www.google.com/travel/flights" target="_blank" rel="noopener noreferrer" id="searchFlightBtn">Buscar en Google Flights</a></div>
 </section>
 
 <section id="charterPanel" class="panel">
-<div class="panel-head"><div><h2 id="charterPanelTitle">Vuelos chárter a Cuba</h2><p id="charterPanelIntro">Consulta directamente las opciones, fechas, equipaje y condiciones publicadas por cada proveedor.</p></div><button class="close" data-close type="button">Cerrar</button></div>
+<div class="panel-head"><div><h2 id="charterPanelTitle">Vuelos chárter a Cuba</h2><p id="charterPanelIntro">Consulta directamente las opciones, fechas, equipaje y condiciones publicadas por cada proveedor.</p></div><button class="close" data-close type="button" id="charterClose">Cerrar</button></div>
 <div class="charter-list">
 <div class="charter"><div><h3>Aerocuba</h3><p id="aeroText">Consulta la disponibilidad directamente con el proveedor.</p></div><a class="btn" href="https://www.aerocuba.com/" target="_blank" rel="noopener noreferrer" id="aeroBtn">Visitar sitio</a></div>
 <div class="charter"><div><h3>Xael Charters</h3><p id="xaelText">Consulta rutas y condiciones vigentes.</p></div><a class="btn" href="https://www.xaelcharter.com/" target="_blank" rel="noopener noreferrer" id="xaelBtn">Visitar sitio</a></div>
@@ -217,22 +195,30 @@ html.access-locked main,html.access-locked footer{visibility:hidden}
 </section>
 
 <section id="itemPanel" class="panel">
-<div class="panel-head"><div><h2 id="itemPanelTitle">¿Qué quieres llevar?</h2><p id="itemPanelIntro">Describe el artículo y especifica dónde deseas llevarlo. La respuesta debe basarse en información disponible y no sustituye la confirmación del transportista.</p></div><button class="close" data-close type="button">Cerrar</button></div>
+<div class="panel-head"><div><h2 id="itemPanelTitle">¿Qué quieres llevar?</h2><p id="itemPanelIntro">Describe el artículo y especifica dónde deseas llevarlo. La respuesta no sustituye la confirmación del transportista.</p></div><button class="close" data-close type="button" id="itemClose">Cerrar</button></div>
 <form id="itemForm">
 <label class="field-label" id="itemLabel" for="itemName">Nombre del artículo</label>
 <input class="field-input" id="itemName" name="item" maxlength="180" required placeholder="Ej.: batería externa">
 <label class="field-label" id="bagLabel" for="itemBag">¿Dónde quieres llevarlo?</label>
-<select class="field-input" id="itemBag" name="location"><option value="carry_on">Equipaje de mano</option><option value="checked">Equipaje facturado</option><option value="both">Ambos / no estoy seguro</option></select>
+<select class="field-input" id="itemBag" name="location">
+<option value="carry_on" id="carryOption">Equipaje de mano</option>
+<option value="checked" id="checkedOption">Equipaje facturado</option>
+<option value="both" id="bothOption">Ambos / no estoy seguro</option>
+</select>
 <label class="field-label" id="airlineLabel" for="itemAirline">Aerolínea (si la conoces)</label>
 <input class="field-input" id="itemAirline" name="airline" maxlength="120" placeholder="Opcional">
 <button class="btn" id="itemSubmit" type="submit">Consultar</button>
 </form>
 <div id="itemResult" class="result" hidden aria-live="polite"></div>
-<div class="official"><h3 id="itemOfficialTitle">Fuentes oficiales</h3><p id="itemOfficialText">Comprueba siempre la respuesta final con la aerolínea y las autoridades correspondientes.</p><div class="actions"><a class="btn secondary" href="https://www.tsa.gov/travel/security-screening/whatcanibring/all" target="_blank" rel="noopener noreferrer">TSA: artículos permitidos</a><a class="btn secondary" href="https://www.faa.gov/hazmat/packsafe" target="_blank" rel="noopener noreferrer">FAA: baterías y materiales</a><a class="btn secondary" href="https://www.iata.org/en/programs/cargo/dgr/dgr-guidance/passengers/" target="_blank" rel="noopener noreferrer">IATA: información para viajeros</a></div></div>
+<div class="official"><h3 id="itemOfficialTitle">Fuentes oficiales</h3><p id="itemOfficialText">Comprueba siempre la respuesta final con la aerolínea y las autoridades correspondientes.</p><div class="actions">
+<a class="btn secondary" href="https://www.tsa.gov/travel/security-screening/whatcanibring/all" target="_blank" rel="noopener noreferrer" id="tsaLink">TSA: artículos permitidos</a>
+<a class="btn secondary" href="https://www.faa.gov/hazmat/packsafe" target="_blank" rel="noopener noreferrer" id="faaLink">FAA: baterías y materiales</a>
+<a class="btn secondary" href="https://www.iata.org/en/programs/cargo/dgr/dgr-guidance/passengers/" target="_blank" rel="noopener noreferrer" id="iataLink">IATA: información para viajeros</a>
+</div></div>
 </section>
 
 <section id="breathePanel" class="panel">
-<div class="panel-head"><div><h2 id="breathePanelTitle">Pausa de bienestar</h2><p id="breathePanelIntro">Sigue el círculo azul y respira a tu ritmo. Puedes detener el ejercicio cuando quieras.</p></div><button class="close" data-close type="button">Cerrar</button></div>
+<div class="panel-head"><div><h2 id="breathePanelTitle">Pausa de bienestar</h2><p id="breathePanelIntro">Sigue el círculo azul y respira a tu ritmo. Puedes detener el ejercicio cuando quieras.</p></div><button class="close" data-close type="button" id="breatheClose">Cerrar</button></div>
 <div class="breathe-container">
 <div id="breatheTimer" class="breathe-timer">Tiempo restante: 60 segundos</div>
 <div id="breatheCircle" class="breathe-circle"><span id="circleWord">Respira</span></div>
@@ -243,19 +229,18 @@ html.access-locked main,html.access-locked footer{visibility:hidden}
 </section>
 
 <section id="pdfPanel" class="panel">
-<div class="panel-head"><div><h2 id="pdfPanelTitle">Mi guía PDF</h2><p id="pdfPanelIntro">Crea una guía para guardar o imprimir. Este documento es informativo, no oficial.</p></div><button class="close" data-close type="button">Cerrar</button></div>
+<div class="panel-head"><div><h2 id="pdfPanelTitle">Mi guía PDF</h2><p id="pdfPanelIntro">Crea una guía para guardar o imprimir. Este documento es informativo, no oficial.</p></div><button class="close" data-close type="button" id="pdfClose">Cerrar</button></div>
 <div class="pdfbox"><h3 id="pdfBoxTitle">Guía de viaje a Cuba</h3><p id="pdfBoxText">La guía contiene pasos generales y enlaces oficiales que puedes consultar antes del viaje.</p><button class="btn red" id="pdfCreateBtn" type="button">Crear mi guía PDF</button><p id="pdfStatus" role="status" aria-live="polite"></p></div>
 </section>
 
 <section class="legal-box"><strong id="legalTitle">Aviso importante.</strong> <span id="legalText">¿QUÉ QUIERES LLEVAR? es una herramienta independiente de orientación de May Roga LLC. No es una agencia de viajes, aerolínea, operador chárter, entidad gubernamental ni proveedor de trámites oficiales. No vende ni emite boletos, visas ni documentos oficiales. Las reglas y los requisitos pueden cambiar. Confirma siempre la información con la fuente oficial correspondiente.</span></section>
 </main>
-
 <footer><span id="footerText">May Roga LLC · Guía independiente para preparar tu viaje.</span><br><span id="footerSub">Los formularios, pagos, reservas y documentos oficiales se gestionan directamente con los proveedores correspondientes.</span></footer>
 
 <script>
 (function(){
 "use strict";
-var API="",lang="es",accessKind=null,sessionTimer=null,sessionDeadline=0,breathTimer=null,phraseTimer=null,pulseTimer=null,breathRemaining=60,currentExercise=0,phraseIndex=0;
+var API="",lang="es",accessKind=null,sessionTimer=null,sessionDeadline=0,breathTimer=null,phraseTimer=null,pulseTimer=null,breathRemaining=60,currentExercise=0,phraseIndex=0,requestBusy=false;
 try{lang=localStorage.getItem("qql_lang")==="en"?"en":"es"}catch(e){}
 var $=function(id){return document.getElementById(id)};
 var TEXT={
@@ -265,7 +250,10 @@ dvCardTitle:"D’Viajeros",dvText:"Prepara tus datos y sigue una guía sencilla 
 dvPanelTitle:"D’Viajeros: prepara tus datos",dvPanelIntro:"Estos son ejemplos para ayudarte a reconocer la información que puede solicitar el formulario. Sigue siempre las instrucciones actuales del sitio oficial.",dvStep1:"Paso 1. Datos personales",dvStep1Text:"Ten cerca el pasaporte y escribe tus datos exactamente como aparecen en él.",dvStep2:"Paso 2. Información del viaje",dvStep2Text:"Prepara la fecha de llegada, el número de vuelo y el nombre de la aerolínea.",dvStep3:"Paso 3. Lugar de estancia",dvStep3Text:"Ten a mano el nombre y la dirección del lugar donde te quedarás.",dvStep4:"Paso 4. Revisa las respuestas",dvStep4Text:"Lee cada pregunta y responde de acuerdo con tu situación real.",dvStep5:"Paso 5. Revisa y termina",dvStep5Text:"Comprueba los datos antes de enviar el formulario oficial.",dvStep6:"Paso 6. Conserva el resultado",dvStep6Text:"Guarda el documento y el código QR que entregue el sistema, si corresponde.",dvOfficialTitle:"Formulario oficial D’Viajeros",dvOfficialText:"Completa el trámite directamente en el portal oficial.",dvOfficialBtn:"Abrir D’Viajeros",
 visaPanelTitle:"Visa para Cuba",visaPanelIntro:"Consulta los requisitos actuales antes de comenzar.",evisaTitle:"Visa electrónica",evisaText:"Consulta el portal oficial para conocer el procedimiento disponible y sus requisitos.",evisaBtn:"Abrir eVisa Cuba",consTitle:"Información consular",consText:"Consulta la información publicada por las representaciones oficiales de Cuba.",consBtn:"Consultar información",visaReminder:"Importante:",visaReminderText:"La opción que corresponde a cada viajero depende de su situación y de los requisitos vigentes. Confirma directamente con la fuente oficial antes de pagar o viajar.",
 flightPanelTitle:"Vuelos a Cuba",flightPanelIntro:"Busca vuelos y consulta directamente las condiciones de la aerolínea.",loadingFlights:"Cargando aerolíneas...",loadingFlightsText:"Espera un momento.",searchFlightTitle:"Buscar vuelos",searchFlightText:"Puedes comparar fechas y rutas antes de continuar con el proveedor.",searchFlightBtn:"Buscar en Google Flights",charterPanelTitle:"Vuelos chárter a Cuba",charterPanelIntro:"Consulta directamente las opciones, fechas, equipaje y condiciones publicadas por cada proveedor.",aeroText:"Consulta la disponibilidad directamente con el proveedor.",xaelText:"Consulta rutas y condiciones vigentes.",cuballamaText:"Consulta la información de viajes y vuelos publicada por la compañía.",cubazulText:"Comprueba la disponibilidad directamente con el proveedor.",charterNote:"La presencia de un enlace no garantiza que haya vuelos disponibles. Confirma las fechas, el precio, las condiciones y la vigencia del servicio antes de comprar.",
-itemPanelTitle:"¿Qué quieres llevar?",itemPanelIntro:"Describe el artículo y especifica dónde deseas llevarlo. La respuesta no sustituye la confirmación del transportista.",itemLabel:"Nombre del artículo",itemBagLabel:"¿Dónde quieres llevarlo?",itemAirlineLabel:"Aerolínea (si la conoces)",itemSubmit:"Consultar",itemOfficialTitle:"Fuentes oficiales",itemOfficialText:"Comprueba siempre la respuesta final con la aerolínea y las autoridades correspondientes.",breathePanelTitle:"Pausa de bienestar",breathePanelIntro:"Sigue el círculo azul y respira a tu ritmo. Puedes detener el ejercicio cuando quieras.",breatheStart:"Comenzar ejercicio",breatheStop:"Detener",pdfPanelTitle:"Mi guía PDF",pdfPanelIntro:"Crea una guía para guardar o imprimir. Este documento es informativo, no oficial.",pdfBoxTitle:"Guía de viaje a Cuba",pdfBoxText:"La guía contiene pasos generales y enlaces oficiales que puedes consultar antes del viaje.",pdfCreateBtn:"Crear mi guía PDF",legalTitle:"Aviso importante.",legalText:"¿QUÉ QUIERES LLEVAR? es una herramienta independiente de orientación de May Roga LLC. No es una agencia de viajes, aerolínea, operador chárter, entidad gubernamental ni proveedor de trámites oficiales. No vende ni emite boletos, visas ni documentos oficiales. Las reglas y los requisitos pueden cambiar. Confirma siempre la información con la fuente oficial correspondiente.",footerText:"May Roga LLC · Guía independiente para preparar tu viaje.",footerSub:"Los formularios, pagos, reservas y documentos oficiales se gestionan directamente con los proveedores correspondientes.",accessTitle:"Accede a ¿QUÉ QUIERES LLEVAR?",accessIntro:"Elige una opción para entrar y preparar tu viaje.",plan1Title:"Acceso por 20 minutos · $15.99",plan1Detail:"Un pago para una sesión de 20 minutos.",plan2Title:"Acceso mensual · $25.99/mes",plan2Detail:"Suscripción mensual. Inicia sesiones de 20 minutos mientras esté activa.",adminLoginTitle:"Acceso de administración",adminPlaceholder:"Usuario de administración",passwordPlaceholder:"Contraseña",adminLoginSubmit:"Entrar gratis",accessLegal:"El pago se procesa mediante Stripe. No se vende ningún boleto ni se realiza un trámite oficial desde esta aplicación.",resume:"Comenzar otros 20 minutos",sessionNew:"Iniciar otra sesión",close:"Cerrar",open:"Abrir",enter:"Entrar",loading:"Cargando...",pdfCreating:"Creando tu guía...",pdfSuccess:"Tu guía PDF está lista.",pdfError:"No se pudo crear el PDF. Inténtalo nuevamente.",checkout:"Abriendo el pago seguro...",checkoutError:"No se pudo iniciar el pago. Inténtalo nuevamente.",checking:"Comprobando acceso...",loginChecking:"Comprobando credenciales...",loginError:"No se pudo iniciar sesión.",paymentChecking:"Confirmando el pago...",paymentPending:"Todavía no se ha confirmado el pago. Espera un momento y vuelve a intentarlo.",sessionEnded:"Tu sesión de 20 minutos terminó.",subEnded:"Tu sesión terminó. Puedes iniciar otros 20 minutos si tu suscripción mensual sigue activa.",restoreChecking:"Comprobando tu suscripción...",restoreError:"No se encontró una suscripción activa o no se pudo iniciar otra sesión.",itemWaiting:"Consultando la información disponible...",itemError:"No se pudo completar la consulta. Comprueba la información e inténtalo nuevamente.",itemNoAnswer:"No hay una respuesta suficiente para confirmar si este artículo está permitido. Consulta las fuentes oficiales antes de viajar.",time:"Tiempo restante de sesión: ",breathReady:"Prepárate para comenzar.",inhale:"Inhala",exhale:"Exhala",breathComplete:"¡Completado! Muy bien.",breathDone:"Ya estás listo para continuar.",startAgain:"Iniciar de nuevo",noAirlines:"No se pudo cargar la lista de aerolíneas. Usa el enlace de búsqueda de vuelos."
+itemPanelTitle:"¿Qué quieres llevar?",itemPanelIntro:"Describe el artículo y especifica dónde deseas llevarlo. La respuesta no sustituye la confirmación del transportista.",itemLabel:"Nombre del artículo",itemBagLabel:"¿Dónde quieres llevarlo?",itemAirlineLabel:"Aerolínea (si la conoces)",itemSubmit:"Consultar",carryOption:"Equipaje de mano",checkedOption:"Equipaje facturado",bothOption:"Ambos / no estoy seguro",tsaLink:"TSA: artículos permitidos",faaLink:"FAA: baterías y materiales",iataLink:"IATA: información para viajeros",itemOfficialTitle:"Fuentes oficiales",itemOfficialText:"Comprueba siempre la respuesta final con la aerolínea y las autoridades correspondientes.",
+breathePanelTitle:"Pausa de bienestar",breathePanelIntro:"Sigue el círculo azul y respira a tu ritmo. Puedes detener el ejercicio cuando quieras.",breatheStart:"Comenzar ejercicio",breatheStop:"Detener",pdfPanelTitle:"Mi guía PDF",pdfPanelIntro:"Crea una guía para guardar o imprimir. Este documento es informativo, no oficial.",pdfBoxTitle:"Guía de viaje a Cuba",pdfBoxText:"La guía contiene pasos generales y enlaces oficiales que puedes consultar antes del viaje.",pdfCreateBtn:"Crear mi guía PDF",
+legalTitle:"Aviso importante.",legalText:"¿QUÉ QUIERES LLEVAR? es una herramienta independiente de orientación de May Roga LLC. No es una agencia de viajes, aerolínea, operador chárter, entidad gubernamental ni proveedor de trámites oficiales. No vende ni emite boletos, visas ni documentos oficiales. Las reglas y los requisitos pueden cambiar. Confirma siempre la información con la fuente oficial correspondiente.",footerText:"May Roga LLC · Guía independiente para preparar tu viaje.",footerSub:"Los formularios, pagos, reservas y documentos oficiales se gestionan directamente con los proveedores correspondientes.",
+accessTitle:"Accede a ¿QUÉ QUIERES LLEVAR?",accessIntro:"Elige una opción para entrar y preparar tu viaje.",plan1Title:"Acceso por 20 minutos · $15.99",plan1Detail:"Un pago para una sesión de 20 minutos.",plan2Title:"Acceso mensual · $25.99/mes",plan2Detail:"Suscripción mensual. Inicia sesiones de 20 minutos mientras esté activa.",adminLoginTitle:"Acceso de administración",adminPlaceholder:"Usuario de administración",passwordPlaceholder:"Contraseña",adminLoginSubmit:"Entrar gratis",accessLegal:"El pago se procesa mediante Stripe. No se vende ningún boleto ni se realiza un trámite oficial desde esta aplicación.",resume:"Comenzar otros 20 minutos",sessionNew:"Iniciar otra sesión",close:"Cerrar",enter:"Entrar",loading:"Cargando...",pdfCreating:"Creando tu guía...",pdfSuccess:"Tu guía PDF está lista.",pdfError:"No se pudo crear el PDF. Inténtalo nuevamente.",checkout:"Abriendo el pago seguro...",checkoutError:"No se pudo iniciar el pago. Inténtalo nuevamente.",checking:"Comprobando acceso...",loginChecking:"Comprobando credenciales...",loginError:"No se pudo iniciar sesión.",paymentChecking:"Confirmando el pago...",paymentPending:"Todavía no se ha confirmado el pago. Espera un momento y vuelve a intentarlo.",sessionEnded:"Tu sesión de 20 minutos terminó.",subEnded:"Tu sesión terminó. Puedes iniciar otros 20 minutos si tu suscripción mensual sigue activa.",restoreChecking:"Comprobando tu suscripción...",restoreError:"No se encontró una suscripción activa o no se pudo iniciar otra sesión.",itemWaiting:"Consultando la información disponible...",itemError:"No se pudo completar la consulta. Comprueba la información e inténtalo nuevamente.",itemNoAnswer:"No hay información suficiente para confirmar si este artículo está permitido. Consulta las fuentes oficiales antes de viajar.",time:"Tiempo restante de sesión: ",breathReady:"Prepárate para comenzar.",inhale:"Inhala",exhale:"Exhala",breathComplete:"¡Completado! Muy bien.",breathDone:"Ya estás listo para continuar.",startAgain:"Iniciar de nuevo",noAirlines:"No se pudo cargar la lista de aerolíneas. Usa el enlace de búsqueda de vuelos.",breathStopped:"Ejercicio detenido."
 },
 en:{
 brand:"TRAVELING TO CUBA?",title:"Prepare your trip to Cuba step by step",intro:"Find the steps you need and continue directly on the relevant website.",benefit:"D’Viajeros, visa, flights, baggage and a PDF guide in one place.",notice:"This app helps you prepare. Official forms, payments and documents are handled directly by their providers.",
@@ -273,7 +261,10 @@ dvCardTitle:"D’Viajeros",dvText:"Prepare your information and follow a simple 
 dvPanelTitle:"D’Viajeros: prepare your information",dvPanelIntro:"These examples help you recognize information the form may request. Always follow the current instructions on the official website.",dvStep1:"Step 1. Personal information",dvStep1Text:"Keep your passport nearby and enter your information exactly as shown on it.",dvStep2:"Step 2. Trip information",dvStep2Text:"Prepare your arrival date, flight number and airline name.",dvStep3:"Step 3. Place of stay",dvStep3Text:"Have the name and address of your accommodation ready.",dvStep4:"Step 4. Review your answers",dvStep4Text:"Read each question and answer according to your actual situation.",dvStep5:"Step 5. Review and finish",dvStep5Text:"Check your information before submitting the official form.",dvStep6:"Step 6. Keep your result",dvStep6Text:"Save the document and any QR code issued by the system, if applicable.",dvOfficialTitle:"Official D’Viajeros form",dvOfficialText:"Complete the process directly on the official portal.",dvOfficialBtn:"Open D’Viajeros",
 visaPanelTitle:"Visa for Cuba",visaPanelIntro:"Check current requirements before you begin.",evisaTitle:"Electronic visa",evisaText:"Visit the official portal to review the available process and requirements.",evisaBtn:"Open eVisa Cuba",consTitle:"Consular information",consText:"Review information published by Cuba's official diplomatic missions.",consBtn:"View information",visaReminder:"Important:",visaReminderText:"The appropriate option depends on each traveler's situation and current requirements. Confirm directly with an official source before paying or traveling.",
 flightPanelTitle:"Flights to Cuba",flightPanelIntro:"Search for flights and review airline conditions directly.",loadingFlights:"Loading airlines...",loadingFlightsText:"Please wait.",searchFlightTitle:"Search flights",searchFlightText:"Compare dates and routes before continuing with a provider.",searchFlightBtn:"Search Google Flights",charterPanelTitle:"Charter flights to Cuba",charterPanelIntro:"Review options, dates, baggage and conditions directly with each provider.",aeroText:"Check availability directly with the provider.",xaelText:"Review current routes and conditions.",cuballamaText:"Review travel and flight information published by the company.",cubazulText:"Check availability directly with the provider.",charterNote:"A link does not guarantee available flights. Confirm dates, price, conditions and service status before purchasing.",
-itemPanelTitle:"What do you want to bring?",itemPanelIntro:"Describe the item and where you want to carry it. The answer does not replace confirmation from the carrier.",itemLabel:"Item name",itemBagLabel:"Where do you want to carry it?",itemAirlineLabel:"Airline (if known)",itemSubmit:"Check item",itemOfficialTitle:"Official sources",itemOfficialText:"Always confirm the final answer with the airline and relevant authorities.",breathePanelTitle:"Well-being break",breathePanelIntro:"Follow the blue circle and breathe at your own pace. You can stop at any time.",breatheStart:"Start exercise",breatheStop:"Stop",pdfPanelTitle:"My PDF guide",pdfPanelIntro:"Create a guide to save or print. This document is informational, not official.",pdfBoxTitle:"Cuba travel guide",pdfBoxText:"The guide contains general steps and official links you can review before your trip.",pdfCreateBtn:"Create my PDF guide",legalTitle:"Important notice.",legalText:"WHAT DO YOU WANT TO BRING? is an independent guidance tool from May Roga LLC. It is not a travel agency, airline, charter operator, government entity or official processing service. It does not sell or issue tickets, visas or official documents. Rules and requirements may change. Always confirm information with the relevant official source.",footerText:"May Roga LLC · Independent guide to prepare your trip.",footerSub:"Official forms, payments, bookings and documents are handled directly by the relevant providers.",accessTitle:"Access WHAT DO YOU WANT TO BRING?",accessIntro:"Choose an option to enter and prepare your trip.",plan1Title:"20-minute access · $15.99",plan1Detail:"One payment for a 20-minute session.",plan2Title:"Monthly access · $25.99/month",plan2Detail:"Monthly subscription. Start 20-minute sessions while active.",adminLoginTitle:"Administrator access",adminPlaceholder:"Administrator username",passwordPlaceholder:"Password",adminLoginSubmit:"Enter for free",accessLegal:"Payment is processed by Stripe. This app does not sell tickets or complete official procedures.",resume:"Start another 20 minutes",sessionNew:"Start another session",close:"Close",open:"Open",enter:"Enter",loading:"Loading...",pdfCreating:"Creating your guide...",pdfSuccess:"Your PDF guide is ready.",pdfError:"The PDF could not be created. Please try again.",checkout:"Opening secure payment...",checkoutError:"Payment could not be started. Please try again.",checking:"Checking access...",loginChecking:"Checking credentials...",loginError:"Could not sign in.",paymentChecking:"Confirming your payment...",paymentPending:"Payment has not been confirmed yet. Wait a moment and try again.",sessionEnded:"Your 20-minute session has ended.",subEnded:"Your session ended. You can start another 20 minutes if your monthly subscription is active.",restoreChecking:"Checking your subscription...",restoreError:"No active subscription was found or another session could not be started.",itemWaiting:"Checking available information...",itemError:"The request could not be completed. Check the information and try again.",itemNoAnswer:"There is not enough information to confirm whether this item is allowed. Check official sources before traveling.",time:"Session time remaining: ",breathReady:"Get ready to begin.",inhale:"Breathe in",exhale:"Breathe out",breathComplete:"Completed! Well done.",breathDone:"You are ready to continue.",startAgain:"Start again",noAirlines:"The airline list could not be loaded. Use the flight search link."
+itemPanelTitle:"What do you want to bring?",itemPanelIntro:"Describe the item and where you want to carry it. The answer does not replace confirmation from the carrier.",itemLabel:"Item name",itemBagLabel:"Where do you want to carry it?",itemAirlineLabel:"Airline (if known)",itemSubmit:"Check item",carryOption:"Carry-on baggage",checkedOption:"Checked baggage",bothOption:"Both / not sure",tsaLink:"TSA: permitted items",faaLink:"FAA: batteries and materials",iataLink:"IATA: passenger guidance",itemOfficialTitle:"Official sources",itemOfficialText:"Always confirm the final answer with the airline and relevant authorities.",
+breathePanelTitle:"Well-being break",breathePanelIntro:"Follow the blue circle and breathe at your own pace. You can stop at any time.",breatheStart:"Start exercise",breatheStop:"Stop",pdfPanelTitle:"My PDF guide",pdfPanelIntro:"Create a guide to save or print. This document is informational, not official.",pdfBoxTitle:"Cuba travel guide",pdfBoxText:"The guide contains general steps and official links you can review before your trip.",pdfCreateBtn:"Create my PDF guide",
+legalTitle:"Important notice.",legalText:"WHAT DO YOU WANT TO BRING? is an independent guidance tool from May Roga LLC. It is not a travel agency, airline, charter operator, government entity or official processing service. It does not sell or issue tickets, visas or official documents. Rules and requirements may change. Always confirm information with the relevant official source.",footerText:"May Roga LLC · Independent guide to prepare your trip.",footerSub:"Official forms, payments, bookings and documents are handled directly by the relevant providers.",
+accessTitle:"Access WHAT DO YOU WANT TO BRING?",accessIntro:"Choose an option to enter and prepare your trip.",plan1Title:"20-minute access · $15.99",plan1Detail:"One payment for a 20-minute session.",plan2Title:"Monthly access · $25.99/month",plan2Detail:"Monthly subscription. Start 20-minute sessions while active.",adminLoginTitle:"Administrator access",adminPlaceholder:"Administrator username",passwordPlaceholder:"Password",adminLoginSubmit:"Enter for free",accessLegal:"Payment is processed by Stripe. This app does not sell tickets or complete official procedures.",resume:"Start another 20 minutes",sessionNew:"Start another session",close:"Close",enter:"Open",loading:"Loading...",pdfCreating:"Creating your guide...",pdfSuccess:"Your PDF guide is ready.",pdfError:"The PDF could not be created. Please try again.",checkout:"Opening secure payment...",checkoutError:"Payment could not be started. Please try again.",checking:"Checking access...",loginChecking:"Checking credentials...",loginError:"Could not sign in.",paymentChecking:"Confirming your payment...",paymentPending:"Payment has not been confirmed yet. Wait a moment and try again.",sessionEnded:"Your 20-minute session has ended.",subEnded:"Your session ended. You can start another 20 minutes if your monthly subscription is active.",restoreChecking:"Checking your subscription...",restoreError:"No active subscription was found or another session could not be started.",itemWaiting:"Checking available information...",itemError:"The request could not be completed. Check the information and try again.",itemNoAnswer:"There is not enough information to confirm whether this item is allowed. Check official sources before traveling.",time:"Session time remaining: ",breathReady:"Get ready to begin.",inhale:"Breathe in",exhale:"Breathe out",breathComplete:"Completed! Well done.",breathDone:"You are ready to continue.",startAgain:"Start again",noAirlines:"The airline list could not be loaded. Use the flight search link.",breathStopped:"Exercise stopped."
 }};
 var exercises={
 es:[
@@ -301,29 +292,23 @@ en:[
 ["A fresh start",["Each step can be simple and clear.","Breathe and choose what to do next.","You can learn the process your own way.","Continue calmly and confidently."]]
 ]};
 function tr(k){return TEXT[lang][k]||TEXT.es[k]||k}
-function request(url,options){return fetch(API+url,Object.assign({credentials:"same-origin",cache:"no-store"},options||{}))}
-function jsonOptions(body){return {method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(body)}}
+function request(url,options){return fetch(API+url,Object.assign({credentials:"same-origin",cache:"no-store",headers:{"Accept":"application/json"}},options||{}))}
+function jsonOptions(body){return{method:"POST",headers:{"Content-Type":"application/json","Accept":"application/json"},body:JSON.stringify(body)}}
+async function readJson(response){try{return await response.json()}catch(e){return{}}}
 function showGate(show){$("accessGate").hidden=!show;document.documentElement.classList.toggle("access-locked",!!show)}
 function stopSessionTimer(){if(sessionTimer)clearInterval(sessionTimer);sessionTimer=null;sessionDeadline=0;$("sessionBar").classList.remove("active")}
 function updateClock(sec){var m=Math.floor(sec/60),s=sec%60;$("sessionClock").textContent=tr("time")+String(m).padStart(2,"0")+":"+String(s).padStart(2,"0")}
-function startSessionTimer(kind){
-stopSessionTimer();accessKind=kind;
-if(kind==="admin")return;
-$("sessionBar").classList.add("active");
-$("resumeSubscriptionBtn").hidden=true;
-$("sessionNewBtn").hidden=true;
-sessionDeadline=Date.now()+20*60*1000;
+function startSessionTimer(kind,seconds){
+stopSessionTimer();accessKind=kind||"single";
+if(accessKind==="admin")return;
+$("sessionBar").classList.add("active");$("resumeSubscriptionBtn").hidden=true;$("sessionNewBtn").hidden=true;
+sessionDeadline=Date.now()+(Math.max(1,Number(seconds)||1200))*1000;
 function tick(){
-var left=Math.max(0,Math.ceil((sessionDeadline-Date.now())/1000));
-updateClock(left);
+var left=Math.max(0,Math.ceil((sessionDeadline-Date.now())/1000));updateClock(left);
 if(left<=0){
 stopSessionTimer();showGate(true);
-if(kind==="subscription"){
-$("resumeSubscriptionBtn").hidden=false;
-$("accessStatus").textContent=tr("subEnded");
-}else{
-$("accessStatus").textContent=tr("sessionEnded");
-}
+$("accessStatus").textContent=accessKind==="subscription"?tr("subEnded"):tr("sessionEnded");
+$("resumeSubscriptionBtn").hidden=accessKind!=="subscription";
 loadPaymentOptions();
 }
 }
@@ -331,14 +316,12 @@ tick();sessionTimer=setInterval(tick,1000);
 }
 async function loadPaymentOptions(){
 try{
-var r=await request("/api/v1/access/status"),d=await r.json();
-if(d&&d.options&&Array.isArray(d.options)){
-d.options.forEach(function(o){
+var r=await request("/api/v1/access/status"),d=await readJson(r);
+if(d&&Array.isArray(d.options))d.options.forEach(function(o){
 var n=String(o.id||o.plan||"");
 if(n==="1"||n==="single"){$("plan1Title").textContent=o.title||tr("plan1Title");$("plan1Detail").textContent=o.detail||tr("plan1Detail")}
 if(n==="2"||n==="subscription"){$("plan2Title").textContent=o.title||tr("plan2Title");$("plan2Detail").textContent=o.detail||tr("plan2Detail")}
 });
-}
 }catch(e){}
 }
 async function checkAccess(){
@@ -347,56 +330,45 @@ var q=new URLSearchParams(location.search),sid=q.get("session_id")||q.get("check
 if(sid){
 $("accessStatus").textContent=tr("paymentChecking");
 try{
-var vr=await request("/api/v1/access/verify",jsonOptions({session_id:sid}));
-var vd=await vr.json();
+var vr=await request("/api/v1/access/verify",jsonOptions({session_id:sid})),vd=await readJson(vr);
 if(vr.ok&&vd.allowed){
-history.replaceState({},"",location.pathname);
-showGate(false);$("accessStatus").textContent="";
-startSessionTimer(vd.kind||vd.plan||"single");return true;
+history.replaceState({},"",location.pathname);showGate(false);$("accessStatus").textContent="";
+startSessionTimer(vd.kind||vd.plan||"single",vd.remaining_seconds||1200);return true;
 }
 $("accessStatus").textContent=vd.message||tr("paymentPending");
 }catch(e){$("accessStatus").textContent=tr("paymentPending")}
 }
 try{
-var r=await request("/api/v1/access/status"),d=await r.json();
+var r=await request("/api/v1/access/status"),d=await readJson(r);
 if(r.ok&&d.allowed){
 var kind=d.kind||d.plan||"single";
 if(d.session_expired){
-showGate(true);
-if(kind==="subscription"){$("resumeSubscriptionBtn").hidden=false;$("accessStatus").textContent=tr("subEnded")}
-else{$("accessStatus").textContent=tr("sessionEnded")}
-await loadPaymentOptions();return false;
+showGate(true);$("resumeSubscriptionBtn").hidden=kind!=="subscription";$("accessStatus").textContent=kind==="subscription"?tr("subEnded"):tr("sessionEnded");await loadPaymentOptions();return false;
 }
 showGate(false);$("accessStatus").textContent="";
-startSessionTimer(kind);return true;
+startSessionTimer(kind,d.remaining_seconds||1200);return true;
 }
 }catch(e){}
 showGate(true);
 if(!$("accessStatus").textContent||$("accessStatus").textContent===tr("checking"))$("accessStatus").textContent="";
-await loadPaymentOptions();
-return false;
+await loadPaymentOptions();return false;
 }
 async function startCheckout(plan){
 var buttons=document.querySelectorAll("[data-plan]");
-buttons.forEach(function(b){b.disabled=true});
-$("accessStatus").textContent=tr("checkout");
+if(requestBusy)return;requestBusy=true;buttons.forEach(function(b){b.disabled=true});$("accessStatus").textContent=tr("checkout");
 try{
-var r=await request("/api/v1/stripe/create-checkout",jsonOptions({plan:plan}));
-var d=await r.json();
+var r=await request("/api/v1/stripe/create-checkout",jsonOptions({plan:plan})),d=await readJson(r);
 if(!r.ok||!d.url)throw new Error(d.message||tr("checkoutError"));
 location.assign(d.url);
 }catch(e){$("accessStatus").textContent=e.message||tr("checkoutError")}
-finally{buttons.forEach(function(b){b.disabled=false})}
+finally{requestBusy=false;buttons.forEach(function(b){b.disabled=false})}
 }
 async function resumeSubscription(){
-var b=$("resumeSubscriptionBtn");b.disabled=true;
-$("accessStatus").textContent=tr("restoreChecking");
+var b=$("resumeSubscriptionBtn");b.disabled=true;$("accessStatus").textContent=tr("restoreChecking");
 try{
-var r=await request("/api/v1/access/restore",jsonOptions({}));
-var d=await r.json();
+var r=await request("/api/v1/access/restore",jsonOptions({})),d=await readJson(r);
 if(!r.ok||!d.allowed)throw new Error(d.message||tr("restoreError"));
-$("accessStatus").textContent="";showGate(false);
-startSessionTimer(d.kind||"subscription");
+$("accessStatus").textContent="";showGate(false);startSessionTimer(d.kind||"subscription",d.remaining_seconds||1200);
 }catch(e){$("accessStatus").textContent=e.message||tr("restoreError")}
 finally{b.disabled=false}
 }
@@ -405,15 +377,11 @@ var f=$("adminLoginForm");f.hidden=!f.hidden;
 if(!f.hidden){$("accessStatus").textContent="";$("adminUsername").focus()}
 }
 async function adminLogin(ev){
-ev.preventDefault();
-var b=$("adminLoginSubmit");b.disabled=true;
-$("accessStatus").textContent=tr("loginChecking");
+ev.preventDefault();var b=$("adminLoginSubmit");b.disabled=true;$("accessStatus").textContent=tr("loginChecking");
 try{
-var r=await request("/api/v1/admin/login",jsonOptions({username:$("adminUsername").value,password:$("adminPassword").value}));
-var d=await r.json();
+var r=await request("/api/v1/admin/login",jsonOptions({username:$("adminUsername").value.trim(),password:$("adminPassword").value})),d=await readJson(r);
 if(!r.ok||!d.allowed)throw new Error(d.message||tr("loginError"));
-$("adminPassword").value="";showGate(false);$("accessStatus").textContent="";
-accessKind="admin";stopSessionTimer();
+$("adminPassword").value="";showGate(false);$("accessStatus").textContent="";accessKind="admin";stopSessionTimer();
 }catch(e){$("accessStatus").textContent=e.message||tr("loginError")}
 finally{b.disabled=false}
 }
@@ -422,24 +390,18 @@ lang=next==="en"?"en":"es";
 try{localStorage.setItem("qql_lang",lang)}catch(e){}
 var t=TEXT[lang];
 Object.keys(t).forEach(function(id){var el=$(id);if(el)el.textContent=t[id]});
-$("esBtn").classList.toggle("active",lang==="es");
-$("enBtn").classList.toggle("active",lang==="en");
-$("esBtn").setAttribute("aria-pressed",String(lang==="es"));
-$("enBtn").setAttribute("aria-pressed",String(lang==="en"));
+$("esBtn").classList.toggle("active",lang==="es");$("enBtn").classList.toggle("active",lang==="en");
+$("esBtn").setAttribute("aria-pressed",String(lang==="es"));$("enBtn").setAttribute("aria-pressed",String(lang==="en"));
 document.documentElement.lang=lang;
-$("adminUsername").placeholder=tr("adminPlaceholder");
-$("adminPassword").placeholder=tr("passwordPlaceholder");
-$("resumeSubscriptionBtn").textContent=tr("resume");
-$("sessionNewBtn").textContent=tr("sessionNew");
-$("adminLoginSubmit").textContent=tr("adminLoginSubmit");
-$("itemLabel").textContent=tr("itemLabel");
-$("bagLabel").textContent=tr("itemBagLabel");
-$("airlineLabel").textContent=tr("itemAirlineLabel");
-$("itemSubmit").textContent=tr("itemSubmit");
-$("breatheStartBtn").textContent=tr("breatheStart");
-$("breatheStopBtn").textContent=tr("breatheStop");
-$("pdfCreateBtn").textContent=tr("pdfCreateBtn");
+$("adminUsername").placeholder=tr("adminPlaceholder");$("adminPassword").placeholder=tr("passwordPlaceholder");
+$("resumeSubscriptionBtn").textContent=tr("resume");$("sessionNewBtn").textContent=tr("sessionNew");
+$("adminLoginSubmit").textContent=tr("adminLoginSubmit");$("itemLabel").textContent=tr("itemLabel");
+$("bagLabel").textContent=tr("itemBagLabel");$("airlineLabel").textContent=tr("itemAirlineLabel");
+$("itemSubmit").textContent=tr("itemSubmit");$("breatheStartBtn").textContent=tr("breatheStart");
+$("breatheStopBtn").textContent=tr("breatheStop");$("pdfCreateBtn").textContent=tr("pdfCreateBtn");
+document.querySelectorAll("[data-close]").forEach(function(b){b.textContent=tr("close")});
 if($("flightPanel").classList.contains("open"))loadFlights();
+if($("breathePanel").classList.contains("open")&&!breathTimer)resetBreathing();
 }
 function closePanels(){
 document.querySelectorAll(".panel").forEach(function(p){p.classList.remove("open")});
@@ -447,15 +409,14 @@ stopBreathing();
 }
 function openPanel(id){
 closePanels();var p=$(id);if(!p)return;
-p.classList.add("open");
-setTimeout(function(){p.scrollIntoView({behavior:"smooth",block:"start"})},25);
+p.classList.add("open");setTimeout(function(){p.scrollIntoView({behavior:"smooth",block:"start"})},25);
 if(id==="flightPanel")loadFlights();
 if(id==="breathePanel")resetBreathing();
 }
 async function loadFlights(){
-var box=$("flightList");box.innerHTML="";
+var box=$("flightList");box.replaceChildren();
 try{
-var r=await request("/api/v1/airlines-cuba"),d=await r.json();
+var r=await request("/api/v1/airlines-cuba"),d=await readJson(r);
 var arr=Array.isArray(d)?d:(d.airlines||d.results||[]);
 if(!r.ok||!arr.length)throw new Error("empty");
 arr.forEach(function(x){
@@ -464,29 +425,25 @@ var card=document.createElement("div");card.className="flight";
 var left=document.createElement("div"),h=document.createElement("h3"),p=document.createElement("p");
 h.textContent=name;p.textContent=x.description||x.type||(lang==="en"?"Check flights and conditions on the provider's website.":"Consulta los vuelos y las condiciones en el sitio del proveedor.");
 left.append(h,p);card.appendChild(left);
-if(url){var a=document.createElement("a");a.className="btn";a.href=url;a.target="_blank";a.rel="noopener noreferrer";a.textContent=tr("enter");card.appendChild(a)}
+if(url&&/^https?:\/\//i.test(url)){var a=document.createElement("a");a.className="btn";a.href=url;a.target="_blank";a.rel="noopener noreferrer";a.textContent=tr("enter");card.appendChild(a)}
 box.appendChild(card);
 });
 }catch(e){
-box.innerHTML="";
-var f=document.createElement("div");f.className="flight";
-var d=document.createElement("div"),h=document.createElement("h3"),p=document.createElement("p");
-h.textContent=tr("noAirlines");p.textContent=tr("searchFlightText");d.append(h,p);f.appendChild(d);box.appendChild(f);
+var f=document.createElement("div");f.className="flight";var d2=document.createElement("div"),h2=document.createElement("h3"),p2=document.createElement("p");
+h2.textContent=tr("noAirlines");p2.textContent=tr("searchFlightText");d2.append(h2,p2);f.appendChild(d2);box.appendChild(f);
 }
 }
 async function checkItem(ev){
-ev.preventDefault();
-var out=$("itemResult"),btn=$("itemSubmit");
+ev.preventDefault();var out=$("itemResult"),btn=$("itemSubmit");
 out.hidden=false;out.textContent=tr("itemWaiting");btn.disabled=true;
 try{
 var body={item:$("itemName").value.trim(),location:$("itemBag").value,airline:$("itemAirline").value.trim(),language:lang,lang:lang};
-var r=await request("/api/item",jsonOptions(body)),d=await r.json();
+var r=await request("/api/item",jsonOptions(body)),d=await readJson(r);
 if(!r.ok)throw new Error(d.message||tr("itemError"));
 out.replaceChildren();
-var message=document.createElement("p");
-message.textContent=d.message||d.answer||d.explanation||d.result||tr("itemNoAnswer");
-out.appendChild(message);
-if(d.next_action){var n=document.createElement("p");n.textContent=d.next_action;out.appendChild(n)}
+var message=document.createElement("p"),answer=d.message||d.answer||d.explanation||d.result||tr("itemNoAnswer");
+message.textContent=typeof answer==="string"?answer:JSON.stringify(answer);out.appendChild(message);
+if(d.next_action){var n=document.createElement("p");n.textContent=typeof d.next_action==="string"?d.next_action:JSON.stringify(d.next_action);out.appendChild(n)}
 var sources=Array.isArray(d.sources)?d.sources:[];
 sources.forEach(function(s){
 var url=s.exact_url||s.deep_url||s.section_url||s.url;
@@ -494,7 +451,7 @@ if(!url||!/^https?:\/\//i.test(url))return;
 var a=document.createElement("a");a.href=url;a.target="_blank";a.rel="noopener noreferrer";a.textContent=s.title||s.name||url;
 out.appendChild(document.createElement("br"));out.appendChild(a);
 });
-if(!message.textContent||message.textContent===tr("itemNoAnswer"))out.appendChild(document.createTextNode(tr("itemNoAnswer")));
+if(!message.textContent)message.textContent=tr("itemNoAnswer");
 }catch(e){out.textContent=e.message||tr("itemError")}
 finally{btn.disabled=false}
 }
@@ -508,42 +465,35 @@ var start=$("breatheStartBtn");if(start){start.disabled=false;start.textContent=
 function speakPhrase(phrase){
 if(!("speechSynthesis"in window)||!phrase)return;
 window.speechSynthesis.cancel();
-var u=new SpeechSynthesisUtterance(phrase);
-u.lang=lang==="en"?"en-US":"es-ES";u.rate=.9;u.pitch=1;u.volume=1;
+var u=new SpeechSynthesisUtterance(phrase);u.lang=lang==="en"?"en-US":"es-ES";u.rate=.9;u.pitch=1;u.volume=1;
 var voices=window.speechSynthesis.getVoices(),prefix=lang==="en"?/^en(-|_)/i:/^es(-|_)/i;
 var v=voices.find(function(x){return prefix.test(x.lang)&&/natural|neural|premium/i.test(x.name)})||voices.find(function(x){return prefix.test(x.lang)});
-if(v)u.voice=v;
-window.speechSynthesis.speak(u);
+if(v)u.voice=v;window.speechSynthesis.speak(u);
 }
 function resetBreathing(){
 stopBreathing();breathRemaining=60;currentExercise=Math.floor(Math.random()*exercises[lang].length);phraseIndex=0;
 $("breatheTimer").textContent=(lang==="en"?"Time remaining: ":"Tiempo restante: ")+breathRemaining+(lang==="en"?" seconds":" segundos");
-$("circleWord").textContent=lang==="en"?"Breathe":"Respira";
-$("breathePhrase").textContent=tr("breathReady");
+$("circleWord").textContent=lang==="en"?"Breathe":"Respira";$("breathePhrase").textContent=tr("breathReady");
 }
 function startBreathing(){
 stopBreathing();breathRemaining=60;currentExercise=Math.floor(Math.random()*exercises[lang].length);phraseIndex=0;
 var start=$("breatheStartBtn"),circle=$("breatheCircle");
 start.disabled=true;start.textContent=lang==="en"?"Running...":"En curso...";
 function showPhrase(){
-var ex=exercises[lang][currentExercise];
-var phrase=ex.phrases[phraseIndex];
+var ex=exercises[lang][currentExercise],phrase=ex[1][phraseIndex];
 $("breathePhrase").textContent=phrase;speakPhrase(phrase);
-phraseIndex=(phraseIndex+1)%ex.phrases.length;
+phraseIndex=(phraseIndex+1)%ex[1].length;
 }
-showPhrase();
-phraseTimer=setInterval(showPhrase,6000);
+showPhrase();phraseTimer=setInterval(showPhrase,6000);
 var inhale=true;
-function pulse(){
-circle.className="breathe-circle "+(inhale?"inhale":"exhale");
-$("circleWord").textContent=inhale?tr("inhale"):tr("exhale");inhale=!inhale;
-}
+function pulse(){circle.className="breathe-circle "+(inhale?"inhale":"exhale");$("circleWord").textContent=inhale?tr("inhale"):tr("exhale");inhale=!inhale}
 pulse();pulseTimer=setInterval(pulse,5000);
 function tick(){
 breathRemaining--;
 $("breatheTimer").textContent=(lang==="en"?"Time remaining: ":"Tiempo restante: ")+breathRemaining+(lang==="en"?" seconds":" segundos");
 if(breathRemaining<=0){
-stopBreathing();$("breatheTimer").textContent=tr("breathComplete");$("circleWord").textContent=lang==="en"?"Ready":"Listo";$("breathePhrase").textContent=tr("breathDone");$("breatheStartBtn").textContent=tr("startAgain");
+stopBreathing();$("breatheTimer").textContent=tr("breathComplete");$("circleWord").textContent=lang==="en"?"Ready":"Listo";
+$("breathePhrase").textContent=tr("breathDone");$("breatheStartBtn").textContent=tr("startAgain");
 }
 }
 breathTimer=setInterval(tick,1000);
@@ -553,7 +503,9 @@ var status=$("pdfStatus"),btn=$("pdfCreateBtn");btn.disabled=true;status.textCon
 try{
 var r=await request("/api/pdf",jsonOptions({lang:lang,language:lang,title:lang==="en"?"Cuba Travel Guide":"Guía de viaje a Cuba",data:{guide:true,dviajeros:true,visa:true,flights:true,charters:true,official_sources:true}}));
 if(!r.ok)throw new Error("pdf");
-var blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement("a");
+var blob=await r.blob();
+if(!blob||!blob.size)throw new Error("empty pdf");
+var url=URL.createObjectURL(blob),a=document.createElement("a");
 a.href=url;a.download=lang==="en"?"cuba-travel-guide.pdf":"guia-viaje-cuba.pdf";
 document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},3000);
 status.textContent=tr("pdfSuccess");
@@ -575,7 +527,7 @@ $("itemBtn").addEventListener("click",function(){openPanel("itemPanel")});
 $("breatheBtn").addEventListener("click",function(){openPanel("breathePanel")});
 $("pdfBtn").addEventListener("click",function(){openPanel("pdfPanel")});
 $("breatheStartBtn").addEventListener("click",startBreathing);
-$("breatheStopBtn").addEventListener("click",function(){stopBreathing();$("breatheTimer").textContent=lang==="en"?"Exercise stopped.":"Ejercicio detenido.";$("breathePhrase").textContent=tr("breathReady")});
+$("breatheStopBtn").addEventListener("click",function(){stopBreathing();$("breatheTimer").textContent=tr("breathStopped");$("breathePhrase").textContent=tr("breathReady")});
 $("pdfCreateBtn").addEventListener("click",createPDF);
 $("itemForm").addEventListener("submit",checkItem);
 document.querySelectorAll("[data-close]").forEach(function(b){b.addEventListener("click",closePanels)});
