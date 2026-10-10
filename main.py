@@ -89,7 +89,6 @@ async def create_checkout_session(request: Request):
         if not price_id:
             return JSONResponse(status_code=400, content={"status": "error", "message": "Price ID not configured"})
         session = stripe.checkout.Session.create(
-            payment_method_types=["card"],
             line_items=[{"price": price_id, "quantity": 1}],
             mode="subscription" if str(price_type) == "2" else "payment",
             success_url=f"{APP_URL}/?success=true",
