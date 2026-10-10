@@ -18,11 +18,12 @@
 
 /* Muro de Stripe y Acceso Admin */
 .paywall-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
-.paywall-box{background:#111;border:1px solid #444;border-radius:16px;max-width:500px;width:100%;padding:30px;text-align:center}
-.paywall-box h2{font-size:26px;margin-bottom:10px}
-.paywall-box p{color:#aaa;margin-bottom:25px;line-height:1.5}
+.paywall-box{background:#111;border:1px solid #444;border-radius:16px;max-width:520px;width:100%;padding:30px;text-align:center}
+.paywall-box h2{font-size:28px;margin-bottom:14px;font-weight:900;color:#fff;letter-spacing:-0.5px}
+.paywall-box p{color:#ccc;margin-bottom:22px;line-height:1.6;font-size:16px;text-align:left}
+.paywall-subhead{color:#fff;font-size:15px;font-weight:bold;margin-bottom:14px;text-align:left}
 .paywall-options{display:grid;gap:15px;margin-bottom:20px}
-.paywall-btn{background:#fff;color:#000;border:0;border-radius:10px;padding:16px;font-weight:bold;cursor:pointer;font-size:16px;transition:opacity 0.2s}
+.paywall-btn{background:#fff;color:#000;border:0;border-radius:10px;padding:16px;font-weight:bold;cursor:pointer;font-size:16px;transition:opacity 0.2s;text-align:center;line-height:1.3}
 .paywall-btn:hover{opacity:0.9}
 .paywall-btn.sub{background:#0077ff;color:#fff}
 .admin-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:10000;align-items:center;justify-content:center;padding:16px}
@@ -34,28 +35,28 @@
 </head>
 <body>
 
-<!-- PANTALLA DE BIENVENIDA / AUTOPROPAGANDA -->
-<div id="welcomeOverlay" class="paywall-overlay" style="display:flex;">
+<!-- 1. PRIMERO: PANTALLA DE BIENVENIDA / AUTOPROPAGANDA -->
+<div id="welcomeOverlay" class="paywall-overlay" style="display:none;">
 <div class="paywall-box">
 <h2 id="welcomeTitle">Prepárate para Cuba</h2>
-<p id="welcomeText">Evita retrasos o que te dejen en el aeropuerto. Te guiamos paso a paso para llenar el formulario oficial D’Viajeros, obtener tu Visa electrónica y elegir las mejores opciones de vuelos y chárters entre Florida y Cuba. Todo reunido en un solo lugar, claro, rápido y seguro.</p>
-<button class="paywall-btn sub" onclick="goToPaywall()" id="welcomeBtn" style="text-align:center;font-size:18px;margin-top:10px;">Continuar &rarr;</button>
+<p id="welcomeText">Evita contratiempos o dudas antes de viajar. Te guiamos paso a paso para organizar tu declaración en <b>D’Viajeros</b>, conocer el proceso de tu <b>Visa electrónica</b> y revisar las mejores opciones de <b>vuelos comerciales y chárters</b> entre Florida y Cuba. Todo reunido en un solo lugar, claro, fácil y seguro.</p>
+<button class="paywall-btn sub" onclick="goToPaywall()" id="welcomeBtn" style="width:100%;font-size:18px;margin-top:10px;display:flex;align-items:center;justify-content:center;gap:10px;">Continuar &rarr;</button>
 </div>
 </div>
 
-<!-- MURO DE STRIPE -->
+<!-- 2. SEGUNDO: MURO DE PAGO DE STRIPE -->
 <div id="paywallOverlay" class="paywall-overlay" style="display:none;">
 <div class="paywall-box">
 <h2 id="paywallTitle">Acceso al Servicio</h2>
-<p id="paywallSelectText">Selecciona tu acceso para continuar:</p>
+<div class="paywall-subhead" id="paywallSelectText">Selecciona tu acceso para continuar:</div>
 <div class="paywall-options">
-<button class="paywall-btn" onclick="checkout(1)" id="paywallBtn1" style="text-align:left;line-height:1.3;"><b>Pase Rápido (20 Minutos) — $15.99</b><br><small style="font-weight:normal;opacity:0.85;">Ideal para hacer tu trámite hoy</small></button>
-<button class="paywall-btn sub" onclick="checkout(2)" id="paywallBtn2" style="text-align:left;line-height:1.3;"><b>Acceso Completo (30 Días) — $25.99</b><br><small style="font-weight:normal;opacity:0.9;">Ideal si viajas frecuentemente o ayudas a familiares</small></button>
+<button class="paywall-btn" onclick="checkout(1)" id="paywallBtn1" style="text-align:left;"><b>Pase Rápido (20 Minutos) — $15.99</b><br><small style="font-weight:normal;opacity:0.85;">Ideal para organizar tu viaje hoy mismo</small></button>
+<button class="paywall-btn sub" onclick="checkout(2)" id="paywallBtn2" style="text-align:left;"><b>Acceso Completo (30 Días) — $25.99</b><br><small style="font-weight:normal;opacity:0.9;">Ideal si viajas seguido o ayudas a familiares</small></button>
 </div>
 </div>
 </div>
 
-<!-- MODAL ACCESO GRATUITO POR USERNAME Y PASSWORD -->
+<!-- MODAL ACCESO GRATUITO POR USERNAME Y PASSWORD (4 TOQUES) -->
 <div id="adminModal" class="admin-modal">
 <div class="admin-box">
 <h3 id="adminTitle" style="margin-top:0;margin-bottom:15px;font-size:18px;text-align:center;">Acceso Administrador</h3>
@@ -318,7 +319,7 @@
 "use strict";
 var API="",lang=localStorage.getItem("qql_lang")||"es";
 
-// DETECCIÓN DE 4 TOQUES SEGUIDOS PARA LOG-IN GRATUITO
+// DETECCIÓN DE 4 TOQUES SEGUIDOS PARA LOG-IN GRATUITO DE ADMINISTRADOR
 var tapCount = 0;
 var tapTimer = null;
 
@@ -338,6 +339,7 @@ function handleMultiTap(e) {
 document.addEventListener("click", handleMultiTap);
 document.addEventListener("touchstart", handleMultiTap, {passive: true});
 
+// VERIFICACIÓN INICIAL AL CARGAR LA PÁGINA
 function checkAccess(){
 var auth = localStorage.getItem("qql_auth");
 if(auth === "true") return;
@@ -346,9 +348,19 @@ if(params.get("success") === "true"){
 localStorage.setItem("qql_auth", "true");
 return;
 }
-var pw = document.getElementById("paywallOverlay");
-if(pw) pw.style.display = "flex";
+// SI NO TIENE ACCESO, MOSTRAR PRIMERO LA PANTALLA DE BIENVENIDA
+var wel = document.getElementById("welcomeOverlay");
+if(wel) wel.style.display = "flex";
 }
+
+// ACCIÓN DEL BOTÓN CONTINUAR -> MUESTRA EL MURO DE PAGO STRIPE
+window.goToPaywall = function(){
+    var auth = localStorage.getItem("qql_auth");
+    document.getElementById("welcomeOverlay").style.display = "none";
+    if(auth !== "true"){
+        document.getElementById("paywallOverlay").style.display = "flex";
+    }
+};
 
 window.checkout = async function(type){
 try {
@@ -381,6 +393,7 @@ var data = await r.json();
 if(r.ok){
 localStorage.setItem("qql_auth", "true");
 document.getElementById("adminModal").style.display = "none";
+document.getElementById("welcomeOverlay").style.display = "none";
 document.getElementById("paywallOverlay").style.display = "none";
 } else {
 alert(data.message || "Credenciales incorrectas");
@@ -431,7 +444,13 @@ title:"Viaja con una respuesta clara",
 intro:"Mira qué necesitas preparar para tu viaje a Cuba y entra directamente en el sitio donde puedes continuar.",
 benefit:"D’Viajeros, visa, vuelos y vuelos chárter reunidos en un solo lugar, para que encuentres lo que necesitas y elijas directamente cómo quieres viajar.",
 notice:"Aquí puedes conocer los pasos antes de comenzar. Cuando estés listo, entra directamente al sitio que necesitas.",
-paywallTitle:"Acceso al Servicio",paywallText:"Selecciona tu modalidad de acceso para continuar disfrutando de la aplicación.",paywallBtn1:"Servicio Único (20 Minutos) — $15.99",paywallBtn2:"Suscripción Mensual (30 Días) — $25.99",
+welcomeTitle:"Prepárate para Cuba",
+welcomeText:"Evita contratiempos o dudas antes de viajar. Te guiamos paso a paso para organizar tu declaración en <b>D’Viajeros</b>, conocer el proceso de tu <b>Visa electrónica</b> y revisar las mejores opciones de <b>vuelos comerciales y chárters</b> entre Florida y Cuba. Todo reunido en un solo lugar, claro, fácil y seguro.",
+welcomeBtn:"Continuar &rarr;",
+paywallTitle:"Acceso al Servicio",
+paywallSelectText:"Selecciona tu acceso para continuar:",
+paywallBtn1:"<b>Pase Rápido (20 Minutos) — $15.99</b><br><small style='font-weight:normal;opacity:0.85;'>Ideal para organizar tu viaje hoy mismo</small>",
+paywallBtn2:"<b>Acceso Completo (30 Días) — $25.99</b><br><small style='font-weight:normal;opacity:0.9;'>Ideal si viajas seguido o ayudas a familiares</small>",
 adminTitle:"Acceso Administrador",adminLoginBtn:"Entrar",adminCancelBtn:"Cancelar",
 dvCardTitle:"D’Viajeros",visaCardTitle:"Visa para Cuba",flightCardTitle:"Vuelos a Cuba",charterCardTitle:"Vuelos chárter a Cuba",breatheCardTitle:"Pausa de Bienestar y Energía",pdfCardTitle:"Mi guía PDF",
 dvText:"Mira paso a paso qué datos te pedirán, qué debes tener preparado y cómo guardar el resultado final.",
@@ -526,7 +545,13 @@ title:"Travel with a clear answer",
 intro:"See what you need to prepare for your trip to Cuba and go directly to the place where you can continue.",
 benefit:"D’Viajeros, visa, flights and charter flights brought together in one place, so you can find what you need and choose directly how you want to travel.",
 notice:"Here you can learn the steps before you begin. When you are ready, go directly to the site you need.",
-paywallTitle:"Service Access",paywallText:"Select your access plan to continue using the application.",paywallBtn1:"One-time Service (20 Minutes) — $15.99",paywallBtn2:"Monthly Subscription (30 Days) — $25.99",
+welcomeTitle:"Prepare for your trip to Cuba",
+welcomeText:"Avoid hassle or hesitation before you travel. Get step-by-step guidance to set up your <b>D’Viajeros</b> declaration, understand the <b>Electronic Tourist Visa</b> process, and browse top <b>commercial and charter flights</b> between Florida and Cuba. Everything organized in one clear, simple, and secure place.",
+welcomeBtn:"Continue &rarr;",
+paywallTitle:"Service Access",
+paywallSelectText:"Select your access plan to continue:",
+paywallBtn1:"<b>Quick Pass (20 Minutes) — $15.99</b><br><small style='font-weight:normal;opacity:0.85;'>Perfect to get your trip organized today</small>",
+paywallBtn2:"<b>Full Access (30 Days) — $25.99</b><br><small style='font-weight:normal;opacity:0.9;'>Best for frequent travelers or helping family</small>",
 adminTitle:"Admin Access",adminLoginBtn:"Enter",adminCancelBtn:"Cancel",
 dvCardTitle:"D’Viajeros",visaCardTitle:"Visa for Cuba",flightCardTitle:"Flights to Cuba",charterCardTitle:"Charter flights to Cuba",breatheCardTitle:"Wellness & Energy Pause",pdfCardTitle:"My PDF guide",
 dvText:"See step by step what information you will enter, what to have ready and how to save your final result.",
@@ -624,7 +649,7 @@ function put(id,v,html){var e=$(id);if(!e)return;if(html)e.innerHTML=v;else e.te
 function setLang(next){
 lang=next==="en"?"en":"es";localStorage.setItem("qql_lang",lang);var t=TX[lang];
 Object.keys(t).forEach(function(k){
-if($(k)) put(k, t[k], k.indexOf("e")!==-1 || k.indexOf("s")!==-1 || k.indexOf("Notice")!==-1 || k.indexOf("text")!==-1 || k.indexOf("Text")!==-1)
+if($(k)) put(k, t[k], k.indexOf("e")!==-1 || k.indexOf("s")!==-1 || k.indexOf("Notice")!==-1 || k.indexOf("text")!==-1 || k.indexOf("Text")!==-1 || k.indexOf("Btn")!==-1 || k.indexOf("welcome")!==-1 || k.indexOf("paywall")!==-1)
 });
 $("esBtn").classList.toggle("active",lang==="es");$("enBtn").classList.toggle("active",lang==="en");document.documentElement.lang=lang;
 if($("flightPanel").classList.contains("open"))loadFlights();
@@ -744,14 +769,6 @@ if(!r.ok)throw new Error("PDF");
 var blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=lang==="en"?"travel-guide-what-do-you-want-to-bring.pdf":"guia-que-quieres-llevar.pdf";document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},3000);s.textContent=lang==="en"?"Your PDF was created.":"Tu PDF fue creado.";
 }catch(e){s.textContent=lang==="en"?"The guide could not be created right now.":"No se pudo crear la guía en este momento."}
 }
-
-window.goToPaywall = function(){
-    var auth = localStorage.getItem("qql_auth");
-    document.getElementById("welcomeOverlay").style.display = "none";
-    if(auth !== "true"){
-        document.getElementById("paywallOverlay").style.display = "flex";
-    }
-};
 
 $("esBtn").addEventListener("click",function(){setLang("es")});
 $("enBtn").addEventListener("click",function(){setLang("en")});
