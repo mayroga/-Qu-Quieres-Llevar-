@@ -34,12 +34,20 @@
 </head>
 <body>
 
+<!-- PANTALLA DE BIENVENIDA / AUTOPROPAGANDA -->
+<div id="welcomeOverlay" class="paywall-overlay" style="display:flex;">
+<div class="paywall-box">
+<h2 id="welcomeTitle">Prepárate para Cuba</h2>
+<p id="welcomeText">Evita retrasos o que te dejen en el aeropuerto. Te guiamos paso a paso para llenar el formulario oficial D’Viajeros, obtener tu Visa electrónica y elegir las mejores opciones de vuelos y chárters entre Florida y Cuba. Todo reunido en un solo lugar, claro, rápido y seguro.</p>
+<button class="paywall-btn sub" onclick="goToPaywall()" id="welcomeBtn" style="text-align:center;font-size:18px;margin-top:10px;">Continuar &rarr;</button>
+</div>
+</div>
+
 <!-- MURO DE STRIPE -->
 <div id="paywallOverlay" class="paywall-overlay" style="display:none;">
 <div class="paywall-box">
-<h2 id="paywallTitle">Prepárate para Cuba</h2>
-<p id="paywallText">Evita retrasos o que te dejen en el aeropuerto. Te guiamos paso a paso para llenar el formulario oficial D’Viajeros, obtener tu Visa electrónica y elegir las mejores opciones de vuelos y chárters entre Florida y Cuba. Todo reunido en un solo lugar, claro, rápido y seguro.</p>
-<div style="color:#fff;font-size:14px;font-weight:bold;margin-bottom:12px;text-align:left;" id="paywallSelectText">Selecciona tu acceso para continuar:</div>
+<h2 id="paywallTitle">Acceso al Servicio</h2>
+<p id="paywallSelectText">Selecciona tu acceso para continuar:</p>
 <div class="paywall-options">
 <button class="paywall-btn" onclick="checkout(1)" id="paywallBtn1" style="text-align:left;line-height:1.3;"><b>Pase Rápido (20 Minutos) — $15.99</b><br><small style="font-weight:normal;opacity:0.85;">Ideal para hacer tu trámite hoy</small></button>
 <button class="paywall-btn sub" onclick="checkout(2)" id="paywallBtn2" style="text-align:left;line-height:1.3;"><b>Acceso Completo (30 Días) — $25.99</b><br><small style="font-weight:normal;opacity:0.9;">Ideal si viajas frecuentemente o ayudas a familiares</small></button>
@@ -736,6 +744,14 @@ if(!r.ok)throw new Error("PDF");
 var blob=await r.blob(),url=URL.createObjectURL(blob),a=document.createElement("a");a.href=url;a.download=lang==="en"?"travel-guide-what-do-you-want-to-bring.pdf":"guia-que-quieres-llevar.pdf";document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url)},3000);s.textContent=lang==="en"?"Your PDF was created.":"Tu PDF fue creado.";
 }catch(e){s.textContent=lang==="en"?"The guide could not be created right now.":"No se pudo crear la guía en este momento."}
 }
+
+window.goToPaywall = function(){
+    var auth = localStorage.getItem("qql_auth");
+    document.getElementById("welcomeOverlay").style.display = "none";
+    if(auth !== "true"){
+        document.getElementById("paywallOverlay").style.display = "flex";
+    }
+};
 
 $("esBtn").addEventListener("click",function(){setLang("es")});
 $("enBtn").addEventListener("click",function(){setLang("en")});
