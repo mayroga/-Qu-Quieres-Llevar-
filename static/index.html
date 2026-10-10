@@ -16,8 +16,8 @@
 .breathe-text{font-size:18px;font-weight:800;color:#fff;text-align:center;min-height:50px;margin-bottom:15px;padding:0 10px}
 .breathe-timer{font-size:14px;color:#aaa;margin-bottom:15px}
 
-/* Muro de Pago y Modal Admin */
-.paywall-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.92);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
+/* Muro de Stripe y Acceso Admin */
+.paywall-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px}
 .paywall-box{background:#111;border:1px solid #444;border-radius:16px;max-width:500px;width:100%;padding:30px;text-align:center}
 .paywall-box h2{font-size:26px;margin-bottom:10px}
 .paywall-box p{color:#aaa;margin-bottom:25px;line-height:1.5}
@@ -25,11 +25,11 @@
 .paywall-btn{background:#fff;color:#000;border:0;border-radius:10px;padding:16px;font-weight:bold;cursor:pointer;font-size:16px;transition:opacity 0.2s}
 .paywall-btn:hover{opacity:0.9}
 .paywall-btn.sub{background:#0077ff;color:#fff}
-.admin-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10000;align-items:center;justify-content:center;padding:16px}
+.admin-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:10000;align-items:center;justify-content:center;padding:16px}
 .admin-box{background:#111;border:1px solid #444;border-radius:12px;padding:25px;max-width:350px;width:100%}
 .admin-box input{width:100%;padding:10px;margin-bottom:12px;background:#222;border:1px solid #444;color:#fff;border-radius:6px}
-.admin-trigger{background:transparent;border:0;color:#444;cursor:pointer;font-size:11px;padding:2px 4px;border-radius:3px;margin-left:6px;vertical-align:middle}
-.admin-trigger:hover{color:#888}
+.admin-trigger{background:transparent;border:0;color:#666;cursor:pointer;font-size:14px;padding:2px 6px;border-radius:4px;vertical-align:middle;margin-left:8px}
+.admin-trigger:hover{color:#fff}
 
 @media(max-width:760px){.grid,.route-grid{grid-template-columns:1fr}.fields{grid-template-columns:1fr}.flight,.charter{align-items:flex-start;flex-direction:column}.panel-head{flex-direction:column}.mock-body{padding:10px}.hero-benefit{font-size:18px}}
 </style>
@@ -40,7 +40,7 @@
 <div id="paywallOverlay" class="paywall-overlay" style="display:none;">
 <div class="paywall-box">
 <h2>Acceso al Servicio</h2>
-<p>Selecciona tu modalidad de acceso para continuar utilizando la aplicación.</p>
+<p>Selecciona tu modalidad de acceso para continuar disfrutando de la aplicación.</p>
 <div class="paywall-options">
 <button class="paywall-btn" onclick="checkout(1)">Servicio Único (20 Minutos) — $15.99</button>
 <button class="paywall-btn sub" onclick="checkout(2)">Suscripción Mensual (30 Días) — $25.99</button>
@@ -48,10 +48,10 @@
 </div>
 </div>
 
-<!-- MODAL ACCESO GRATUITO POR ADMIN -->
+<!-- MODAL ACCESO GRATUITO POR USERNAME Y PASSWORD -->
 <div id="adminModal" class="admin-modal">
 <div class="admin-box">
-<h3 style="margin-top:0;margin-bottom:15px;font-size:16px;text-align:center;">Acceso Gratuito</h3>
+<h3 style="margin-top:0;margin-bottom:15px;font-size:18px;text-align:center;">Acceso Administrador</h3>
 <input type="text" id="adminUser" placeholder="Usuario">
 <input type="password" id="adminPass" placeholder="Contraseña">
 <button class="btn" style="width:100%;margin-bottom:8px;" onclick="adminLogin()">Entrar</button>
@@ -61,7 +61,10 @@
 
 <header>
 <div class="nav">
-<div style="display:flex;align-items:center;"><div class="logo" id="brand">¿VAS PARA CUBA?</div><button class="admin-trigger" onclick="document.getElementById('adminModal').style.display='flex'" title="Acceso">🔒</button></div>
+<div style="display:flex;align-items:center;">
+<div class="logo" id="brand">¿VAS PARA CUBA?</div>
+<button class="admin-trigger" onclick="document.getElementById('adminModal').style.display='flex'" title="Acceso">🔒</button>
+</div>
 <div class="lang"><button id="esBtn" class="active">ES</button><button id="enBtn">EN</button></div>
 </div>
 </header>
@@ -174,7 +177,7 @@
 </div>
 
 </div>
-<div class="official"><h3 id="dvOfficialTitle">Hazlo en D’Viajeros</h3><p id="dvOfficialText">Cuando quieras comenzar, entra directamente en el sitio de D’Viajeros.</p><a class="btn" href="https://dviajeros.mitrans.gob.cu/" target="_blank" rel="noopener noreferrer" id="dvOfficialBtn">Abrir D’Viajeros</a></div>
+<div class="official"><h3 id="dvOfficialTitle">Hazlo en D’Viajeros</h3><p id="dvOfficialText">Когда quieras comenzar, entra directamente en el sitio de D’Viajeros.</p><a class="btn" href="https://dviajeros.mitrans.gob.cu/" target="_blank" rel="noopener noreferrer" id="dvOfficialBtn">Abrir D’Viajeros</a></div>
 </section>
 
 <section id="visaPanel" class="panel">
@@ -294,7 +297,6 @@
 </div></div></div></div></div>
 <div class="explain"><strong>Muy fácil:</strong> Ten tu tarjeta lista para finalizar el proceso sin contratiempos.</div>
 </div>
-
 </div>
 
 </section>
@@ -337,7 +339,7 @@ var data = await r.json();
 if(data.url) {
 window.location.href = data.url;
 } else {
-alert("No se pudo iniciar el pago.");
+alert(data.message || "No se pudo iniciar el pago.");
 }
 } catch(e) {
 alert("Error de conexión con la pasarela de pagos.");
@@ -367,6 +369,38 @@ alert("Error al intentar iniciar sesión.");
 };
 
 checkAccess();
+
+var wellnessExercises = {
+es: [
+    { name: "1. Calma y Enfoque Total", phrases: ["Respira hondo, tu viaje está bajo control.", "Siente la seguridad en cada paso que das.", "La tranquilidad te abre todas las puertas.", "Tu energía positiva ilumina tu camino hoy."] },
+    { name: "2. Energía y Alegría Renovada", phrases: ["Inhala alegría, exhala cualquier duda.", "Una gran sonrisa te acompaña a tu destino.", "Tu corazón vibra con la emoción del reencuentro.", "Eres fuerte, capaz y estás listo para viajar."] },
+    { name: "3. Confianza y Seguridad Plena", phrases: ["Cada respiración te llena de absoluta seguridad.", "Tienes todo lo necesario para triunfar hoy.", "Caminas con paso firme hacia la felicidad.", "Todo marcha de manera perfecta y segura."] },
+    { name: "4. Paz Interior y Bienestar", phrases: ["Suelta las tensiones, solo existe el presente.", "La paz habita dentro de ti en este instante.", "Siente cómo tu cuerpo se relaja por completo.", "La armonía y el bienestar guían tus pasos."] },
+    { name: "5. Vitalidad y Fuerza Positiva", phrases: ["Una energía brillante recorre todo tu ser.", "Eres un viajero afortunado y bendecido.", "Tu mente está clara, despejada y brillante.", "La alegría de viajar llena cada rincón de ti."] },
+    { name: "6. Armonía y Esperanza", phrases: ["El futuro se abre ante ti lleno de esperanza.", "Respira hondo y siente la libertad de avanzar.", "Cada momento te acerca más a tus seres queridos.", "La felicidad es tu estado natural hoy."] },
+    { name: "7. Fortaleza y Seguridad en Ti", phrases: ["Confía plenamente en tu capacidad de resolver.", "Tu intuición y sabiduría te guían con acierto.", "La fuerza interior te acompaña a todas partes.", "Estás protegido, seguro y en paz."] },
+    { name: "8. Alegría de Vivir y Compartir", phrases: ["El reencuentro familiar está lleno de luz.", "Tu corazón late con ilusión y gratitud.", "La alegría fluye libremente en tu interior.", "Cada segundo de tu viaje será maravilloso."] },
+    { name: "9. Libertad y Bienestar Ligero", phrases: ["Siente tu mente ligera como una pluma.", "El estrés se evapora con cada exhalación.", "Disfruta el proceso con absoluta calma.", "La vida te sonríe en este hermoso viaje."] },
+    { name: "10. Éxito, Magia y Felicidad", phrases: ["Todo lo que emprendes hoy sale perfecto.", "La magia del viaje comienza en tu interior.", "Estás rodeado de abundancia y bienestar.", "Sonríe, tu camino está lleno de bendiciones."] }
+],
+en: [
+    { name: "1. Total Calm and Focus", phrases: ["Breathe deeply, your trip is in good hands.", "Feel absolute confidence in every step.", "Peace of mind opens all doors for you.", "Your positive energy lights your path today."] },
+    { name: "2. Renewed Energy and Joy", phrases: ["Inhale joy, exhale any hesitation.", "A bright smile accompanies you forward.", "Your heart beats with the thrill of reunion.", "You are strong, capable, and ready to travel."] },
+    { name: "3. Full Confidence and Safety", phrases: ["Every breath fills you with total security.", "You have everything needed to succeed today.", "You walk firmly toward happiness and success.", "Everything is unfolding perfectly and safely."] },
+    { name: "4. Inner Peace and Well-being", phrases: ["Release all tension, only the present matters.", "Peace lives within you right at this moment.", "Feel your body relax completely and deeply.", "Harmony and well-being guide your steps."] },
+    { name: "5. Vitality and Positive Strength", phrases: ["A brilliant energy flows through your entire being.", "You are a fortunate and blessed traveler.", "Your mind is clear, sharp, and bright.", "The joy of traveling fills every part of you."] },
+    { name: "6. Harmony and Hope", phrases: ["The future opens before you full of hope.", "Breathe deeply and feel the freedom to move.", "Every moment brings you closer to your loved ones.", "Happiness is your natural state today."] },
+    { name: "7. Inner Strength and Self-Assurance", phrases: ["Trust completely in your ability to handle things.", "Your intuition and wisdom guide you wisely.", "Inner strength accompanies you everywhere.", "You are protected, secure, and at peace."] },
+    { name: "8. Joy of Living and Sharing", phrases: ["The family reunion is filled with bright light.", "Your heart beats with excitement and gratitude.", "Joy flows freely deep inside your spirit.", "Every second of your journey will be wonderful."] },
+    { name: "9. Freedom and Light Well-being", phrases: ["Feel your mind as light as a feather.", "Stress evaporates away with each exhale.", "Enjoy the process with absolute calm.", "Life is smiling at you on this beautiful trip."] },
+    { name: "10. Success, Magic, and Happiness", phrases: ["Everything you undertake today turns out perfectly.", "The magic of travel begins right inside you.", "You are surrounded by abundance and well-being.", "Smile, your path is filled with blessings."] }
+]
+};
+
+var currentExerciseIndex = 0;
+var breatheInterval = null;
+var phraseInterval = null;
+var timerInterval = null;
 
 var TX={
 es:{
@@ -451,42 +485,6 @@ cha3t:"Example 3: Cuballama (Travel)", cha3s:"See the steps on your phone to eas
 cha4t:"Example 4: Cubazul Air Charter", cha4s:"See the steps on your phone to easily manage your trip.", cha4h:"Example of what you will see on screen"
 }};
 
-// 10 Ejercicios de bienestar y energía diferentes que rotan al abrir o iniciar
-var wellnessExercises = {
-es: [
-    { name: "1. Calma y Enfoque Total", phrases: ["Respira hondo, tu viaje está bajo control.", "Siente la seguridad en cada paso que das.", "La tranquilidad te abre todas las puertas.", "Tu energía positiva ilumina tu camino hoy."] },
-    { name: "2. Energía y Alegría Renovada", phrases: ["Inhala alegría, exhala cualquier duda.", "Una gran sonrisa te acompaña a tu destino.", "Tu corazón vibra con la emoción del reencuentro.", "Eres fuerte, capaz y estás listo para viajar."] },
-    { name: "3. Confianza y Seguridad Plena", phrases: ["Cada respiración te llena de absoluta seguridad.", "Tienes todo lo necesario para triunfar hoy.", "Caminas con paso firme hacia la felicidad.", "Todo marcha de manera perfecta y segura."] },
-    { name: "4. Paz Interior y Bienestar", phrases: ["Suelta las tensiones, solo existe el presente.", "La paz habita dentro de ti en este instante.", "Siente cómo tu cuerpo se relaja por completo.", "La armonía y el bienestar guían tus pasos."] },
-    { name: "5. Vitalidad y Fuerza Positiva", phrases: ["Una energía brillante recorre todo tu ser.", "Eres un viajero afortunado y bendecido.", "Tu mente está clara, despejada y brillante.", "La alegría de viajar llena cada rincón de ti."] },
-    { name: "6. Armonía y Esperanza", phrases: ["El futuro se abre ante ti lleno de esperanza.", "Respira hondo y siente la libertad de avanzar.", "Cada momento te acerca más a tus seres queridos.", "La felicidad es tu estado natural hoy."] },
-    { name: "7. Fortaleza y Seguridad en Ti", phrases: ["Confía plenamente en tu capacidad de resolver.", "Tu intuición y sabiduría te guían con acierto.", "La fuerza interior te acompaña a todas partes.", "Estás protegido, seguro y en paz."] },
-    { name: "8. Alegría de Vivir y Compartir", phrases: ["El reencuentro familiar está lleno de luz.", "Tu corazón late con ilusión y gratitud.", "La alegría fluye libremente en tu interior.", "Cada segundo de tu viaje será maravilloso."] },
-    { name: "9. Libertad y Bienestar Ligero", phrases: ["Siente tu mente ligera como una pluma.", "El estrés se evapora con cada exhalación.", "Disfruta el proceso con absoluta calma.", "La vida te sonríe en este hermoso viaje."] },
-    { name: "10. Éxito, Magia y Felicidad", phrases: ["Todo lo que emprendes hoy sale perfecto.", "La magia del viaje comienza en tu interior.", "Estás rodeado de abundancia y bienestar.", "Sonríe, tu camino está lleno de bendiciones."] }
-],
-en: [
-    { name: "1. Total Calm and Focus", phrases: ["Breathe deeply, your trip is in good hands.", "Feel absolute confidence in every step.", "Peace of mind opens all doors for you.", "Your positive energy lights your path today."] },
-    { name: "2. Renewed Energy and Joy", phrases: ["Inhale joy, exhale any hesitation.", "A bright smile accompanies you forward.", "Your heart beats with the thrill of reunion.", "You are strong, capable, and ready to travel."] },
-    { name: "3. Full Confidence and Safety", phrases: ["Every breath fills you with total security.", "You have everything needed to succeed today.", "You walk firmly toward happiness and success.", "Everything is unfolding perfectly and safely."] },
-    { name: "4. Inner Peace and Well-being", phrases: ["Release all tension, only the present matters.", "Peace lives within you right at this moment.", "Feel your body relax completely and deeply.", "Harmony and well-being guide your steps."] },
-    { name: "5. Vitality and Positive Strength", phrases: ["A brilliant energy flows through your entire being.", "You are a fortunate and blessed traveler.", "Your mind is clear, sharp, and bright.", "The joy of traveling fills every part of you."] },
-    { name: "6. Harmony and Hope", phrases: ["The future opens before you full of hope.", "Breathe deeply and feel the freedom to move.", "Every moment brings you closer to your loved ones.", "Happiness is your natural state today."] },
-    { name: "7. Inner Strength and Self-Assurance", phrases: ["Trust completely in your ability to handle things.", "Your intuition and wisdom guide you wisely.", "Inner strength accompanies you everywhere.", "You are protected, secure, and at peace."] },
-    { name: "8. Joy of Living and Sharing", phrases: ["The family reunion is filled with bright light.", "Your heart beats with excitement and gratitude.", "Joy flows freely deep inside your spirit.", "Every second of your journey will be wonderful."] },
-    { name: "9. Freedom and Light Well-being", phrases: ["Feel your mind as light as a feather.", "Stress evaporates away with each exhale.", "Enjoy the process with absolute calm.", "Life is smiling at you on this beautiful trip."] },
-    { name: "10. Success, Magic, and Happiness", phrases: ["Everything you undertake today turns out perfectly.", "The magic of travel begins right inside you.", "You are surrounded by abundance and well-being.", "Smile, your path is filled with blessings."] }
-]
-};
-
-var currentExerciseIndex = 0;
-var breatheInterval = null;
-var phraseInterval = null;
-var timerInterval = null;
-
-function $(id){return document.getElementById(id)}
-function put(id,v,html){var e=$(id);if(!e)return;if(html)e.innerHTML=v;else e.textContent=v}
-
 function setLang(next){
 lang=next==="en"?"en":"es";localStorage.setItem("qql_lang",lang);var t=TX[lang];
 Object.keys(t).forEach(function(k){if($(k))put(k,t[k],k==="dv1e"||k==="dv2e"||k==="dv3e"||k==="dv4e"||k==="dv5e"||k==="dv6e"||k==="dv7e"||k==="opaExplain"||k==="charterNote")});
@@ -505,7 +503,6 @@ if(id==="flightPanel")loadFlights();
 if(id==="breathePanel")initBreatheSession();
 }
 
-// Control del ejercicio respiratorio: la voz lee únicamente la frase visible.
 function breatheSpeak(text){
     if(!("speechSynthesis" in window) || !text) return;
     window.speechSynthesis.cancel();
@@ -538,7 +535,6 @@ function initBreatheSession(){
     var phraseIndex = 0;
     phraseBox.innerHTML = "<b>" + exercise.name + "</b><br>" + exercise.phrases[phraseIndex];
 
-    // La voz dice solo la frase, nunca el título del ejercicio ni otros textos.
     breatheSpeak(exercise.phrases[phraseIndex]);
     phraseInterval = setInterval(function(){
         phraseIndex = (phraseIndex + 1) % exercise.phrases.length;
@@ -546,7 +542,6 @@ function initBreatheSession(){
         breatheSpeak(exercise.phrases[phraseIndex]);
     }, 6000);
 
-    // Se conserva la animación visual del círculo, sin instrucciones habladas adicionales.
     var isInhale = true;
     function pulseCircle(){
         if(isInhale){
@@ -571,7 +566,6 @@ function initBreatheSession(){
             phraseBox.innerHTML = "<b>" + (lang === "en" ? "You are ready to go." : "Ya estás listo para continuar.") + "</b>";
             startBtn.textContent = lang === "en" ? "Start Again" : "Iniciar de nuevo";
             startBtn.disabled = false;
-            // No se reproduce voz al terminar.
         }
     }, 1000);
 }
@@ -587,6 +581,7 @@ function stopBreatheSession(){
         startBtn.disabled = false;
     }
 }
+
 async function loadFlights(){
 var box=$("flightList"),t=TX[lang];
 try{
