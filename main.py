@@ -1,7 +1,6 @@
 from __future__ import annotations
-import os,json,re,io,datetime
+import os,json,re,io,datetime,time,hmac,hashlib,base64,urllib.parse,urllib.request,urllib.error
 from typing import Any,Dict
-import stripe
 from fastapi import FastAPI,Request
 from fastapi.responses import HTMLResponse,JSONResponse,StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -14,7 +13,6 @@ from reportlab.lib import colors
 from reportlab.lib.units import inch
 import cuba_engine as engine
 from schemas import *
-
 SOURCE_VERSION=engine.VERSION
 SOURCES=engine.SOURCES
 all_sources=engine.all_sources
@@ -25,19 +23,80 @@ get_airlines=engine.get_airlines
 get_charters=engine.get_charters
 official_url=engine.official_url
 answer_sources=engine.answer_sources
-VERSION="16.0.0"
+VERSION="16.2.0"
 APP_NAME="¿QUÉ QUIERES LLEVAR?"
 STATIC_DIR="static"
-
-stripe.api_key = os.getenv("STRIPE_SECRET_KEY", "")
-STRIPE_PRICE_ID1 = os.getenv("STRIPE_PRICE_ID1", "")
-STRIPE_PRICE_ID2 = os.getenv("STRIPE_PRICE_ID2", "")
-ADMIN_USERNAME = os.getenv("ADMIN_USERNAME", "admin")
-ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin")
-APP_URL = os.getenv("APP_URL", "https://qu-quieres-llevar.onrender.com")
-
 app=FastAPI(title=APP_NAME,version=VERSION)
 app.mount("/static",StaticFiles(directory=STATIC_DIR),name="static")
+APP_URL=os.getenv("APP_URL","https://qu-quieres-llevar.onrender.com").strip().rstrip("/")
+SESSION_COOKIE="qql_access"
+COOKIE_MAX_AGE=60*60*24*365
+PUBLIC_API_PATHS={"/api/config","/api/access-status","/api/access/session/start","/api/payment/options","/api/create-checkout-session","/api/payment/verify","/api/login","/api/logout","/api/stripe/webhook","/api/v1/stripe/webhook","/api/legal","/api/ping"}
+
+def _secret_key():
+    key=os.getenv("SESSION_SIGNING_SECRET","").strip() or os.getenv("STRIPE_SECRET_KEY","").strip()
+    if not key:raise RuntimeError("Falta SESSION_SIGNING_SECRET o STRIPE_SECRET_KEY en Render.")
+    return key.encode("utf-8")
+def _sign(value:str)->str:
+    return hmac.new(_secret_key(),value.encode("utf-8"),hashlib.sha256).hexdigest()
+def _make_cookie(kind:str,value:str)->str:
+    issued=str(int(time.time()));payload=f"{kind}.{issued}.{value}";return payload+"."+_sign(payload)
+def _read_cookie(raw:str|None):
+    if not raw:return None
+    try:
+        kind,issued,value,sig=raw.split(".",3);payload=f"{kind}.{issued}.{value}"
+        if not hmac.compare_digest(sig,_sign(payload)):return None
+        age=max(0,int(time.time())-int(issued))
+        if kind not in ("admin","single","subscription"):return None
+        if age>(12*60*60 if kind=="admin" else COOKIE_MAX_AGE):return None
+        return {"kind":kind,"value":value,"issued":int(issued),"age":age,"session_expired":kind in ("single","subscription") and age>=20*60}
+    except Exception:return None
+
+def _stripe_request(method:str,path:str,params:dict|None=None):
+    key=os.getenv("STRIPE_SECRET_KEY","").strip()
+    if not key:raise RuntimeError("Falta configurar STRIPE_SECRET_KEY en Render.")
+    url="https://api.stripe.com/v1/"+path.lstrip("/")
+    data=None;headers={"Authorization":"Bearer "+key,"Content-Type":"application/x-www-form-urlencoded"}
+    if method.upper()=="GET" and params:url+="?"+urllib.parse.urlencode(params,doseq=True)
+    elif params:data=urllib.parse.urlencode(params,doseq=True).encode("utf-8")
+    req=urllib.request.Request(url,data=data,headers=headers,method=method.upper())
+    try:
+        with urllib.request.urlopen(req,timeout=15) as resp:return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        try:detail=json.loads(e.read().decode("utf-8"));msg=detail.get("error",{}).get("message","Stripe rechazó la solicitud.")
+        except Exception:msg="Stripe rechazó la solicitud."
+        raise RuntimeError(msg)
+
+def _session_details(session_id:str):
+    if not session_id or not session_id.startswith("cs_"):return None
+    session=_stripe_request("GET","checkout/sessions/"+urllib.parse.quote(session_id,safe=""))
+    if session.get("status")!="complete" or session.get("payment_status")!="paid":return None
+    items=_stripe_request("GET","checkout/sessions/"+urllib.parse.quote(session_id,safe="")+"/line_items",{"limit":10})
+    price_ids=[]
+    for item in items.get("data",[]):
+        price=item.get("price")
+        if isinstance(price,dict):price=price.get("id")
+        if price:price_ids.append(str(price))
+    p1=os.getenv("STRIPE_PRICE_ID1","").strip();p2=os.getenv("STRIPE_PRICE_ID2","").strip()
+    mode=session.get("mode")
+    if mode=="payment" and p1 and p1 in price_ids:return {"session":session,"plan":"single","subscription":None}
+    if mode=="subscription" and p2 and p2 in price_ids:
+        sub=session.get("subscription")
+        if isinstance(sub,str):sub=_stripe_request("GET","subscriptions/"+urllib.parse.quote(sub,safe=""))
+        if isinstance(sub,dict) and sub.get("status") in ("active","trialing"):
+            return {"session":session,"plan":"subscription","subscription":sub}
+    return None
+
+def _payment_is_valid(session_id:str)->bool:
+    try:return _session_details(session_id) is not None
+    except Exception:return False
+
+def _has_access(request:Request)->bool:
+    cookie=_read_cookie(request.cookies.get(SESSION_COOKIE))
+    if not cookie:return False
+    if cookie["kind"]=="admin":return hmac.compare_digest(cookie["value"],"admin")
+    if cookie["session_expired"]:return False
+    return _payment_is_valid(cookie["value"])
 
 def now():return datetime.datetime.now().isoformat(timespec="seconds")
 def model_dict(x):
@@ -46,7 +105,6 @@ def model_dict(x):
     if hasattr(x,"model_dump"):return x.model_dump(exclude_none=False)
     if hasattr(x,"dict"):return x.dict()
     return dict(x)
-
 def normalize_result(result,default_sources=None):
     if result is None:result={}
     if hasattr(result,"model_dump"):result=result.model_dump()
@@ -54,7 +112,6 @@ def normalize_result(result,default_sources=None):
     result=dict(result)
     if not isinstance(result.get("sources"),list):result["sources"]=default_sources or []
     return result
-
 def call_engine(name,data=None):
     fn=getattr(engine,name,None)
     if not fn:return {"status":"error","message":f"Función no disponible: {name}","next_action":"Revisa la aplicación."}
@@ -76,59 +133,129 @@ async def home():
 async def health():
     return {"status":"ok","version":VERSION,"source_version":SOURCE_VERSION,"app":APP_NAME,"ready":True,"gemini_item_assistant":bool(os.getenv("GEMINI_API_KEY","").strip())}
 
+@app.get("/api/access-status")
+async def access_status(request:Request):
+    cookie=_read_cookie(request.cookies.get(SESSION_COOKIE))
+    if not cookie:return {"status":"ok","allowed":False,"kind":None}
+    if cookie["kind"]=="admin":return {"status":"ok","allowed":True,"kind":"admin","session_expired":False}
+    try:details=_session_details(cookie["value"])
+    except Exception:details=None
+    if not details:return {"status":"ok","allowed":False,"kind":None}
+    kind=details["plan"]
+    if cookie["session_expired"]:
+        return {"status":"ok","allowed":kind=="subscription","kind":kind if kind=="subscription" else None,"session_expired":True}
+    return {"status":"ok","allowed":True,"kind":kind,"session_expired":False,"remaining_seconds":max(0,20*60-cookie["age"])}
+
+@app.post("/api/access/session/start")
+async def start_subscription_session(request:Request):
+    cookie=_read_cookie(request.cookies.get(SESSION_COOKIE))
+    if not cookie or cookie["kind"]!="subscription":
+        return JSONResponse(status_code=401,content={"allowed":False,"message":"No se encontró una suscripción autorizada."})
+    try:details=_session_details(cookie["value"])
+    except Exception:details=None
+    if not details or details["plan"]!="subscription":
+        return JSONResponse(status_code=402,content={"allowed":False,"message":"La suscripción no está activa o el pago no está confirmado."})
+    response=JSONResponse(content={"status":"ok","allowed":True,"kind":"subscription","session_expired":False})
+    response.set_cookie(SESSION_COOKIE,_make_cookie("subscription",cookie["value"]),max_age=COOKIE_MAX_AGE,httponly=True,secure=APP_URL.startswith("https://"),samesite="lax",path="/")
+    return response
+
+@app.get("/api/payment/options")
+async def payment_options():
+    options=[]
+    for n in (1,2):
+        pid=os.getenv(f"STRIPE_PRICE_ID{n}","").strip()
+        title=f"Acceso con Stripe · Opción {n}";detail="Continuar al pago seguro."
+        if pid and os.getenv("STRIPE_SECRET_KEY","").strip():
+            try:
+                price=_stripe_request("GET","prices/"+urllib.parse.quote(pid,safe=""),{"expand[]":"product"})
+                amount=price.get("unit_amount");currency=(price.get("currency") or "usd").upper()
+                recurring=price.get("recurring") or {};product=price.get("product")
+                if isinstance(product,dict) and product.get("name"):title=product["name"]
+                elif amount is not None:title=f"Opción {n} · {amount/100:.2f} {currency}"
+                if amount is not None:
+                    detail=f"{amount/100:.2f} {currency}"
+                    if recurring.get("interval"):detail+=" · "+str(recurring.get("interval_count",1))+" "+str(recurring["interval"])
+                    else:detail+=" · pago único"
+            except Exception:pass
+        options.append({"id":n,"title":title,"detail":detail,"configured":bool(pid)})
+    return {"status":"ok","options":options}
+
+@app.post("/api/create-checkout-session")
+async def create_checkout_session(request:Request):
+    try:body=await request.json()
+    except Exception:body={}
+    plan=str(body.get("plan", ""))
+    if plan not in ("1","2"):return JSONResponse(status_code=400,content={"message":"Selecciona una opción de pago válida."})
+    price_id=os.getenv("STRIPE_PRICE_ID"+plan,"").strip()
+    if not price_id:return JSONResponse(status_code=503,content={"message":f"Falta configurar STRIPE_PRICE_ID{plan} en Render."})
+    try:
+        price=_stripe_request("GET","prices/"+urllib.parse.quote(price_id,safe=""))
+        recurring=price.get("recurring") or {};amount=price.get("unit_amount");currency=(price.get("currency") or "").lower()
+        if currency!="usd" or amount!=(1599 if plan=="1" else 2599):raise RuntimeError(f"STRIPE_PRICE_ID{plan} debe ser USD {15.99 if plan=='1' else 25.99:.2f}.")
+        if (plan=="1" and recurring) or (plan=="2" and (recurring.get("interval")!="month" or int(recurring.get("interval_count",1))!=1)):
+            raise RuntimeError("El tipo de precio de Stripe no coincide con el plan seleccionado.")
+        mode="subscription" if plan=="2" else "payment"
+        params={"mode":mode,"line_items[0][price]":price_id,"line_items[0][quantity]":"1","success_url":APP_URL+"/?payment=success&session_id={CHECKOUT_SESSION_ID}","cancel_url":APP_URL+"/?payment=cancel","allow_promotion_codes":"true","metadata[app]":"qql","metadata[plan]":"subscription" if plan=="2" else "single"}
+        session=_stripe_request("POST","checkout/sessions",params)
+        if not session.get("url"):raise RuntimeError("Stripe no devolvió el enlace de pago.")
+        return {"status":"ok","url":session["url"]}
+    except Exception as e:return JSONResponse(status_code=502,content={"message":str(e) or "No se pudo iniciar el pago de Stripe."})
+
+@app.post("/api/payment/verify")
+async def verify_payment(request:Request):
+    try:body=await request.json()
+    except Exception:body={}
+    sid=str(body.get("session_id", "")).strip()
+    try:details=_session_details(sid)
+    except Exception:details=None
+    if not details:return JSONResponse(status_code=402,content={"allowed":False,"message":"Stripe todavía no confirma un pago válido para este servicio."})
+    plan=details["plan"]
+    session=details["session"]
+    if plan=="single":
+        if (session.get("metadata") or {}).get("qql_redeemed")=="true":
+            return JSONResponse(status_code=409,content={"allowed":False,"message":"Este pago único ya fue utilizado."})
+        try:
+            _stripe_request("POST","checkout/sessions/"+urllib.parse.quote(sid,safe=""),{"metadata[qql_redeemed]":"true"})
+        except Exception as e:
+            return JSONResponse(status_code=502,content={"allowed":False,"message":"No se pudo reservar la sesión de pago único. Inténtalo otra vez."})
+    response=JSONResponse(content={"status":"ok","allowed":True,"message":"Pago confirmado.","plan":plan,"session_minutes":20})
+    response.set_cookie(SESSION_COOKIE,_make_cookie(plan,sid),max_age=COOKIE_MAX_AGE,httponly=True,secure=APP_URL.startswith("https://"),samesite="lax",path="/")
+    return response
+
+@app.post("/api/login")
+async def admin_login(request:Request):
+    try:body=await request.json()
+    except Exception:body={}
+    expected_user=os.getenv("ADMIN_USERNAME","");expected_password=os.getenv("ADMIN_PASSWORD","")
+    username=str(body.get("username", ""));password=str(body.get("password", ""))
+    if not expected_user or not expected_password:return JSONResponse(status_code=503,content={"allowed":False,"message":"Configura ADMIN_USERNAME y ADMIN_PASSWORD en Render."})
+    if not hmac.compare_digest(username,expected_user) or not hmac.compare_digest(password,expected_password):
+        return JSONResponse(status_code=401,content={"allowed":False,"message":"Usuario o contraseña incorrectos."})
+    response=JSONResponse(content={"status":"ok","allowed":True})
+    response.set_cookie(SESSION_COOKIE,_make_cookie("admin","admin"),max_age=12*60*60,httponly=True,secure=APP_URL.startswith("https://"),samesite="lax",path="/")
+    return response
+
+@app.post("/api/logout")
+async def admin_logout():
+    response=JSONResponse(content={"status":"ok"});response.delete_cookie(SESSION_COOKIE,path="/",secure=APP_URL.startswith("https://"),httponly=True,samesite="lax");return response
+
+@app.post("/api/v1/stripe/webhook")
+@app.post("/api/stripe/webhook")
+async def stripe_webhook(request:Request):
+    raw=await request.body();signature=request.headers.get("stripe-signature","");secret=os.getenv("STRIPE_WEBHOOK_SECRET","").strip()
+    if not secret:return JSONResponse(status_code=503,content={"status":"error","message":"Falta STRIPE_WEBHOOK_SECRET en Render."})
+    try:
+        parts={k:v for item in signature.split(",") if "=" in item for k,v in [item.split("=",1)]};ts=parts.get("t","");v1=parts.get("v1","")
+        if not ts or not v1 or abs(int(time.time())-int(ts))>300:raise ValueError("Firma vencida o inválida.")
+        expected=hmac.new(secret.encode("utf-8"),ts.encode("utf-8")+b"."+raw,hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(expected,v1):raise ValueError("Firma inválida.")
+        event=json.loads(raw.decode("utf-8"))
+        return {"status":"ok","received":True,"event":event.get("type","")}
+    except Exception:return JSONResponse(status_code=400,content={"status":"error","message":"Firma de Stripe inválida."})
+
 @app.get("/api/config")
 async def config():
-    return {"status":"ok","app":APP_NAME,"version":VERSION,"language":"es","free":False,"payment_required":True,"server_storage":False,"features":{"dviajeros":True,"visa":True,"flights":True,"airlines":True,"charters":True,"pdf":True,"official_sources":True},"official_sources":official_sources()}
-
-@app.post("/api/stripe/create-checkout-session")
-async def create_checkout_session(request: Request):
-    try:
-        body = await request.json()
-        price_type = body.get("price_type", "1")
-        price_id = STRIPE_PRICE_ID1 if str(price_type) == "1" else STRIPE_PRICE_ID2
-        if not price_id:
-            return JSONResponse(status_code=400, content={"status": "error", "message": "Price ID not configured"})
-        session = stripe.checkout.Session.create(
-            line_items=[{"price": price_id, "quantity": 1}],
-            mode="subscription" if str(price_type) == "2" else "payment",
-            success_url=f"{APP_URL}/?success=true",
-            cancel_url=f"{APP_URL}/?canceled=true",
-        )
-        return {"status": "ok", "url": session.url}
-    except Exception as e:
-        return JSONResponse(status_code=500, content={"status": "error", "message": str(e)})
-
-@app.post("/api/stripe/webhook")
-async def stripe_webhook(request: Request):
-    payload = await request.body()
-    sig_header = request.headers.get("stripe-signature")
-    webhook_secret = os.getenv("STRIPE_WEBHOOK_SECRET", "")
-    event = None
-    if webhook_secret:
-        try:
-            event = stripe.Webhook.construct_event(payload, sig_header, webhook_secret)
-        except Exception as e:
-            return JSONResponse(status_code=400, content={"status": "error", "message": str(e)})
-    else:
-        try:
-            event = json.loads(payload.decode("utf-8"))
-        except Exception:
-            return JSONResponse(status_code=400, content={"status": "error", "message": "Invalid payload"})
-    if event and event.get("type") == "checkout.session.completed":
-        pass
-    return {"status": "success"}
-
-@app.post("/api/admin/login")
-async def admin_login(request: Request):
-    try:
-        body = await request.json()
-        username = body.get("username", "")
-        password = body.get("password", "")
-        if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
-            return {"status": "ok", "message": "Acceso concedido"}
-        return JSONResponse(status_code=401, content={"status": "error", "message": "Credenciales incorrectas"})
-    except Exception as e:
-        return JSONResponse(status_code=400, content={"status": "error", "message": str(e)})
+    return {"status":"ok","app":APP_NAME,"version":VERSION,"language":"es","free":False,"login_required":True,"payment_required":True,"server_storage":False,"stripe_configured":bool(os.getenv("STRIPE_SECRET_KEY","")),"publishable_key":os.getenv("STRIPE_PUBLISHABLE_KEY",""),"features":{"dviajeros":True,"visa":True,"flights":True,"airlines":True,"charters":True,"pdf":True,"official_sources":True},"official_sources":official_sources()}
 
 @app.post("/api/flight")
 async def flight(data:FlightRequest):return call_engine("analyze_flight",data)
